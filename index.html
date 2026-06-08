@@ -1,84 +1,361 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="zh-HK">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HinHin生物學模擬器</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f6f8fa;
-            color: #24292e;
-            margin: 0;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            color: #586069;
-            margin-bottom: 30px;
-        }
-        .menu-container {
-            width: 100%;
-            max-width: 600px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .menu-item {
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            background: white;
-            border: 1px solid #e1e4e8;
-            border-radius: 8px;
-            text-decoration: none;
-            color: inherit;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: all 0.2s ease;
-        }
-        /* 滑鼠移上去的視覺效果 */
-        .menu-item:hover {
-            border-color: #0366d6;
-            background-color: #f1f8ff;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
-        }
-        .item-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #0366d6;
-            margin-bottom: 5px;
-        }
-        .item-desc {
-            font-size: 0.95rem;
-            color: #586069;
-            line-height: 1.4;
-        }
-    </style>
-</head>
-<body>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HinHin生物學模擬器</title>
 
-    <h1>HinHin生物學模擬器</h1>
-    <p class="subtitle">點擊下方進入模擬</p>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      future: { hoverOnlyWhenSupported: true }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    body {
+      background-color: #f3f4f6; /* 清新優雅的淺灰色背景 */
+      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
     
-    <div class="menu-container">
+    /* 高級玻璃擬態與柔和陰影 */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
 
-        <a href="bio sim ch3 inter-membrane3.0.html" class="menu-item">
-            <div class="item-title">跨越細胞膜的活動 ➔</div>
-            <div class="item-desc">包含擴散、滲透、主動轉運的互動式模擬。</div>
-        </a>
+    /* 懸停時的動態發光與微調平滑動畫 */
+    .menu-item-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .menu-item-card:hover {
+      transform: translateY(-2px);
+    }
+
+    /* 下拉菜單動畫過渡 */
+    .chapter-content {
+      transition: max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="text-gray-800 min-h-screen flex flex-col items-center justify-start py-16 px-4 select-none">
+
+  <div class="w-full max-w-xl flex flex-col gap-6">
+    
+    <div class="text-center mb-4">
+      <div class="inline-flex flex-col items-center gap-2 mb-3">
+        <img src="https://i.imgur.com/wZLVI47.jpeg" alt="HinHin Biology Logo" class="w-16 h-16 rounded-full object-cover border-2 border-emerald-100 shadow-md">
         
-        <a href="bio sim ch3 membrane fluid mosaic model.html" class="menu-item">
-            <div class="item-title">細胞膜流體镶嵌模型 ➔</div>
-            <div class="item-desc">細胞膜的結構。</div>
-        </a>
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 text-xs font-semibold tracking-wide uppercase">
+          <i class="fa-solid fa-flask-vial animate-pulse"></i> Interactive Simulation
         </div>
+      </div>
+      
+      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600">
+        HinHin 生物學模擬器
+      </h1>
+      <p class="text-gray-500 text-sm mt-2 font-medium">點擊下方選單進入模擬</p>
+    </div>
+
+    <div class="flex flex-col gap-4">
+      
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-emerald-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-emerald-500 rounded-full"></span>
+            <span>CH3 跨膜活動</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-emerald-500 transition-transform duration-300 transform">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-[1000px] opacity-100 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch3 membrane fluid mosaic model.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-emerald-300 hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-teal-600 group-hover:text-teal-500 transition-colors">細胞膜流體鑲嵌模型</div>
+              <p class="text-xs text-gray-400 mt-1">Fluid Mosaic Model</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+
+          <a href="bio sim ch3 inter-membrane3.0.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-emerald-300 hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-emerald-600 group-hover:text-emerald-500 transition-colors">跨越細胞膜的活動</div>
+              <p class="text-xs text-gray-400 mt-1">擴散、滲透與主動轉運模擬</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+
+          <a href="bio sim ch3 osmosis dialysis potato strip.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-emerald-300 hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-emerald-600 group-hover:text-emerald-500 transition-colors">馬鈴薯條滲透實驗</div>
+              <p class="text-xs text-gray-400 mt-1">不同濃度溶液中的細胞變化</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+
+          <a href="bio sim ch3 osmosis dialysis tubing exp.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-emerald-300 hover:shadow-[0_8px_20px_-8px_rgba(16,185,129,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-emerald-600 group-hover:text-emerald-500 transition-colors">透析管滲透實驗</div>
+              <p class="text-xs text-gray-400 mt-1">Dialysis Tubing Experiment</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-amber-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-amber-500 rounded-full"></span>
+            <span>CH4 酶的反應</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-amber-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch4 enzymatic reaction.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-amber-300 hover:shadow-[0_8px_20px_-8px_rgba(245,158,11,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-amber-600 group-hover:text-amber-500 transition-colors">酶促反應模擬</div>
+              <p class="text-xs text-gray-400 mt-1">Enzymatic Reaction Simulator</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-sky-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-sky-500 rounded-full"></span>
+            <span>CH7 人體的呼吸系統</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-sky-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch7 inhalation and exhalation.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-sky-300 hover:shadow-[0_8px_20px_-8px_rgba(14,165,233,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-sky-600 group-hover:text-sky-500 transition-colors">吸氣與呼氣機制</div>
+              <p class="text-xs text-gray-400 mt-1">肋間肌與橫膈膜的聯動模擬</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-sky-50 border border-sky-100 text-sky-600 group-hover:bg-sky-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-rose-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-rose-400 rounded-full"></span>
+            <span>CH12 開花植物的生殖</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-rose-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch12 flower simulation.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-rose-300 hover:shadow-[0_8px_20px_-8px_rgba(244,63,94,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-rose-600 group-hover:text-rose-500 transition-colors">花卉構造與生殖模擬</div>
+              <p class="text-xs text-gray-400 mt-1">Flower Structure & Reproduction</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 text-rose-600 group-hover:bg-rose-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-lime-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-lime-500 rounded-full"></span>
+            <span>CH14 植物的生長與發育</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-lime-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch14 secondary growth xylem phloem.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-lime-300 hover:shadow-[0_8px_20px_-8px_rgba(132,204,22,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-lime-600 group-hover:text-lime-500 transition-colors">植物次生生長模擬</div>
+              <p class="text-xs text-gray-400 mt-1">木質部與韌皮部的形成過程</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-lime-50 border border-lime-100 text-lime-600 group-hover:bg-lime-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-purple-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-purple-500 rounded-full"></span>
+            <span>CH15 人體的感官（眼睛）</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-purple-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch15 myopia and long sight.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-purple-300 hover:shadow-[0_8px_20px_-8px_rgba(168,85,247,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-purple-600 group-hover:text-purple-500 transition-colors">近視與遠視光路模擬</div>
+              <p class="text-xs text-gray-400 mt-1">Myopia and Long Sight Correction</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+
+          <a href="bio sim ch15 pupill and lens.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-purple-300 hover:shadow-[0_8px_20px_-8px_rgba(168,85,247,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-purple-600 group-hover:text-purple-500 transition-colors">瞳孔反射與晶狀體調節</div>
+              <p class="text-xs text-gray-400 mt-1">Pupil Reflex and Lens Accommodation</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-purple-50 border border-purple-100 text-purple-600 group-hover:bg-purple-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-indigo-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-indigo-500 rounded-full"></span>
+            <span>CH16 協調與反應（神經與肌肉）</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-indigo-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch16 flexor and extensor .html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-indigo-300 hover:shadow-[0_8px_20px_-8px_rgba(99,102,241,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-indigo-600 group-hover:text-indigo-500 transition-colors">屈肌與伸肌的拮抗作用</div>
+              <p class="text-xs text-gray-400 mt-1">Flexor and Extensor Coordination</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+
+          <a href="bio sim ch16 synaptic activity.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-indigo-300 hover:shadow-[0_8px_20px_-8px_rgba(99,102,241,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-indigo-600 group-hover:text-indigo-500 transition-colors">突觸傳遞活動</div>
+              <p class="text-xs text-gray-400 mt-1">Synaptic Activity & Neurotransmitters</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-teal-600 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-teal-500 rounded-full"></span>
+            <span>CH20-21 光合與呼吸作用代謝圈</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-teal-500 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch20_21 calvin and kerbs.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-teal-300 hover:shadow-[0_8px_20px_-8px_rgba(20,184,166,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-teal-600 group-hover:text-teal-500 transition-colors">卡爾文循環與克氏循環</div>
+              <p class="text-xs text-gray-400 mt-1">Calvin Cycle and Krebs Cycle</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-teal-50 border border-teal-100 text-teal-600 group-hover:bg-teal-600 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="chapter-container flex flex-col gap-2.5">
+        <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-amber-700 transition-colors duration-200 group">
+          <div class="flex items-center gap-3">
+            <span class="w-2 h-6 bg-amber-600 rounded-full"></span>
+            <span>CH25 遺傳學（孟德爾定律）</span>
+          </div>
+          <div class="arrow-icon text-gray-400 group-hover:text-amber-600 transition-transform duration-300 transform rotate-[-90deg]">
+            <i class="fa-solid fa-chevron-down text-sm"></i>
+          </div>
+        </button>
+
+        <div class="chapter-content overflow-hidden max-h-0 opacity-0 flex flex-col gap-2.5 pl-1">
+          <a href="bio sim ch25 mendels law chromosome mendel.html" class="glass-panel menu-item-card rounded-2xl p-5 flex items-center justify-between group gap-4 border hover:border-amber-500 hover:shadow-[0_8px_20px_-8px_rgba(217,119,6,0.15)]">
+            <div class="flex-1">
+              <div class="text-base font-bold text-amber-700 group-hover:text-amber-600 transition-colors">孟德爾遺傳定律與染色體</div>
+              <p class="text-xs text-gray-400 mt-1">Mendel's Law and Chromosome Simulation</p>
+            </div>
+            <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-amber-50 border border-amber-100 text-amber-700 group-hover:bg-amber-700 group-hover:text-white transition-all shadow-sm">
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="text-center text-xs text-gray-400 mt-6 tracking-wider font-medium">
+      © HinHin Biology Simulation System
+    </div>
+
+  </div>
+
+  <script>
+    function toggleChapter(button) {
+      const content = button.nextElementSibling;
+      const arrow = button.querySelector('.arrow-icon');
+      
+      if (content.classList.contains('max-h-0')) {
+        // 展開：將 max-h 設為足夠大的高度（例如 1000px）容納卡片
+        content.classList.remove('max-h-0', 'opacity-0');
+        content.classList.add('max-h-[1000px]', 'opacity-100');
+        arrow.classList.remove('rotate-[-90deg]');
+      } else {
+        // 收合
+        content.classList.remove('max-h-[1000px]', 'opacity-100');
+        content.classList.add('max-h-0', 'opacity-0');
+        arrow.classList.add('rotate-[-90deg]');
+      }
+    }
+  </script>
 
 </body>
 </html>
