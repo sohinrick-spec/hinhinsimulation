@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>植物次級生長與年輪教育模擬器 — HinHin Biology</title>
+    <style>
+        :root {
+            /* 1. Precision Lab Color Palette */
+            --primary-bg: #f4f6f9;         /* Light ice-blue/gray global background */
+            --panel-bg: #ffffff;           /* Pure White main panels */
+            --text-main: #1a2332;          /* Deep Navy primary text */
+            --text-sub: #4a5a70;           /* Slate Blue secondary text */
+            --text-muted: #8a9ab0;         /* Gray dim labels */
+            
+            /* Semantic Accents */
+            --accent-cyan: #1976d2;        /* Primary active state */
+            --accent-green: #2e7d32;       /* Success / active playback */
+            --accent-green-hover: #1b5e20;
+            --accent-amber: #e65100;       /* Warning / alert / alert borders */
+            --accent-amber-bg: #fffcf5;    /* Light warning container tint */
+            
+            --border-color: #d4dbe6;       /* Crisp thin border */
+            
+            /* 2. Typography Definitions */
+            --font-ui: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "微軟正黑體", sans-serif;
+            --font-mono: 'IBM Plex Mono', Monaco, Consolas, monospace;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 3. Outer Frame & Layout Partitioning */
+        .container {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px; /* Micro-radius */
+            box-shadow: none; /* Eliminated heavy shadows for lab instrument look */
+            display: flex;
+            flex-direction: row;
+            overflow: hidden;
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        /* Left Canvas Section (Instrument Viewport) */
+        .canvas-section {
+            padding: 24px;
+            background-color: #fafbfc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid var(--border-color);
+        }
+
+        canvas {
+            background-color: transparent;
+        }
+
+        /* Right Control Section (Instrument Console Panel) */
+        .control-section {
+            padding: 32px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Typography & Headings */
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin: 0 0 4px 0;
+            text-transform: uppercase;
+            color: var(--text-main);
+        }
+        
+        h3 {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 10px 0;
+        }
+
+        /* 4. Segmented Control / Stage Buttons */
+        .stage-btns {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 0;
+            flex-wrap: wrap;
+        }
+
+        .stage-btns button {
+            background-color: #f8fafc;
+            color: var(--text-sub);
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 4px; /* Micro-radius */
+            cursor: pointer;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.15s ease;
+        }
+
+        .stage-btns button:hover {
+            background-color: #f1f5f9;
+            color: var(--text-main);
+            border-color: #b4c2d4;
+        }
+
+        .stage-btns button.active {
+            background-color: var(--accent-cyan);
+            color: #ffffff;
+            border-color: var(--accent-cyan);
+        }
+
+        /* 5. Precision Telemetry Panel (Dynamic Metrics) */
+        .info-panel {
+            background-color: var(--accent-amber-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-amber);
+            padding: 16px;
+            border-radius: 4px;
+            margin-bottom: 0;
+        }
+
+        .info-panel h3 {
+            margin: 0 0 8px 0;
+            font-family: var(--font-mono); /* Technical status requires Monospace */
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-transform: none;
+            letter-spacing: 0;
+        }
+
+        .info-panel p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-sub);
+        }
+        
+        /* 6. Execution & Input Controls Block */
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 0;
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 4px;
+        }
+
+        .play-btn {
+            background-color: var(--accent-green);
+            color: #ffffff;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-family: var(--font-ui);
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: background-color 0.15s ease;
+            white-space: nowrap;
+        }
+
+        .play-btn:hover {
+            background-color: var(--accent-green-hover);
+        }
+
+        /* Ultra-thin Minimalist Range Slider */
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        /* Track Styling */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Thumb Styling (Scales cleanly on hover) */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px; /* Centers thumb on 3px track */
+            background-color: var(--accent-cyan);
+            height: 13px;
+            width: 13px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            background-color: var(--accent-cyan);
+            height: 9px;
+            width: 9px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+        
+        input[type="range"]:hover::-moz-range-thumb {
+            transform: scale(1.2);
+        }
+
+        /* 7. Structured Data Grid Legend */
+        .legend {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: auto;
+            border-top: 1px dashed var(--border-color);
+            padding-top: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            color: var(--text-sub);
+            font-weight: 500;
+        }
+
+        .color-box {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px; /* Precision block */
+            margin-right: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.15);
+            flex-shrink: 0;
+        }
+        
+        /* Structure Mapping References */
+        .c-pp { background-color: #6D92B2; }
+        .c-sp { background-color: #A3B8CC; }
+        .c-cam { background-color: #D9B958; }
+        .c-px { background-color: #9C4F4E; }
+        .c-sx-s { background-color: #E2CDBA; }
+        .c-sx-a { background-color: #8E5A44; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="canvas-section">
+        <canvas id="plantCanvas" width="700" height="500"></canvas>
+    </div>
+    
+    <div class="control-section">
+        <h1>次級生長與年輪動態解析</h1>
+        
+        <h3>教學階段展示</h3>
+        <div class="stage-btns">
+            <button onclick="setStage(0)" id="btn-s0" class="active">初始狀態</button>
+            <button onclick="setStage(1)" id="btn-s1">第一年結束</button>
+            <button onclick="setStage(2)" id="btn-s2">第二年結束</button>
+            <button onclick="setStage(3)" id="btn-s3">第三年結束</button>
+        </div>
+
+        <div class="info-panel">
+            <h3 id="timeStatus">狀態：剛形成維管束形成層環</h3>
+            <p id="descStatus">初生木質部與初生韌皮部之間的形成層，與髓突相連成環狀，準備開始進行次級生長。</p>
+        </div>
+
+        <div class="controls">
+            <button id="playBtn" class="play-btn">播放動畫</button>
+            <input type="range" id="timeSlider" min="0" max="3" step="0.01" value="0">
+        </div>
+
+        <h3>構造圖例對照</h3>
+        <div class="legend">
+            <div class="legend-item"><div class="color-box c-pp"></div> 初生韌皮部</div>
+            <div class="legend-item"><div class="color-box c-px"></div> 初生木質部</div>
+            <div class="legend-item"><div class="color-box c-sp"></div> 次生韌皮部</div>
+            <div class="legend-item"><div class="color-box c-sx-s"></div> 次生木質部 (早材/春材)</div>
+            <div class="legend-item"><div class="color-box c-cam"></div> 維管束形成層</div>
+            <div class="legend-item"><div class="color-box c-sx-a"></div> 次生木質部 (晚材/秋材)</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('plantCanvas');
+    const ctx = canvas.getContext('2d');
+    const playBtn = document.getElementById('playBtn');
+    const timeSlider = document.getElementById('timeSlider');
+    const timeStatus = document.getElementById('timeStatus');
+    const descStatus = document.getElementById('descStatus');
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const cx = width / 2;
+    const cy = height / 2;
+
+    let time = 0; 
+    let isPlaying = false;
+    let animationId;
+
+    // 生長參數設定
+    const PITH_RADIUS = 30;
+    const BASE_CAMBIUM_RADIUS = 50;
+    const GROWTH_PER_YEAR = 40;
+    const BUNDLE_COUNT = 8;
+
+    // 色彩設定
+    const COLOR_SPRING = '#E2CDBA';
+    const COLOR_AUTUMN = '#8E5A44';
+    const COLOR_PITH = '#FDFBF7';
+    const COLOR_PITH_RAY = '#f2ede4';
+    const COLOR_PRIMARY_XYLEM = '#9C4F4E';
+    const COLOR_PRIMARY_PHLOEM = '#6D92B2';
+    const COLOR_SEC_PHLOEM = '#A3B8CC';
+    const COLOR_CAMBIUM = '#D9B958';
+    const COLOR_LABEL = '#333333';
+
+    function interpolateColor(color1, color2, factor) {
+        const hex1 = color1.substring(1);
+        const hex2 = color2.substring(1);
+        const r1 = parseInt(hex1.substring(0, 2), 16);
+        const g1 = parseInt(hex1.substring(2, 4), 16);
+        const b1 = parseInt(hex1.substring(4, 6), 16);
+        const r2 = parseInt(hex2.substring(0, 2), 16);
+        const g2 = parseInt(hex2.substring(2, 4), 16);
+        const b2 = parseInt(hex2.substring(4, 6), 16);
+        const r = Math.round(r1 + factor * (r2 - r1));
+        const g = Math.round(g1 + factor * (g2 - g1));
+        const b = Math.round(b1 + factor * (b2 - b1));
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    // 繪製引導線與文字
+    function drawLabel(text, targetR, angle, align) {
+        const targetX = cx + Math.cos(angle) * targetR;
+        const targetY = cy + Math.sin(angle) * targetR;
+        
+        // 折線的轉折點
+        const elbowDist = 200; 
+        const elbowX = cx + (align === 'left' ? -elbowDist : elbowDist);
+        const elbowY = targetY;
+
+        ctx.strokeStyle = COLOR_LABEL;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // 畫一個小圓點指示目標
+        ctx.arc(targetX, targetY, 3, 0, Math.PI*2);
+        ctx.fillStyle = COLOR_LABEL;
+        ctx.fill();
+        
+        ctx.moveTo(targetX, targetY);
+        ctx.lineTo(elbowX, elbowY);
+        
+        const textX = align === 'left' ? elbowX - 10 : elbowX + 10;
+        ctx.lineTo(textX, elbowY);
+        ctx.stroke();
+
+        ctx.font = "14px '微軟正黑體', sans-serif";
+        ctx.textAlign = align === 'left' ? "right" : "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(text, textX, elbowY);
+    }
+
+    function updateStatusText(t) {
+        if (t === 0) {
+            timeStatus.innerText = "狀態：剛形成維管束形成層環";
+            descStatus.innerText = "初生木質部與韌皮部之間的分生組織相連成環，準備進行次級生長向內生成木材，向外生成樹皮。";
+        } else {
+            const year = Math.ceil(t);
+            const frac = t % 1;
+            let seasonText = "";
+            let desc = "";
+            
+            if (frac === 0 && t > 0) {
+                seasonText = `第 ${t} 年結束 (休眠期)`;
+                desc = "形成了一圈完整的年輪。可以明顯看出深色的秋材與淺色的春材交界。";
+            } else if (frac < 0.5) {
+                seasonText = `第 ${year} 年 - 春夏季`;
+                desc = "水分充足、氣候溫暖，形成層快速分裂，產生細胞壁較薄、管徑較大、顏色較淺的「早材(春材)」。";
+            } else {
+                seasonText = `第 ${year} 年 - 秋冬季`;
+                desc = "氣候漸冷、水分減少，生長緩慢，產生細胞壁較厚、管徑較小、顏色較深的「晚材(秋材)」。";
+            }
+            timeStatus.innerText = `狀態：${seasonText}`;
+            descStatus.innerText = desc;
+        }
+
+        // 更新按鈕狀態
+        for(let i=0; i<=3; i++){
+            document.getElementById(`btn-s${i}`).classList.remove('active');
+        }
+        if(t === 0 || t === 1 || t === 2 || t === 3) {
+            document.getElementById(`btn-s${t}`).classList.add('active');
+        }
+    }
+
+    function drawSimulation(t) {
+        ctx.clearRect(0, 0, width, height);
+
+        const currentCambiumRadius = BASE_CAMBIUM_RADIUS + (t * GROWTH_PER_YEAR);
+        const phloemThickness = 12 + (t * 5); // 韌皮部向外擴張
+        const outerBoundary = currentCambiumRadius + phloemThickness;
+
+        // 1. 背景髓射線 (視覺裝飾)
+        ctx.fillStyle = COLOR_PITH_RAY;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerBoundary + 10, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. 次生韌皮部
+        ctx.fillStyle = COLOR_SEC_PHLOEM;
+        ctx.beginPath();
+        ctx.arc(cx, cy, outerBoundary, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 3. 初生韌皮部 (被推至最外圍)
+        ctx.fillStyle = COLOR_PRIMARY_PHLOEM;
+        for (let i = 0; i < BUNDLE_COUNT; i++) {
+            const angle = (i / BUNDLE_COUNT) * Math.PI * 2;
+            const px = cx + Math.cos(angle) * outerBoundary;
+            const py = cy + Math.sin(angle) * outerBoundary;
+            ctx.beginPath();
+            ctx.arc(px, py, 12, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 4. 次生木質部 (年輪核心邏輯)
+        const step = 0.01; 
+        for (let tau = t; tau >= 0; tau -= step) {
+            const r = BASE_CAMBIUM_RADIUS + (tau * GROWTH_PER_YEAR);
+            const frac = tau % 1;
+            // 使用非線性曲線強化秋材的深色漸層
+            const mix = Math.pow(frac, 4); 
+            ctx.fillStyle = interpolateColor(COLOR_SPRING, COLOR_AUTUMN, mix);
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 5. 繪製髓心與初生木質部
+        ctx.fillStyle = COLOR_PITH;
+        ctx.beginPath();
+        ctx.arc(cx, cy, PITH_RADIUS + 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = COLOR_PRIMARY_XYLEM;
+        for (let i = 0; i < BUNDLE_COUNT; i++) {
+            const angle = (i / BUNDLE_COUNT) * Math.PI * 2;
+            const dist = PITH_RADIUS + 2; 
+            const px = cx + Math.cos(angle) * dist;
+            const py = cy + Math.sin(angle) * dist;
+            
+            // 繪製水滴狀的初生木質部
+            ctx.save();
+            ctx.translate(px, py);
+            ctx.rotate(angle + Math.PI/2);
+            ctx.beginPath();
+            ctx.moveTo(0, -12);
+            ctx.bezierCurveTo(8, -12, 10, 8, 0, 15);
+            ctx.bezierCurveTo(-10, 8, -8, -12, 0, -12);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // 6. 形成層環
+        ctx.strokeStyle = COLOR_CAMBIUM;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy, currentCambiumRadius, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 7. 動態文字標註 (只在特定角度繪製，避免遮擋)
+        // 左側標註：韌皮部與形成層
+        drawLabel("初生韌皮部", outerBoundary, Math.PI, 'left');
+        if (t > 0.1) {
+            drawLabel("次生韌皮部", currentCambiumRadius + (phloemThickness/2), Math.PI - 0.3, 'left');
+        }
+        drawLabel("維管束形成層", currentCambiumRadius, Math.PI + 0.3, 'left');
+
+        // 右側標註：木質部
+        drawLabel("初生木質部", PITH_RADIUS + 5, 0, 'right');
+        if (t > 0) {
+            // 指向當前生成的次生木質部中間
+            const midXylemR = BASE_CAMBIUM_RADIUS + (currentCambiumRadius - BASE_CAMBIUM_RADIUS) * 0.7;
+            drawLabel("次生木質部 (年輪)", midXylemR, 0.2, 'right');
+        }
+    }
+
+    function loop() {
+        if (isPlaying) {
+            time += 0.005; // 稍微放慢播放速度讓學生看得清
+            if (time > 3) {
+                time = 3;
+                isPlaying = false;
+                playBtn.innerText = "重播動畫";
+                playBtn.style.backgroundColor = "#e67e22";
+            }
+            timeSlider.value = time;
+            updateStatusText(time);
+            drawSimulation(time);
+            animationId = requestAnimationFrame(loop);
+        }
+    }
+
+    playBtn.addEventListener('click', () => {
+        if (time >= 3 && !isPlaying) {
+            time = 0; 
+            playBtn.style.backgroundColor = "var(--accent-green)";
+        }
+        isPlaying = !isPlaying;
+        playBtn.innerText = isPlaying ? "暫停" : "播放動畫";
+        if (isPlaying) loop();
+        else cancelAnimationFrame(animationId);
+    });
+
+    timeSlider.addEventListener('input', (e) => {
+        time = parseFloat(e.target.value);
+        updateStatusText(time);
+        drawSimulation(time);
+        if (time < 3 && !isPlaying) {
+            playBtn.innerText = "播放動畫";
+            playBtn.style.backgroundColor = "var(--accent-green)";
+        }
+    });
+
+    // 外部調用跳轉階段
+    window.setStage = function(targetTime) {
+        time = targetTime;
+        timeSlider.value = time;
+        if (isPlaying) {
+            isPlaying = false;
+            cancelAnimationFrame(animationId);
+            playBtn.innerText = "播放動畫";
+        }
+        updateStatusText(time);
+        drawSimulation(time);
+    };
+
+    // 初始化繪製
+    drawSimulation(time);
+    updateStatusText(time);
+</script>
+</body>
+</html>

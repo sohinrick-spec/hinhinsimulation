@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>細胞膜流體鑲嵌模型 — HinHin Biology</title>
+    <style>
+        /* Precision Instrument Design System (Dark Laboratory Variant) */
+        :root {
+            --bg-dark: #05070c;
+            --bg-panel: #0b0f19;
+            --border-color: #1e293b;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-dim: #64748b;
+            
+            /* Strict Semantic Mappings */
+            --accent-cyan: #38bdf8;
+            --accent-rose: #f43f5e;
+            --accent-emerald: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-violet: #8b5cf6;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body, html {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Inter', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+        }
+
+        /* App Layout Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Fixed Top Header (52px) */
+        .app-header {
+            height: 52px;
+            min-height: 52px;
+            background-color: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+        }
+
+        .header-title-set {
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+        }
+
+        .header-title-set h1 {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            color: var(--text-primary);
+        }
+
+        .header-author {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .system-status {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--accent-emerald);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            letter-spacing: 1px;
+        }
+
+        /* Split Pane Layout */
+        .main-container {
+            display: flex;
+            flex: 1;
+            width: 100%;
+            height: calc(100vh - 52px);
+            overflow: hidden;
+        }
+
+        /* Fixed-width Control Sidebar (260px) */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background-color: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            z-index: 90;
+        }
+
+        .sidebar-section {
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            margin-bottom: 12px;
+        }
+
+        /* Precision Stat Cards Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .stat-card-label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+        }
+
+        .stat-card-value {
+            font-family: monospace;
+            font-size: 15px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            margin-top: 4px;
+        }
+
+        /* Precision Instrument Control Sliders */
+        .control-group {
+            margin-bottom: 12px;
+        }
+        
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .control-label-wrapper {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .control-title {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .control-value {
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 3px;
+            cursor: pointer;
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            background: var(--accent-cyan);
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -3.5px;
+            transition: transform 0.15s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.3);
+        }
+
+        /* Dynamic Analysis Output Panel */
+        #info-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .protein-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--accent-amber);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .protein-desc {
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+        }
+
+        .protein-bio {
+            font-size: 12px;
+            line-height: 1.6;
+            color: var(--accent-violet);
+            border-top: 1px dashed var(--border-color);
+            padding-top: 10px;
+        }
+
+        .empty-state {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-style: italic;
+            text-align: center;
+            margin: auto 0;
+        }
+
+        /* Main Workspace / Canvas Visualizer */
+        .workspace {
+            flex: 1;
+            position: relative;
+            background-color: #000000;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Interactive Environment Tags */
+        #env-labels {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 80;
+        }
+
+        .env-tag {
+            background: rgba(11, 15, 25, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            color: var(--accent-cyan);
+            letter-spacing: 0.5px;
+            border-left: 3px solid var(--accent-cyan);
+        }
+
+        .env-tag.inside {
+            color: var(--accent-rose);
+            border-left-color: var(--accent-rose);
+        }
+
+        /* System Loader Overlay */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: var(--accent-cyan);
+            transition: opacity 0.5s ease;
+        }
+
+        .instruction-footer {
+            font-size: 11px;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+    <div id="loader">優化微觀流體動力學...</div>
+
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-title-set">
+                <h1>細胞膜流體鑲嵌模型</h1>
+                <span class="header-author">By：HinHin</span>
+            </div>
+            <div class="system-status" id="sys-status">SYSTEM: DYNAMIC</div>
+        </header>
+
+        <main class="main-container">
+            
+            <aside class="sidebar">
+                
+                <section class="sidebar-section">
+                    <div class="section-label">實驗室即時數據 / Telemetry</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-card-label">磷脂總數</div>
+                            <div class="stat-card-value" style="color: var(--accent-cyan);">1,150+</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-label">蛋白質結構</div>
+                            <div class="stat-card-value" style="color: var(--accent-amber);">9 UNITS</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sidebar-section">
+                    <div class="section-label">流體動力學參數 / Controls</div>
+                    
+                    <div class="control-group">
+                        <div class="control-label-wrapper">
+                            <span class="control-title">微觀運動速率</span>
+                            <span class="control-value" id="val-speed">1.0x</span>
+                        </div>
+                        <input type="range" id="ctrl-speed" min="0" max="3" step="0.1" value="1">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label-wrapper">
+                            <span class="control-title">磷脂側向擴散</span>
+                            <span class="control-value" id="val-lipid">1.0x</span>
+                        </div>
+                        <input type="range" id="ctrl-lipid" min="0" max="3" step="0.1" value="1">
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-label-wrapper">
+                            <span class="control-title">嵌合蛋白游動振幅</span>
+                            <span class="control-value" id="val-protein">1.0x</span>
+                        </div>
+                        <input type="range" id="ctrl-protein" min="0" max="3" step="0.1" value="1">
+                    </div>
+                </section>
+
+                <section class="sidebar-section" style="flex: 1; display: flex; flex-direction: column; padding: 16px 0 0 0; border-bottom: none;">
+                    <div class="section-label" style="padding: 0 16px;">分子結構光譜分析 / Spectrum Analysis</div>
+                    <div id="info-panel">
+                        <div id="info-content" style="display: none;">
+                            <div class="protein-title" id="p-name">蛋白質名稱</div>
+                            <div class="protein-desc" id="p-desc">功能描述</div>
+                            <div class="protein-bio" id="p-bio">生物學意義</div>
+                        </div>
+                        <div id="info-empty" class="empty-state">
+                            💡 請點擊主視窗中的彩色蛋白質以激活精確光譜分析。
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sidebar-section" style="border-top: 1px solid var(--border-color);">
+                    <div class="instruction-footer">
+                        操作提示：按住滑鼠左鍵旋轉視角，右鍵平移，滾輪縮放。
+                    </div>
+                </section>
+            </aside>
+
+            <section class="workspace">
+                <div id="env-labels">
+                    <div class="env-tag">細胞外環境 (Extracellular Space)</div>
+                    <div class="env-tag inside">細胞內環境 (Intracellular Space)</div>
+                </div>
+                <div id="canvas-container"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        // --- 科學資料庫 ---
+        const proteinData = {
+            'channel': {
+                name: '通道蛋白 (Channel Protein)',
+                desc: '橫跨整個磷脂雙層的內嵌蛋白。中央擁有充滿水電解質的親水性通道。',
+                bio: '引導特定的離子（如 Na+, K+）或水分子（水通道蛋白）順著濃度梯度進行被動運輸（便利擴散）。'
+            },
+            'carrier': {
+                name: '載體蛋白 (Carrier Protein)',
+                desc: '與特定物質結合後，自身構型會發生改變，將物質由膜的一側轉運至另一側。',
+                bio: '可用於便利擴散或消耗 ATP 進行主動運輸（如鈉鉀幫浦），具有高度專一性。'
+            },
+            'receptor': {
+                name: '受體蛋白 (Receptor Protein)',
+                desc: '主要面向細胞外側，擁有能與特定化學信號（如激素、神經傳遞物質）結合的特異性位點。',
+                bio: '結合信號分子後會引發細胞內的級聯化學反應（細胞訊息傳導）。'
+            },
+            'antigen': {
+                name: '醣蛋白/抗原 (Glycoprotein / Antigen)',
+                desc: '蛋白質與寡醣鏈結合的複合體，醣鏈部分嚴格延伸至細胞外側，形成細胞外被。',
+                bio: '作為細胞的「身分證」，用於細胞識別、免疫防禦（區分自我與非我）。'
+            },
+            'enzyme': {
+                name: '膜結合酶 (Membrane-bound Enzyme)',
+                desc: '鑲嵌在膜上（多位於細胞內側表面）的蛋白質，具有催化特定生化反應的活性中心。',
+                bio: '將代謝反應直接定位在膜表面，例如細胞呼吸電子傳遞鏈中的各種複合體酶。'
+            }
+        };
+
+        // --- 儀表板控制聯動參數 ---
+        const simParams = {
+            speed: 1.0,
+            lipidDrift: 1.0,
+            proteinDrift: 1.0
+        };
+
+        // 綁定 UI 控制器
+        const setupSliders = () => {
+            const inputs = [
+                { id: 'ctrl-speed', valId: 'val-speed', key: 'speed', suffix: 'x' },
+                { id: 'ctrl-lipid', valId: 'val-lipid', key: 'lipidDrift', suffix: 'x' },
+                { id: 'ctrl-protein', valId: 'val-protein', key: 'proteinDrift', suffix: 'x' }
+            ];
+            inputs.forEach(item => {
+                const el = document.getElementById(item.id);
+                const display = document.getElementById(item.valId);
+                el.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    simParams[item.key] = val;
+                    display.innerText = val.toFixed(1) + item.suffix;
+                });
+            });
+        };
+        setupSliders();
+
+        // --- Three.js 初始化 ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x000000);
+        scene.fog = new THREE.FogExp2(0x000000, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 20, 35);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        container.appendChild(renderer.domElement);
+
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2 + 0.2;
+
+        // --- 燈光設置 ---
+        const ambientLight = new THREE.AmbientLight(0x334155, 1.8);
+        scene.add(ambientLight);
+
+        const dirLight1 = new THREE.DirectionalLight(0x38bdf8, 1.5);
+        dirLight1.position.set(20, 30, 20);
+        scene.add(dirLight1);
+
+        const dirLight2 = new THREE.DirectionalLight(0xf43f5e, 1.0);
+        dirLight2.position.set(-20, -30, -20);
+        scene.add(dirLight2);
+
+        // --- 建立磷脂雙層 (緊密型) ---
+        const lipids = [];
+        const lipidGroup = new THREE.Group();
+        scene.add(lipidGroup);
+
+        const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
+        const tailGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.0, 8);
+        tailGeo.translate(0, -0.5, 0);
+
+        const headMatOuter = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.2 });
+        const headMatInner = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.2 });
+        const tailMat = new THREE.MeshStandardMaterial({ color: 0x64748b, roughness: 0.6 });
+
+        const rows = 35;
+        const cols = 35;
+        const spacing = 1.1;
+
+        for(let r = 0; r < rows; r++) {
+            for(let c = 0; c < cols; c++) {
+                const x = (r - rows/2) * spacing + (Math.random() - 0.5) * 0.15;
+                const z = (c - cols/2) * spacing + (Math.random() - 0.5) * 0.15;
+                
+                if (Math.abs(x) < 14 && Math.abs(z) < 14 && (r+c)%13 === 0) continue;
+
+                // 上層磷脂
+                const uHead = new THREE.Mesh(headGeo, headMatOuter);
+                const uTail1 = new THREE.Mesh(tailGeo, tailMat);
+                const uTail2 = new THREE.Mesh(tailGeo, tailMat);
+                uTail1.position.set(-0.12, 0, 0);
+                uTail2.position.set(0.12, 0, 0);
+                uTail1.rotation.z = 0.08;
+                uTail2.rotation.z = -0.08;
+                
+                const uLipid = new THREE.Group();
+                uLipid.add(uHead, uTail1, uTail2);
+                uLipid.position.set(x, 1.1, z);
+                lipidGroup.add(uLipid);
+
+                // 下層磷脂
+                const dHead = new THREE.Mesh(headGeo, headMatInner);
+                const dTail1 = new THREE.Mesh(tailGeo, tailMat);
+                const dTail2 = new THREE.Mesh(tailGeo, tailMat);
+                dTail1.position.set(-0.12, 0, 0);
+                dTail2.position.set(0.12, 0, 0);
+                dTail1.rotation.z = 0.08;
+                dTail2.rotation.z = -0.08;
+
+                const dLipid = new THREE.Group();
+                dLipid.add(dHead, dTail1, dTail2);
+                dLipid.position.set(x, -1.1, z);
+                dLipid.rotation.x = Math.PI; 
+                lipidGroup.add(dLipid);
+
+                lipids.push({
+                    group: uLipid, baseX: x, baseZ: z, baseY: 1.1, seed: Math.random() * 100
+                });
+                lipids.push({
+                    group: dLipid, baseX: x, baseZ: z, baseY: -1.1, seed: Math.random() * 100
+                });
+            }
+        }
+
+        // --- 建立按比例縮放的功能蛋白質家族 ---
+        const proteins = [];
+        const proteinGroup = new THREE.Group();
+        scene.add(proteinGroup);
+
+        const matChannel = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.4 });
+        const matCarrier = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.4 });
+        const matReceptor = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, roughness: 0.3 });
+        const matAntigen = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.4 });
+        const matEnzyme = new THREE.MeshStandardMaterial({ color: 0xeab308, roughness: 0.5 });
+
+        function createChannel(x, z) {
+            const group = new THREE.Group();
+            const numSegments = 8;
+            for(let i=0; i<numSegments; i++) {
+                const angle = (i / numSegments) * Math.PI * 2;
+                const pGeo = new THREE.CylinderGeometry(0.4, 0.4, 3.2, 16);
+                const mesh = new THREE.Mesh(pGeo, matChannel);
+                mesh.position.set(Math.cos(angle)*0.8, 0, Math.sin(angle)*0.8);
+                group.add(mesh);
+            }
+            group.position.set(x, 0, z);
+            group.userData = { type: 'channel' };
+            return group;
+        }
+
+        function createCarrier(x, z) {
+            const group = new THREE.Group();
+            const topGeo = new THREE.CylinderGeometry(1.1, 0.6, 1.6, 16);
+            const bottomGeo = new THREE.CylinderGeometry(0.6, 1.1, 1.6, 16);
+            const m1 = new THREE.Mesh(topGeo, matCarrier);
+            const m2 = new THREE.Mesh(bottomGeo, matCarrier);
+            m1.position.y = 0.8;
+            m2.position.y = -0.8;
+            group.add(m1, m2);
+            group.position.set(x, 0, z);
+            group.userData = { type: 'carrier' };
+            return group;
+        }
+
+        function createReceptor(x, z) {
+            const group = new THREE.Group();
+            const bodyGeo = new THREE.CylinderGeometry(0.7, 0.7, 3.0, 16);
+            const body = new THREE.Mesh(bodyGeo, matReceptor);
+            
+            const bindingBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.8, 1.6), matReceptor);
+            bindingBase.position.set(0, 1.8, 0);
+            const hornL = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), matReceptor);
+            hornL.position.set(0, 2.2, 0.6);
+            hornL.rotation.x = 0.5;
+            const hornR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.8, 0.4), matReceptor);
+            hornR.position.set(0, 2.2, -0.6);
+            hornR.rotation.x = -0.5;
+
+            group.add(body, bindingBase, hornL, hornR);
+            group.position.set(x, 0, z);
+            group.userData = { type: 'receptor' };
+            return group;
+        }
+
+        function createAntigen(x, z) {
+            const group = new THREE.Group();
+            const baseGeo = new THREE.SphereGeometry(1.1, 16, 16);
+            baseGeo.scale(1, 1.4, 1);
+            const base = new THREE.Mesh(baseGeo, matAntigen);
+            group.add(base);
+
+            const chainGroup = new THREE.Group();
+            chainGroup.position.set(0, 1.4, 0);
+            const sugarGeo = new THREE.SphereGeometry(0.22, 8, 8);
+            const sugarMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x14532d });
+
+            let lastPos = new THREE.Vector3(0,0,0);
+            for(let i=0; i<6; i++) {
+                const sugar = new THREE.Mesh(sugarGeo, sugarMat);
+                const nextPos = lastPos.clone().add(new THREE.Vector3(
+                    (Math.random()-0.5)*0.6,
+                    0.4 + Math.random()*0.3,
+                    (Math.random()-0.5)*0.6
+                ));
+                sugar.position.copy(nextPos);
+                chainGroup.add(sugar);
+                lastPos = nextPos;
+            }
+            group.add(chainGroup);
+            group.position.set(x, 0, z);
+            group.userData = { type: 'antigen' };
+            return group;
+        }
+
+        function createEnzyme(x, z) {
+            const group = new THREE.Group();
+            const enzymeGeo = new THREE.IcosahedronGeometry(1.0, 1);
+            const mesh = new THREE.Mesh(enzymeGeo, matEnzyme);
+            mesh.position.y = -1.2;
+            group.add(mesh);
+            group.position.set(x, 0, z);
+            group.userData = { type: 'enzyme' };
+            return group;
+        }
+
+        const pConfigs = [
+            { func: createChannel, x: -7, z: -7 },
+            { func: createChannel, x: 8, z: 8 },
+            { func: createCarrier, x: 6, z: -6 },
+            { func: createCarrier, x: -8, z: 8 },
+            { func: createReceptor, x: -2, z: 5 },
+            { func: createAntigen, x: 7, z: -1 },
+            { func: createAntigen, x: -6, z: 0 },
+            { func: createEnzyme, x: 2, z: -7 },
+            { func: createEnzyme, x: 0, z: -1 }
+        ];
+
+        pConfigs.forEach(cfg => {
+            const pMesh = cfg.func(cfg.x, cfg.z);
+            proteinGroup.add(pMesh);
+            proteins.push({
+                mesh: pMesh, baseX: cfg.x, baseZ: cfg.z, seed: Math.random() * 50
+            });
+        });
+
+        document.getElementById('loader').style.opacity = 0;
+        setTimeout(() => document.getElementById('loader').remove(), 500);
+
+        // --- 互動點擊事件 ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const infoContent = document.getElementById('info-content');
+        const infoEmpty = document.getElementById('info-empty');
+        const pName = document.getElementById('p-name');
+        const pDesc = document.getElementById('p-desc');
+        const pBio = document.getElementById('p-bio');
+
+        window.addEventListener('click', (e) => {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(proteinGroup.children, true);
+
+            if(intersects.length > 0) {
+                let obj = intersects[0].object;
+                while(obj.parent && !obj.userData.type) {
+                    obj = obj.parent;
+                }
+                if(obj.userData.type && proteinData[obj.userData.type]) {
+                    const data = proteinData[obj.userData.type];
+                    pName.innerText = data.name;
+                    pDesc.innerText = data.desc;
+                    pBio.innerText = "💡 生物學意義：" + data.bio;
+                    
+                    infoEmpty.style.display = 'none';
+                    infoContent.style.display = 'block';
+                    
+                    obj.scale.set(1.1, 1.1, 1.1);
+                    setTimeout(() => obj.scale.set(1, 1, 1), 200);
+                }
+            } else {
+                if (e.target.tagName !== 'CANVAS') return;
+                infoContent.style.display = 'none';
+                infoEmpty.style.display = 'block';
+            }
+        });
+
+        // --- 動態渲染迴圈 (配合儀表板參數強化) ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime() * simParams.speed;
+
+            // 1. 磷脂微幅高頻波動 + 側向擴散
+            lipids.forEach(lipid => {
+                const waveY = Math.sin(time * 2.0 + lipid.seed) * 0.08;
+                lipid.group.position.y = lipid.baseY + waveY;
+
+                const driftX = Math.sin(time * 0.8 + lipid.seed) * 0.35 * simParams.lipidDrift;
+                const driftZ = Math.cos(time * 0.8 + lipid.seed) * 0.35 * simParams.lipidDrift;
+                lipid.group.position.x = lipid.baseX + driftX;
+                lipid.group.position.z = lipid.baseZ + driftZ;
+            });
+
+            // 2. 蛋白質游動
+            proteins.forEach(p => {
+                const driftX = Math.sin(time * 0.4 + p.seed) * 1.4 * simParams.proteinDrift;
+                const driftZ = Math.cos(time * 0.3 + p.seed * 1.5) * 1.4 * simParams.proteinDrift;
+                p.mesh.position.x = p.baseX + driftX;
+                p.mesh.position.z = p.baseZ + driftZ;
+
+                p.mesh.rotation.x = Math.sin(time * 0.6 + p.seed) * 0.04;
+                p.mesh.rotation.z = Math.cos(time * 0.6 + p.seed) * 0.04;
+            });
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        });
+    </script>
+</body>
+</html>

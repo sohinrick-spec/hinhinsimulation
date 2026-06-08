@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>薯條滲透實驗模擬器 — HinHin Biology</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: #d4dbe6;
+  --text: #1a2332;
+  --text-muted: #4a5a70;
+  --text-dim: #8a9ab0;
+  
+  /* Precision Instrument Semantic Mapping */
+  --hypo-color: #1976d2;  /* Primary Cyan / Blue */
+  --iso-color: #2e7d32;   /* Success / Energy Green */
+  --hyper-color: #e65100; /* Warning Amber */
+  
+  --font-body: 'IBM Plex Sans', 'Noto Sans TC', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', Monaco, monospace;
+  --radius: 4px;
+  --radius-sm: 4px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  padding: 2rem 1.5rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.25rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+h1::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 18px;
+  background: var(--hypo-color);
+  border-radius: 2px;
+}
+
+.subtitle {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Controls Dashboard */
+.controls {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+}
+.ctrl-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+.slider-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  flex: 1;
+  height: 3px;
+  border-radius: 1.5px;
+  background: #d4dbe6;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1976d2;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px #1976d2;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+input[type=range]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #1976d2;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 1px #1976d2;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+input[type=range]::-moz-range-thumb:hover { transform: scale(1.25); }
+
+.time-val {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 60px;
+  text-align: right;
+}
+.btn-group { display: flex; gap: 6px; }
+button {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.1s ease;
+  white-space: nowrap;
+}
+button:hover { background: var(--surface2); color: var(--text); border-color: #b4c2d6; }
+button.active { background: var(--text) !important; color: var(--surface) !important; border-color: var(--text) !important; }
+
+/* Interactive Specific Buttons */
+#playBtn.active { background: var(--iso-color) !important; color: #ffffff !important; border-color: var(--iso-color) !important; }
+.btn-group button:nth-child(2):hover { background: #fde8e8; color: #c62828; border-color: #f8b4b4; }
+.btn-group button:nth-child(3) { font-family: var(--font-mono); }
+
+/* Main grid */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+@media (max-width: 700px) { .main-grid { grid-template-columns: 1fr; } }
+
+/* Panels */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+}
+.panel-title {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.panel-title::before {
+  content: '■';
+  color: var(--hypo-color);
+  font-size: 0.6rem;
+}
+
+.tubes-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  gap: 12px;
+}
+.tube-col { display: flex; flex-direction: column; align-items: center; gap: 12px; flex: 1; }
+
+.tube-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+  line-height: 1.4;
+}
+.tube-conc {
+  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* Precision Canvas & Hardcoded SVG Light-adaptation Filter Layer */
+.tube-svg-wrap { width: 100%; display: flex; justify-content: center; }
+.tube-svg-wrap svg, #massChart {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(1.05);
+}
+
+/* Stat Blocks Formatted to Micro-Grid Metric Boxes */
+.stats-mini {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px;
+  width: 100%;
+}
+.stat-line {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 0.7rem;
+  border-right: 1px solid #e2e8f0;
+}
+.stat-line:last-child { border-right: none; }
+.stat-line span:first-child {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.stat-line span:last-child {
+  font-family: var(--font-mono) !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.val-pos { color: #2e7d32 !important; }
+.val-neg { color: #c62828 !important; }
+.val-neu { color: var(--text-muted) !important; }
+
+.texture-chip {
+  display: inline-block;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+  font-family: var(--font-body);
+}
+
+/* Chart panel */
+.chart-wrap { position: relative; width: 100%; height: 280px; }
+
+/* Injected Custom Legend Override Fixes */
+.chart-wrap + div {
+  margin-top: 12px !important;
+  gap: 16px !important;
+}
+.chart-wrap + div > div {
+  font-family: var(--font-mono) !important;
+  color: var(--text-muted) !important;
+  font-size: 0.7rem !important;
+  font-weight: 500;
+}
+.chart-wrap + div > div:nth-child(1) span { background-color: #1976d2 !important; border-radius: 0px !important; }
+.chart-wrap + div > div:nth-child(2) span { background-color: #2e7d32 !important; border-radius: 0px !important; }
+.chart-wrap + div > div:nth-child(3) span { background-color: #e65100 !important; border-radius: 0px !important; }
+
+/* Info row */
+.info-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 1.25rem;
+}
+@media (max-width: 600px) { .info-row { grid-template-columns: 1fr; } }
+.info-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.info-card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.info-card-label { font-size: 0.78rem; font-weight: 700; }
+.info-card-body { font-size: 0.72rem; color: var(--text-muted); line-height: 1.6; }
+
+.osmosis-note {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--hypo-color);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.osmosis-note strong { color: var(--text); }
+
+/* Absolute CSS Overrides for Inline Styles Generated dynamically via JS Object mapping */
+.tube-col:nth-child(1) .tube-name,
+.info-card:nth-child(1) .info-card-label {
+  color: #1976d2 !important;
+}
+.tube-col:nth-child(1) .dot,
+.info-card:nth-child(1) .dot {
+  background-color: #1976d2 !important;
+}
+.tube-col:nth-child(1) .texture-chip,
+.info-card:nth-child(1) .texture-chip {
+  background: #e3f2fd !important;
+  color: #1976d2 !important;
+  border: 1px solid #b3e5fc !important;
+}
+
+.tube-col:nth-child(2) .tube-name,
+.info-card:nth-child(2) .info-card-label {
+  color: #2e7d32 !important;
+}
+.tube-col:nth-child(2) .dot,
+.info-card:nth-child(2) .dot {
+  background-color: #2e7d32 !important;
+}
+.tube-col:nth-child(2) .texture-chip,
+.info-card:nth-child(2) .texture-chip {
+  background: #e8f5e9 !important;
+  color: #2e7d32 !important;
+  border: 1px solid #c8e6c9 !important;
+}
+
+.tube-col:nth-child(3) .tube-name,
+.info-card:nth-child(3) .info-card-label {
+  color: #e65100 !important;
+}
+.tube-col:nth-child(3) .dot,
+.info-card:nth-child(3) .dot {
+  background-color: #e65100 !important;
+}
+.tube-col:nth-child(3) .texture-chip,
+.info-card:nth-child(3) .texture-chip {
+  background: #fff3e0 !important;
+  color: #e65100 !important;
+  border: 1px solid #ffe0b2 !important;
+}
+</style>
+</head>
+<body>
+
+<h1>薯條滲透實驗模擬器</h1>
+<div class="subtitle">實驗 3.4 ── 馬鈴薯組織在不同濃度蔗糖溶液中的滲透作用</div>
+
+<div class="controls">
+  <span class="ctrl-label">浸泡時間</span>
+  <div class="slider-wrap">
+    <input type="range" id="timeSlider" min="0" max="60" value="0" step="0.5">
+    <span class="time-val" id="timeVal">0 min</span>
+  </div>
+  <div class="btn-group">
+    <button id="playBtn" onclick="togglePlay()">▶ 播放</button>
+    <button onclick="resetSim()">↺ 重置</button>
+    <button onclick="jumpTo(60)">→ 60 min</button>
+  </div>
+</div>
+
+<div class="main-grid">
+
+  <div class="panel">
+    <div class="panel-title">試管裝置（各 3 支，每支放 1 條薯條）</div>
+    <div class="tubes-row" id="tubesRow"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">質量變化百分率 vs 時間</div>
+    <div class="chart-wrap">
+      <canvas id="massChart" role="img" aria-label="三組薯條質量變化百分率隨時間的折線圖"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<div class="info-row" id="infoRow"></div>
+
+<div class="osmosis-note">
+  <strong>滲透原理：</strong>
+  水分子從<strong>低濃度</strong>（水較多）側，穿越半透膜淨移動至<strong>高濃度</strong>（水較少）側。
+  馬鈴薯細胞液濃度約相當於 <strong>10% 蔗糖溶液</strong>（等滲），故浸於蒸餾水時水流入、浸於 20% 蔗糖時水流出、浸於 10% 時幾乎無淨移動。
+</div>
+
+<script>
+/* ── Data ─────────────────────────────────────── */
+const CONFIGS = [
+  {
+    id: 'distilled',
+    name: '蒸餾水',
+    conc: '0%',
+    color: '#4fa3e0',
+    type: 'hypo',
+    badge: { bg: '#1a3a52', fg: '#4fa3e0', text: '低滲' },
+    finalMass: +12,
+    finalLen:  +8,
+    texture: { t: '變硬', bg: '#1a3a52', fg: '#4fa3e0' },
+    waterDir: '↑ 水流入',
+    explanation: '蒸餾水濃度低於細胞液，水藉滲透淨移入細胞，薯條膨脹變硬、變長、變重。',
+  },
+  {
+    id: 'sucrose10',
+    name: '10% 蔗糖溶液',
+    conc: '10%',
+    color: '#52c48a',
+    type: 'iso',
+    badge: { bg: '#1a3d2e', fg: '#52c48a', text: '等滲' },
+    finalMass: 0,
+    finalLen:  0,
+    texture: { t: '不變', bg: '#2a2d38', fg: '#7a8099' },
+    waterDir: '≈ 平衡',
+    explanation: '10% 蔗糖與細胞液近乎等滲，水分子進出細胞量相近，薯條幾乎無變化。',
+  },
+  {
+    id: 'sucrose20',
+    name: '20% 蔗糖溶液',
+    conc: '20%',
+    color: '#e87c4f',
+    type: 'hyper',
+    badge: { bg: '#4a2415', fg: '#e87c4f', text: '高滲' },
+    finalMass: -15,
+    finalLen: -10,
+    texture: { t: '變軟', bg: '#4a2415', fg: '#e87c4f' },
+    waterDir: '↓ 水流出',
+    explanation: '20% 蔗糖濃度高於細胞液，水藉滲透淨移出細胞，薯條萎縮變軟、變短、變輕。',
+  },
+];
+
+/* ── State ─────────────────────────────────────── */
+let currentTime = 0;
+let playing = false;
+let animTimer = null;
+
+/* ── Easing ─────────────────────────────────────── */
+function ease(t) {
+  const p = Math.min(t / 60, 1);
+  return p < 0.5 ? 2*p*p : -1+(4-2*p)*p;
+}
+
+/* ── Chart.js setup ─────────────────────────────── */
+const ctx = document.getElementById('massChart').getContext('2d');
+
+// Build time axis 0..60
+const TIME_POINTS = Array.from({length: 121}, (_, i) => i * 0.5);
+
+function massAtTime(cfg, t) {
+  return +(cfg.finalMass * ease(t)).toFixed(2);
+}
+
+function buildDatasets() {
+  return CONFIGS.map(cfg => ({
+    label: cfg.name,
+    data: TIME_POINTS.map(t => ({ x: t, y: massAtTime(cfg, t) })),
+    borderColor: cfg.color,
+    backgroundColor: cfg.color + '22',
+    borderWidth: 2,
+    pointRadius: 0,
+    pointHoverRadius: 4,
+    tension: 0.4,
+    fill: false,
+  }));
+}
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    datasets: buildDatasets(),
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1e2333',
+        borderColor: 'rgba(255,255,255,0.1)',
+        borderWidth: 1,
+        titleColor: '#7a8099',
+        bodyColor: '#e8eaf0',
+        titleFont: { family: 'DM Mono', size: 11 },
+        bodyFont: { family: 'DM Mono', size: 12 },
+        callbacks: {
+          title: items => `時間：${items[0].parsed.x} min`,
+          label: item => ` ${item.dataset.label}：${item.parsed.y > 0 ? '+' : ''}${item.parsed.y.toFixed(1)}%`,
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'linear',
+        min: 0, max: 60,
+        title: { display: true, text: '時間 (分鐘)', color: '#7a8099', font: { family: 'DM Mono', size: 11 } },
+        ticks: { color: '#7a8099', font: { family: 'DM Mono', size: 10 }, stepSize: 10 },
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        border: { color: 'rgba(255,255,255,0.12)' },
+      },
+      y: {
+        title: { display: true, text: '質量改變 (%)', color: '#7a8099', font: { family: 'DM Mono', size: 11 } },
+        min: -20, max: 18,
+        ticks: { color: '#7a8099', font: { family: 'DM Mono', size: 10 }, callback: v => v+'%' },
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        border: { color: 'rgba(255,255,255,0.12)' },
+      }
+    }
+  }
+});
+
+// Add vertical time marker annotation manually via afterDraw plugin
+const markerPlugin = {
+  id: 'timeMarker',
+  afterDraw(chart) {
+    const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
+    const xPos = x.getPixelForValue(currentTime);
+    ctx.save();
+    ctx.setLineDash([4, 3]);
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xPos, top);
+    ctx.lineTo(xPos, bottom);
+    ctx.stroke();
+    ctx.restore();
+  }
+};
+Chart.register(markerPlugin);
+
+/* ── SVG tube renderer ──────────────────────────── */
+function liquidColors(cfg) {
+  if (cfg.type === 'hypo')  return ['#1a3d60','#0d2540'];
+  if (cfg.type === 'iso')   return ['#1a3d2e','#0d2519'];
+  return ['#4a2010','#2a1008'];
+}
+
+function buildTubeSVG(cfg, t) {
+  const prog = ease(t);
+  // 低滲：水流入薯條 → 液位下降；高滲：水流出薯條 → 液位上升
+  const liquidH = 115 + (cfg.type === 'hypo' ? -10*prog : cfg.type === 'hyper' ? 9*prog : 0);
+  // Potato dims
+  const potatoH = Math.max(30, 64 + cfg.finalLen * 0.6 * prog);
+  const potatoW = 14 + (cfg.type === 'hypo' ? 3*prog : cfg.type === 'hyper' ? -3*prog : 0);
+  const potatoColor = cfg.type === 'hypo'
+    ? `hsl(38,${62+15*prog}%,${62-12*prog}%)`
+    : cfg.type === 'hyper'
+    ? `hsl(36,${55-12*prog}%,${65+10*prog}%)`
+    : 'hsl(38,58%,65%)';
+  const potatoBorder = cfg.type === 'hypo'
+    ? `hsl(35,${55+10*prog}%,${45-8*prog}%)`
+    : 'hsl(35,50%,48%)';
+
+  const W = 64, H = 200;
+  // Tube inner dimensions
+  const tubeX = 8, tubeW = W - 16;
+  const tubeTop = 14, tubeH = H - 22;
+  const tubeBottom = tubeTop + tubeH;
+  const liquidTop = tubeBottom - liquidH;
+
+  // Potato sits submerged: bottom of potato = tubeBottom - 8 (resting on curved bottom)
+  const potatoBottom = tubeBottom - 8;
+  const potatoTop = potatoBottom - potatoH;
+  const potatoCx = W / 2;
+
+  // Bubble particles for hypo (water entering)
+  let bubbles = '';
+  if (cfg.type === 'hypo' && t > 2) {
+    const seed = [0.2, 0.55, 0.8];
+    seed.forEach((s, i) => {
+      const bx = tubeX + 4 + s * (tubeW - 8);
+      const phase = (t * 0.8 + i * 1.2) % 1;
+      const by = liquidTop + (tubeH - 20) * (1 - phase);
+      const r = 1.5 + s * 1.5;
+      const op = 0.15 + 0.25 * Math.sin(phase * Math.PI);
+      bubbles += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${r}" fill="rgba(180,220,255,${op.toFixed(2)})"/>`;
+    });
+  }
+
+  // Water-flow arrow inside liquid
+  let flowArrow = '';
+  if (t > 3) {
+    const ax = W/2;
+    if (cfg.type === 'hypo') {
+      const ay = liquidTop + 18;
+      flowArrow = `<text x="${ax}" y="${ay}" text-anchor="middle" font-size="9" fill="rgba(79,163,224,0.7)" font-family="sans-serif">↑</text>`;
+    } else if (cfg.type === 'hyper') {
+      const ay = liquidTop + 20;
+      flowArrow = `<text x="${ax}" y="${ay}" text-anchor="middle" font-size="9" fill="rgba(232,124,79,0.7)" font-family="sans-serif">↓</text>`;
+    }
+  }
+
+  const [lc1, lc2] = liquidColors(cfg);
+
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="liq_${cfg.id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${lc1}"/>
+      <stop offset="100%" stop-color="${lc2}"/>
+    </linearGradient>
+    <clipPath id="clip_${cfg.id}">
+      <rect x="${tubeX}" y="${tubeTop}" width="${tubeW}" height="${tubeH}" rx="8"/>
+    </clipPath>
+  </defs>
+  <rect x="${tubeX}" y="${tubeTop}" width="${tubeW}" height="${tubeH}" rx="8"
+        fill="#10131c" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+  <g clip-path="url(#clip_${cfg.id})">
+    <rect x="${tubeX}" y="${liquidTop.toFixed(1)}" width="${tubeW}" height="${liquidH.toFixed(1)}"
+          fill="url(#liq_${cfg.id})"/>
+    ${bubbles}
+    ${flowArrow}
+  </g>
+  <rect x="${(potatoCx - potatoW/2).toFixed(1)}" y="${potatoTop.toFixed(1)}"
+        width="${potatoW.toFixed(1)}" height="${potatoH.toFixed(1)}"
+        rx="3" fill="${potatoColor}" stroke="${potatoBorder}" stroke-width="0.8"/>
+  <rect x="${tubeX}" y="${tubeTop}" width="${tubeW}" height="${tubeH}" rx="8"
+        fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+  <rect x="${tubeX - 2}" y="${tubeTop - 6}" width="${tubeW + 4}" height="8" rx="2"
+        fill="#1e2333" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+</svg>`;
+}
+
+/* ── Render Tubes ───────────────────────────────── */
+function renderTubes(t) {
+  const container = document.getElementById('tubesRow');
+  container.innerHTML = '';
+  CONFIGS.forEach(cfg => {
+    const prog = ease(t);
+    const massChange = cfg.finalMass * prog;
+    const lenChange  = cfg.finalLen  * prog;
+    const massSign   = massChange >=  0.05 ? '+' : '';
+    const lenSign    = lenChange  >=  0.05 ? '+' : '';
+    const massClass  = massChange >=  0.5 ? 'val-pos' : massChange <= -0.5 ? 'val-neg' : 'val-neu';
+    const lenClass   = lenChange  >=  0.5 ? 'val-pos' : lenChange  <= -0.5 ? 'val-neg' : 'val-neu';
+    const texChip    = t > 3 ? `<span class="texture-chip" style="background:${cfg.texture.bg};color:${cfg.texture.fg}">${cfg.texture.t}</span>` : '<span class="texture-chip" style="background:#1e2333;color:#7a8099">—</span>';
+
+    const col = document.createElement('div');
+    col.className = 'tube-col';
+    col.innerHTML = `
+      <div class="tube-name">${cfg.name}<br><span class="tube-conc">${cfg.conc}</span></div>
+      <div class="tube-svg-wrap" style="max-width:72px">${buildTubeSVG(cfg, t)}</div>
+      <div class="stats-mini">
+        <div class="stat-line"><span>質量</span><span class="${massClass}">${massSign}${massChange.toFixed(1)}%</span></div>
+        <div class="stat-line"><span>長度</span><span class="${lenClass}">${lenSign}${lenChange.toFixed(1)}%</span></div>
+        <div class="stat-line"><span>質感</span><span>${texChip}</span></div>
+      </div>
+    `;
+    container.appendChild(col);
+  });
+}
+
+/* ── Render Info cards ──────────────────────────── */
+function renderInfo() {
+  document.getElementById('infoRow').innerHTML = CONFIGS.map(cfg => `
+    <div class="info-card">
+      <div class="info-card-top">
+        <div class="dot" style="background:${cfg.color}"></div>
+        <span class="info-card-label" style="color:${cfg.color}">${cfg.name}</span>
+        <span class="texture-chip" style="background:${cfg.badge.bg};color:${cfg.badge.fg};margin-left:auto">${cfg.badge.text}</span>
+      </div>
+      <div class="info-card-body">${cfg.explanation}</div>
+    </div>
+  `).join('');
+}
+
+/* ── Time sync ──────────────────────────────────── */
+function setTime(t) {
+  currentTime = Math.min(Math.max(+t, 0), 60);
+  document.getElementById('timeSlider').value = currentTime;
+  document.getElementById('timeVal').textContent = currentTime.toFixed(currentTime % 1 ? 1 : 0) + ' min';
+  renderTubes(currentTime);
+  chart.update('none');
+}
+
+/* ── Custom legend ──────────────────────────────── */
+function buildLegend() {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap';
+  CONFIGS.forEach(cfg => {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:11px;color:#7a8099;font-family:"DM Mono",monospace';
+    item.innerHTML = `<span style="width:20px;height:2px;background:${cfg.color};border-radius:1px;display:inline-block"></span>${cfg.name}`;
+    wrap.appendChild(item);
+  });
+  document.querySelector('.chart-wrap').after(wrap);
+}
+
+/* ── Play / Reset ───────────────────────────────── */
+function togglePlay() {
+  playing = !playing;
+  const btn = document.getElementById('playBtn');
+  if (playing) {
+    btn.textContent = '⏸ 暫停';
+    btn.classList.add('active');
+    if (currentTime >= 60) currentTime = 0;
+    animTimer = setInterval(() => {
+      currentTime += 0.5;
+      if (currentTime >= 60) {
+        currentTime = 60;
+        clearInterval(animTimer);
+        playing = false;
+        btn.textContent = '▶ 播放';
+        btn.classList.remove('active');
+      }
+      setTime(currentTime);
+    }, 50);
+  } else {
+    clearInterval(animTimer);
+    btn.textContent = '▶ 播放';
+    btn.classList.remove('active');
+  }
+}
+
+function resetSim() {
+  playing = false;
+  clearInterval(animTimer);
+  document.getElementById('playBtn').textContent = '▶ 播放';
+  document.getElementById('playBtn').classList.remove('active');
+  setTime(0);
+}
+
+function jumpTo(t) { setTime(t); }
+
+document.getElementById('timeSlider').addEventListener('input', function() {
+  if (playing) { playing = false; clearInterval(animTimer); document.getElementById('playBtn').textContent = '▶ 播放'; document.getElementById('playBtn').classList.remove('active'); }
+  setTime(this.value);
+});
+
+/* ── Init ───────────────────────────────────────── */
+renderInfo();
+buildLegend();
+setTime(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>神經脈衝突觸傳遞模擬器 — HinHin Biology</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Scientific Laboratory Dashboard / Precision Instrument Palette */
+            --bg-main: #f4f6f9;         /* Light ice-blue/gray base */
+            --bg-card: #ffffff;         /* Pure white containers */
+            --bg-inset: #eef2f7;        /* Distinct inner panels */
+            --border-color: #d4dbe6;    /* Crisp, thin instrument borders */
+            
+            --text-main: #1a2332;       /* Deep Navy primary text */
+            --text-muted: #4a5a70;      /* Slate Blue secondary text */
+            --text-dim: #8a9ab0;        /* Gray for small labels */
+            
+            /* Precision Semantic Accents */
+            --accent-blue: #1976d2;     /* Primary Cyan/Blue */
+            --accent-green: #2e7d32;    /* Success/Energy Green */
+            --accent-yellow: #e65100;   /* Warning Amber */
+            --accent-red: #c62828;      /* Danger/Reset Rose */
+            --accent-purple: #5e35b1;   /* Special Violet */
+            --accent-orange: #d84315;   /* Secondary Warning */
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'IBM Plex Sans', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px;
+            margin: 0;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            text-align: left;
+            width: 100%;
+            max-width: 1220px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--text-main);
+            padding-bottom: 12px;
+        }
+
+        h1 {
+            color: var(--text-main);
+            margin: 0 0 6px 0;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        p.desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        /* Monospace target formatting for technical steps/numbers inside descriptions */
+        p.desc br + span, 
+        .status-box b,
+        .status-box u {
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .highlight-rule {
+            color: var(--accent-red);
+            font-weight: 600;
+            background: rgba(198, 40, 40, 0.08);
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .main-layout {
+            display: flex;
+            gap: 20px;
+            max-width: 1220px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        #canvas-container {
+            position: relative;
+            background-color: #0b0f19; /* Maintained for micro-contrast visual accuracy of bio-luminescence simulation */
+            border-radius: 4px;
+            box-shadow: none;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            padding: 4px;
+            background: #ffffff;
+        }
+
+        canvas {
+            display: block;
+            border: 1px solid #1a2332;
+            background-color: #090d16;
+        }
+
+        .sidebar {
+            width: 290px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 16px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .panel-title {
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 4px;
+            margin: 0;
+        }
+
+        .settings-panel {
+            background-color: var(--bg-inset);
+            border-radius: 4px;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .setting-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .setting-label:hover {
+            color: var(--text-main);
+        }
+
+        .setting-label input[type="checkbox"] {
+            width: 14px;
+            height: 14px;
+            cursor: pointer;
+            accent-color: var(--accent-blue);
+            margin: 0;
+            border-radius: 2px;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            flex-shrink: 0;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 1220px;
+            margin-top: 16px;
+        }
+
+        button {
+            font-family: 'IBM Plex Sans', sans-serif;
+            color: #ffffff;
+            border: 1px solid transparent;
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: none;
+            text-transform: uppercase;
+            letter-spacing: 0.25px;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+
+        #startBtn {
+            flex: 1;
+            background-color: var(--accent-blue);
+            border-color: #0d47a1;
+        }
+        #startBtn:hover:not(:disabled) {
+            background-color: #1565c0;
+        }
+
+        #pauseBtn {
+            background-color: var(--bg-card);
+            color: var(--accent-yellow);
+            border-color: var(--accent-yellow);
+            flex: 0 0 140px;
+        }
+        #pauseBtn:hover:not(:disabled) {
+            background-color: var(--accent-yellow);
+            color: #ffffff;
+        }
+
+        #resetBtn {
+            background-color: var(--bg-card);
+            color: var(--accent-red);
+            border-color: var(--accent-red);
+            flex: 0 0 140px;
+        }
+        #resetBtn:hover:not(:disabled) {
+            background-color: var(--accent-red);
+            color: #ffffff;
+        }
+
+        button:disabled {
+            background-color: #e0e6ed !important;
+            border-color: var(--border-color) !important;
+            color: var(--text-dim) !important;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .status-box {
+            width: 100%;
+            max-width: 1220px;
+            margin-top: 16px;
+            padding: 12px 16px;
+            background-color: var(--bg-card);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--accent-blue);
+            box-sizing: border-box;
+            font-size: 13px;
+            line-height: 1.5;
+            font-weight: 500;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>神經脈衝突觸傳遞模擬器 — HinHin Biology</h1>
+        <p class="desc">
+            探索神經信號傳遞，支援時間控制（暫停）與抑制劑自訂。<br>
+            <span class="highlight-rule"></span>
+        </p>
+    </header>
+    
+    <div class="main-layout">
+        <div id="canvas-container">
+            <canvas id="simCanvas" width="920" height="520"></canvas>
+        </div>
+        
+        <div class="sidebar">
+            <p class="panel-title">基礎清除機制</p>
+            <div class="settings-panel">
+                <label class="setting-label">
+                    <input type="checkbox" id="cbReuptake" checked>
+                    啟用再攝取泵 (Reuptake)
+                </label>
+                <label class="setting-label">
+                    <input type="checkbox" id="cbDegradation" checked>
+                    啟用分解酶 (Degradation)
+                </label>
+            </div>
+
+            <p class="panel-title" style="color: var(--accent-red) !important; border-bottom-color: rgba(198, 40, 40, 0.3);">藥理/毒理抑制劑</p>
+            <div class="settings-panel" style="background-color: rgba(198, 40, 40, 0.03); border-color: rgba(198, 40, 40, 0.25);">
+                <label class="setting-label" style="color: var(--accent-red);" title="阻斷回收，使信號不斷發出">
+                    <input type="checkbox" id="cbReuptakeInhibitor">
+                    回收泵抑制劑 (阻斷回收)
+                </label>
+                <label class="setting-label" style="color: var(--accent-red);" title="阻斷分解，使信號不斷發出">
+                    <input type="checkbox" id="cbDegradationInhibitor">
+                    分解酶抑制劑 (阻斷降解)
+                </label>
+                <label class="setting-label" style="color: var(--accent-purple);" title="阻斷受體，使突觸後完全不發出信號">
+                    <input type="checkbox" id="cbReceptorInhibitor">
+                    受體抑制劑 (阻斷興奮)
+                </label>
+            </div>
+
+            <p class="panel-title">科學圖例</p>
+            <ul class="legend-list">
+                <li class="legend-item">
+                    <div class="legend-color" style="background: #2575fc;"></div>
+                    <span>細胞內液 (突觸前後神經元)</span>
+                </li>
+                <li class="legend-item">
+                    <div class="legend-color" style="background: #ef4444; border-radius: 50%;"></div>
+                    <span>神經遞質</span>
+                </li>
+                <li class="legend-item">
+                    <div class="legend-color" style="background: #7c3aed;"></div>
+                    <span>特異性受體 (表面結合)</span>
+                </li>
+                <li class="legend-item">
+                    <div class="legend-color" style="background: #06b6d4;"></div>
+                    <span>再攝取泵</span>
+                </li>
+                <li class="legend-item">
+                    <div class="legend-color" style="background: #8a9ab0;"></div>
+                    <span>被阻斷/抑制的結構 (灰色)</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+    
+    <div class="controls">
+        <button id="startBtn">▶ 啟動神經脈衝傳遞</button>
+        <button id="pauseBtn" disabled>⏸ 暫停</button>
+        <button id="resetBtn">↺ 重置模擬器</button>
+    </div>
+    
+    <div class="status-box" id="statusText">系統就緒，請設定抑制劑並點擊「啟動」觀測微觀反應。</div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusText = document.getElementById('statusText');
+        
+        const cbReuptake = document.getElementById('cbReuptake');
+        const cbDegradation = document.getElementById('cbDegradation');
+        const cbReuptakeInhibitor = document.getElementById('cbReuptakeInhibitor');
+        const cbDegradationInhibitor = document.getElementById('cbDegradationInhibitor');
+        const cbReceptorInhibitor = document.getElementById('cbReceptorInhibitor');
+
+        let state = 0;
+        let progress = 0;
+        let lastTime = 0;
+        let state7Timer = 0; 
+        let stimWaveProgress = 0; 
+        let isPaused = false;
+        let savedStatusHtml = "";
+        let savedStatusColor = "";
+        let animationId;
+
+        let vesicles = [];
+        let neurotransmitters = [];
+        let receptors = [];
+        let enzymes = [];
+        let reuptakePumps = [];
+        let degradedParticles = [];
+
+        const CLEFT_LEFT_BOUND = 450; 
+        const CLEFT_RIGHT_BOUND = 515;
+
+        function initData() {
+            vesicles = [
+                {x: 270, y: 190, ox: 270, oy: 190, tx: 415, ty: 190, fused: false},
+                {x: 230, y: 260, ox: 230, oy: 260, tx: 425, ty: 260, fused: false},
+                {x: 280, y: 330, ox: 280, oy: 330, tx: 415, ty: 330, fused: false},
+                {x: 160, y: 220, ox: 160, oy: 220, tx: 400, ty: 225, fused: false},
+                {x: 150, y: 300, ox: 150, oy: 300, tx: 400, ty: 295, fused: false}
+            ];
+
+            receptors = [
+                {x: 535, y: 160, bound: false, glow: 0},
+                {x: 528, y: 220, bound: false, glow: 0},
+                {x: 525, y: 280, bound: false, glow: 0},
+                {x: 528, y: 340, bound: false, glow: 0},
+                {x: 535, y: 400, bound: false, glow: 0}
+            ];
+
+            reuptakePumps = [
+                {x: 420, y: 130},
+                {x: 426, y: 410}
+            ];
+
+            neurotransmitters = [];
+            enzymes = [];
+            degradedParticles = [];
+            state7Timer = 0;
+            stimWaveProgress = 0;
+        }
+
+        function setStatus(text, borderStyle, textColor) {
+            statusText.innerHTML = text;
+            statusText.style.borderLeftColor = borderStyle;
+            statusText.style.color = textColor;
+            savedStatusHtml = text;
+            savedStatusColor = textColor;
+        }
+
+        function drawLabel(text, x, y, lineX, lineY) {
+            ctx.beginPath();
+            ctx.moveTo(x, y + 4);
+            ctx.lineTo(lineX, lineY);
+            ctx.strokeStyle = "rgba(148, 163, 184, 0.2)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "12px system-ui, sans-serif";
+            ctx.fillText(text, x, y);
+        }
+
+        function drawStaticStructure() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 突觸前神經元
+            ctx.beginPath();
+            ctx.moveTo(0, 150);
+            ctx.lineTo(130, 150);
+            ctx.bezierCurveTo(240, 150, 340, 60, 420, 100);
+            ctx.bezierCurveTo(450, 260, 450, 260, 420, 440);
+            ctx.bezierCurveTo(340, 480, 240, 390, 130, 390);
+            ctx.lineTo(0, 390);
+            let gradPre = ctx.createLinearGradient(0, 270, 440, 270);
+            gradPre.addColorStop(0, "#1e293b");
+            gradPre.addColorStop(0.7, "#1e3a8a");
+            gradPre.addColorStop(1, "#2575fc");
+            ctx.fillStyle = gradPre;
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#3b82f6";
+            ctx.stroke();
+
+            // 突觸後神經元
+            ctx.beginPath();
+            ctx.moveTo(920, 80);
+            ctx.lineTo(680, 80);
+            ctx.bezierCurveTo(570, 80, 530, 110, 530, 270);
+            ctx.bezierCurveTo(530, 430, 570, 460, 680, 460);
+            ctx.lineTo(920, 460);
+            let gradPost = ctx.createLinearGradient(530, 270, 920, 270);
+            gradPost.addColorStop(0, "#1d4ed8");
+            gradPost.addColorStop(0.4, "#1e293b");
+            gradPost.addColorStop(1, "#0f172a");
+            ctx.fillStyle = gradPost;
+            ctx.fill();
+            ctx.strokeStyle = "#60a5fa";
+            ctx.stroke();
+
+            // 再攝取泵
+            reuptakePumps.forEach(p => {
+                if (cbReuptakeInhibitor.checked) {
+                    ctx.fillStyle = "#475569"; 
+                    ctx.strokeStyle = "#ef4444";
+                } else {
+                    ctx.fillStyle = "#06b6d4";
+                    ctx.strokeStyle = "#22d3ee";
+                }
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 8, 0, Math.PI * 2);
+                ctx.fill(); ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 4, -Math.PI/2, Math.PI/2, true);
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1.5; ctx.stroke();
+
+                if (cbReuptakeInhibitor.checked) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x - 5, p.y - 5); ctx.lineTo(p.x + 5, p.y + 5);
+                    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 2; ctx.stroke();
+                }
+            });
+
+            // 特異性受體
+            receptors.forEach(r => {
+                ctx.save();
+                if (cbReceptorInhibitor.checked) {
+                    ctx.fillStyle = "#475569"; 
+                    ctx.strokeStyle = "#94a3b8";
+                } else if (r.bound) {
+                    ctx.shadowBlur = 15 + r.glow;
+                    ctx.shadowColor = "#a78bfa";
+                    ctx.fillStyle = "#a78bfa";
+                } else {
+                    ctx.fillStyle = "#7c3aed";
+                }
+                ctx.strokeStyle = cbReceptorInhibitor.checked ? "#64748b" : "#c084fc";
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(r.x, r.y, 11, Math.PI * 0.6, Math.PI * 1.4, true);
+                ctx.lineTo(r.x + 10, r.y - 12);
+                ctx.lineTo(r.x + 10, r.y + 12);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+
+                if (cbReceptorInhibitor.checked) {
+                    ctx.beginPath();
+                    ctx.moveTo(r.x - 4, r.y - 4); ctx.lineTo(r.x + 4, r.y + 4);
+                    ctx.moveTo(r.x + 4, r.y - 4); ctx.lineTo(r.x - 4, r.y + 4);
+                    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 2; ctx.stroke();
+                }
+                ctx.restore();
+            });
+
+            drawLabel("突觸間隙 (Cleft)", 440, 495, 480, 330);
+            drawLabel(cbReuptakeInhibitor.checked ? "再攝取泵 (已被阻斷)" : "突觸前膜 / 再攝取泵", 270, 50, 415, 125);
+            drawLabel(cbReceptorInhibitor.checked ? "表面受體 (已被抑制阻斷)" : "突觸後膜 / 表面受體", 580, 40, 540, 150);
+        }
+
+        function drawDynamicEntities() {
+            vesicles.forEach(v => {
+                if (!v.fused) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(v.x, v.y, 20, 0, Math.PI * 2);
+                    ctx.fillStyle = "rgba(16, 185, 129, 0.15)"; ctx.fill();
+                    ctx.strokeStyle = "#34d399"; ctx.lineWidth = 2; ctx.stroke();
+                    ctx.fillStyle = "#ef4444";
+                    const innerParticles = [[-7,-6], [5,7], [7,-5], [-5,7], [0,-2], [-2,-9], [2,1]];
+                    innerParticles.forEach(pt => {
+                        ctx.beginPath();
+                        ctx.arc(v.x + pt[0], v.y + pt[1], 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    ctx.restore();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(v.x, v.y, 20, Math.PI * 0.6, Math.PI * 1.4, true);
+                    ctx.strokeStyle = "#059669"; ctx.lineWidth = 2.5; ctx.stroke();
+                }
+            });
+
+            neurotransmitters.forEach(nt => {
+                if (!nt.active) return;
+                ctx.save();
+                ctx.globalAlpha = nt.alpha !== undefined ? nt.alpha : 1;
+                ctx.beginPath();
+                ctx.arc(nt.x, nt.y, 4, 0, Math.PI * 2);
+                ctx.shadowBlur = 5;
+                ctx.shadowColor = "#f87171";
+                ctx.fillStyle = "#ef4444"; 
+                ctx.fill();
+                ctx.restore();
+            });
+
+            enzymes.forEach(ez => {
+                ctx.save();
+                ctx.fillStyle = cbDegradationInhibitor.checked ? "#475569" : "#f97316";
+                ctx.strokeStyle = cbDegradationInhibitor.checked ? "#94a3b8" : "#fdba74";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(ez.x, ez.y - 7);
+                ctx.lineTo(ez.x + 7, ez.y + 6);
+                ctx.lineTo(ez.x - 7, ez.y + 6);
+                ctx.closePath();
+                ctx.fill(); ctx.stroke();
+                if (cbDegradationInhibitor.checked) {
+                    ctx.beginPath();
+                    ctx.moveTo(ez.x - 4, ez.y - 2); ctx.lineTo(ez.x + 4, ez.y + 2);
+                    ctx.strokeStyle = "#ef4444"; ctx.lineWidth = 1.5; ctx.stroke();
+                }
+                ctx.restore();
+            });
+
+            degradedParticles.forEach(dp => {
+                ctx.save();
+                ctx.globalAlpha = dp.alpha;
+                ctx.fillStyle = "#f59e0b"; 
+                ctx.beginPath();
+                ctx.arc(dp.x, dp.y, dp.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+        }
+
+        function drawActionPotentialWave(isPre, curProgress) {
+            ctx.save();
+            ctx.lineWidth = 4;
+            ctx.shadowBlur = 20;
+
+            if (isPre) {
+                ctx.strokeStyle = "#fbbf24";
+                ctx.shadowColor = "#f59e0b";
+                let currentX = curProgress * 420;
+                let curveY = 150;
+                if (currentX > 130) {
+                    let factor = (currentX - 130) / 290;
+                    curveY = 150 - factor * 40; 
+                }
+                ctx.beginPath(); ctx.arc(currentX, curveY, 8, 0, Math.PI*2); ctx.fillStyle = "#ffffff"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(currentX, 540 - curveY, 8, 0, Math.PI*2); ctx.fillStyle = "#ffffff"; ctx.fill(); ctx.stroke();
+            } else {
+                ctx.strokeStyle = "#a78bfa";
+                ctx.shadowColor = "#8b5cf6";
+                let currentX = 530 + curProgress * 390;
+                ctx.beginPath(); ctx.arc(currentX, 110, 8, 0, Math.PI*2); ctx.fillStyle = "#ffffff"; ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(currentX, 430, 8, 0, Math.PI*2); ctx.fillStyle = "#ffffff"; ctx.fill(); ctx.stroke();
+                ctx.fillStyle = "#a78bfa"; ctx.font = "bold 14px system-ui";
+                ctx.fillText("⚡ 連續神經信號觸發！", currentX - 50, 75);
+            }
+            ctx.restore();
+        }
+
+        function mainLoop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            let dt = timestamp - lastTime;
+            lastTime = timestamp;
+            if (dt > 100) dt = 16; 
+
+            // 處理暫停邏輯
+            if (isPaused) {
+                drawStaticStructure();
+                drawDynamicEntities();
+                // 暫停時仍要畫出停滯在半空中的電波
+                if (state === 6) {
+                    if (!cbReceptorInhibitor.checked) drawActionPotentialWave(false, progress);
+                } else if (state === 7) {
+                    let anyBound = receptors.some(r => r.bound);
+                    if (anyBound && !cbReceptorInhibitor.checked) drawActionPotentialWave(false, stimWaveProgress);
+                } else if (state === 1) {
+                    drawActionPotentialWave(true, progress);
+                }
+                animationId = requestAnimationFrame(mainLoop);
+                return;
+            }
+
+            drawStaticStructure();
+
+            if (state === 1) {
+                progress += dt * 0.0015;
+                drawActionPotentialWave(true, progress);
+                if (progress >= 1) {
+                    state = 2; progress = 0;
+                    setStatus("<b>【步驟 2/7】</b> 突觸小泡精確向突觸前膜外移。", "var(--accent-blue)", "var(--accent-blue)");
+                }
+            }
+            else if (state === 2) {
+                progress += dt * 0.0012;
+                let ease = 1 - Math.pow(1 - progress, 3); 
+                vesicles.forEach((v, idx) => {
+                    if (idx < 3) { 
+                        v.x = v.ox + (v.tx - v.ox) * ease;
+                        v.y = v.oy + (v.ty - v.oy) * ease;
+                    }
+                });
+                if (progress >= 1) {
+                    state = 3; progress = 0;
+                    setStatus("<b>【步驟 3/7】胞吐作用 (Exocytosis)：</b> 小泡膜與前膜融合，釋放神經遞質。", "var(--accent-orange)", "var(--accent-orange)");
+                }
+            }
+            else if (state === 3) {
+                progress += dt * 0.003; 
+                vesicles.forEach((v, idx) => {
+                    if (idx < 3 && !v.fused) {
+                        v.fused = true; v.x = v.tx;
+                        for (let i = 0; i < 10; i++) {
+                            neurotransmitters.push({
+                                x: v.tx + 10, y: v.ty + (Math.random() * 20 - 10),
+                                vx: 1.2 + Math.random() * 2, vy: (Math.random() * 2 - 1) * 1.5,
+                                targetReceptor: null, active: true, alpha: 1, reuptakePhase: 0,
+                                clearanceMethod: 'none', bindPhase: 'cooldown', cooldownTimer: Math.random() * 500
+                            });
+                        }
+                    }
+                });
+                if (progress >= 1) {
+                    state = 4; progress = 0;
+                    let rIdx = 0;
+                    neurotransmitters.forEach((nt, index) => {
+                        if (index % 4 === 0 && rIdx < receptors.length) {
+                            nt.targetReceptor = receptors[rIdx]; rIdx++;
+                            nt.bindPhase = 'seeking'; // 覆寫初始狀態
+                        }
+                    });
+                    setStatus("<b>【步驟 4/7】化學擴散 (Diffusion)：</b> 神經遞質在間隙中擴散，膜邊界堅固反彈。", "var(--accent-purple)", "var(--accent-purple)");
+                }
+            }
+            else if (state === 4) {
+                progress += dt * 0.001;
+                let stillDiffusing = false;
+                neurotransmitters.forEach(nt => {
+                    if (nt.targetReceptor && nt.bindPhase === 'seeking') {
+                        let dx = (nt.targetReceptor.x - 8) - nt.x; 
+                        let dy = nt.targetReceptor.y - nt.y;
+                        nt.x += dx * 0.04; nt.y += dy * 0.04;
+                        if (Math.abs(dx) > 4) stillDiffusing = true;
+                    } else {
+                        nt.x += nt.vx; nt.y += nt.vy;
+                        if (nt.x > CLEFT_RIGHT_BOUND && nt.vx > 0) { nt.x = CLEFT_RIGHT_BOUND; nt.vx *= -1; }
+                        if (nt.x < CLEFT_LEFT_BOUND && nt.vx < 0) { nt.x = CLEFT_LEFT_BOUND; nt.vx *= -1; }
+                        if (nt.y < 110 || nt.y > 430) nt.vy *= -1;
+                        if (nt.x < 515) stillDiffusing = true;
+                    }
+                });
+                if (!stillDiffusing || progress >= 1) {
+                    state = 5; progress = 0;
+                    if (cbReceptorInhibitor.checked) {
+                        setStatus("<b>【步驟 5/7】表面接觸：</b> 分子抵達，但<u>受體已被抑制劑阻斷！</u>無法成功引發活化。", "var(--accent-purple)", "var(--accent-purple)");
+                    } else {
+                        setStatus("<b>【步驟 5/7】受體結合：</b> 神經遞質精確嵌入突觸後膜表面的受體上。", "var(--accent-yellow)", "var(--accent-yellow)");
+                    }
+                }
+            }
+            else if (state === 5) {
+                progress += dt * 0.002;
+                neurotransmitters.forEach(nt => {
+                    if (nt.targetReceptor && nt.bindPhase === 'seeking') {
+                        if (!cbReceptorInhibitor.checked) {
+                            nt.targetReceptor.bound = true;
+                            nt.targetReceptor.glow = Math.sin(progress * Math.PI * 4) * 6;
+                        }
+                        nt.x = nt.targetReceptor.x - 8; nt.y = nt.targetReceptor.y;
+                    }
+                });
+                if (progress >= 1) {
+                    state = 6; progress = 0;
+                    if (cbReceptorInhibitor.checked) {
+                        setStatus("<b>【步驟 6/7】信號阻斷：</b> 受體抑制劑存在，<u style='color:var(--accent-red)'>下一個神經元未能受到刺激，不發出任何信號！</u>", "var(--accent-red)", "var(--accent-red)");
+                    } else {
+                        setStatus("<b>【步驟 6/7】引發後續脈衝：</b> 刺激成功，引發突觸後新神經脈衝！", "var(--accent-green)", "var(--accent-green)");
+                    }
+                }
+            }
+            else if (state === 6) {
+                progress += dt * 0.0012;
+                if (!cbReceptorInhibitor.checked) drawActionPotentialWave(false, progress);
+                
+                neurotransmitters.forEach(nt => {
+                    if (nt.targetReceptor && nt.bindPhase === 'seeking') {
+                        nt.x = nt.targetReceptor.x - 8; nt.y = nt.targetReceptor.y;
+                    }
+                });
+                if (progress >= 1) {
+                    state = 7; progress = 0; state7Timer = 0; stimWaveProgress = 0;
+                    
+                    let effReup = cbReuptake.checked && !cbReuptakeInhibitor.checked;
+                    let effDeg = cbDegradation.checked && !cbDegradationInhibitor.checked;
+
+                    if (cbDegradation.checked) { 
+                        for (let i = 0; i < 6; i++) {
+                            enzymes.push({
+                                x: 475 + Math.random() * 35, y: 130 + Math.random() * 260,
+                                vx: (Math.random() * 2 - 1) * 1.5, vy: (Math.random() * 2 - 1) * 1.5
+                            });
+                        }
+                    }
+
+                    neurotransmitters.forEach(nt => {
+                        // 轉換為游離態準備進入清除或連續結合循環
+                        nt.bindPhase = 'cooldown';
+                        nt.cooldownTimer = Math.random() * 800;
+                        nt.targetReceptor = null;
+                        nt.vx = (Math.random() * 2 - 1) * 2;
+                        nt.vy = (Math.random() * 2 - 1) * 2;
+
+                        if (effReup && effDeg) {
+                            nt.clearanceMethod = Math.random() > 0.5 ? 'reuptake' : 'degradation';
+                        } else if (effReup) {
+                            nt.clearanceMethod = 'reuptake';
+                        } else if (effDeg) {
+                            nt.clearanceMethod = 'degradation';
+                        } else {
+                            nt.clearanceMethod = 'none'; 
+                        }
+                    });
+
+                    if (cbReceptorInhibitor.checked) {
+                        setStatus("<b>【步驟 7/7】清除階段：</b> 受體持續無興奮，常規清除通道或殘留分子運行中。", "var(--accent-purple)", "var(--accent-purple)");
+                    } else if (cbReuptakeInhibitor.checked || cbDegradationInhibitor.checked) {
+                        setStatus("<b>【步驟 7/7】過度興奮：</b> 由於清除受阻，神經遞質<u style='color:var(--accent-red)'>將持續與受體重複結合，不斷發出信號！</u>", "var(--accent-red)", "var(--accent-red)");
+                    } else {
+                        setStatus("<b>【步驟 7/7】常規清除機制：</b> 分子被正常回收與降解，間隙逐步恢復乾淨。", "var(--accent-orange)", "#f97316");
+                    }
+                }
+            }
+            else if (state === 7) {
+                state7Timer += dt;
+                let effReup = cbReuptake.checked && !cbReuptakeInhibitor.checked;
+                let effDeg = cbDegradation.checked && !cbDegradationInhibitor.checked;
+                let anyBoundGlobal = false;
+
+                if (!cbReceptorInhibitor.checked) {
+                    receptors.forEach(r => { r.bound = false; r.glow = 0; });
+                }
+
+                enzymes.forEach(ez => {
+                    ez.x += ez.vx; ez.y += ez.vy;
+                    if (ez.x < CLEFT_LEFT_BOUND && ez.vx < 0) { ez.x = CLEFT_LEFT_BOUND; ez.vx *= -1; }
+                    if (ez.x > CLEFT_RIGHT_BOUND && ez.vx > 0) { ez.x = CLEFT_RIGHT_BOUND; ez.vx *= -1; }
+                    if (ez.y < 120 || ez.y > 440) ez.vy *= -1;
+                });
+
+                let activeCount = 0;
+                neurotransmitters.forEach(nt => {
+                    if (!nt.active) return;
+                    activeCount++;
+
+                    if (nt.clearanceMethod === 'reuptake' && effReup) {
+                        if (nt.reuptakePhase === 0) {
+                            let targetPump = (nt.y < 270) ? reuptakePumps[0] : reuptakePumps[1];
+                            let dx = targetPump.x - nt.x; let dy = targetPump.y - nt.y;
+                            let dist = Math.sqrt(dx*dx + dy*dy);
+                            if (dist > 6) {
+                                nt.x += (dx / dist) * 2.5; nt.y += (dy / dist) * 2.5;
+                            } else {
+                                nt.reuptakePhase = 1; nt.vx = -1.5; nt.vy = 0;
+                            }
+                        } else if (nt.reuptakePhase === 1) {
+                            nt.x += nt.vx; nt.alpha -= 0.03;
+                            if (nt.alpha <= 0) nt.active = false;
+                        }
+                    } 
+                    else if (nt.clearanceMethod === 'degradation' && effDeg) {
+                        let nearestEz = null; let minDist = 9999;
+                        enzymes.forEach(ez => {
+                            let d = Math.sqrt(Math.pow(ez.x - nt.x, 2) + Math.pow(ez.y - nt.y, 2));
+                            if (d < minDist) { minDist = d; nearestEz = ez; }
+                        });
+
+                        if (nearestEz && minDist < 25) {
+                            nt.active = false; 
+                            for (let k = 0; k < 4; k++) {
+                                degradedParticles.push({
+                                    x: nt.x + (Math.random() * 6 - 3), y: nt.y + (Math.random() * 6 - 3),
+                                    vx: (Math.random() * 2 - 1) * 0.8, vy: (Math.random() * 2 - 1) * 0.8,
+                                    alpha: 1, size: 1.5 + Math.random() * 1.5
+                                });
+                            }
+                        } else {
+                            nt.x += (Math.random() * 2 - 1) * 0.8; nt.y += (Math.random() * 2 - 1) * 0.8;
+                            if (nt.x > CLEFT_RIGHT_BOUND) { nt.x = CLEFT_RIGHT_BOUND; nt.vx *= -1; }
+                            if (nt.x < CLEFT_LEFT_BOUND) { nt.x = CLEFT_LEFT_BOUND; nt.vx *= -1; }
+                            if (nt.y < 110 || nt.y > 430) nt.vy *= -1;
+                        }
+                    } 
+                    else {
+                        // 滯留的神經遞質 (Clearance === 'none')
+                        if (cbReceptorInhibitor.checked) {
+                            // 受體被阻斷，只能不斷游離漂浮
+                            nt.x += nt.vx * 0.5; nt.y += nt.vy * 0.5;
+                            if (nt.x > CLEFT_RIGHT_BOUND && nt.vx > 0) { nt.x = CLEFT_RIGHT_BOUND; nt.vx *= -1; }
+                            if (nt.x < CLEFT_LEFT_BOUND && nt.vx < 0) { nt.x = CLEFT_LEFT_BOUND; nt.vx *= -1; }
+                            if (nt.y < 110 || nt.y > 430) nt.vy *= -1;
+                        } else {
+                            // 新增：不斷反覆結合與分離的動畫邏輯 (Continuous Binding Animation)
+                            if (nt.bindPhase === 'cooldown') {
+                                nt.cooldownTimer -= dt;
+                                nt.x += nt.vx * 0.6; nt.y += nt.vy * 0.6;
+                                if (nt.x > CLEFT_RIGHT_BOUND && nt.vx > 0) { nt.x = CLEFT_RIGHT_BOUND; nt.vx *= -1; }
+                                if (nt.x < CLEFT_LEFT_BOUND && nt.vx < 0) { nt.x = CLEFT_LEFT_BOUND; nt.vx *= -1; }
+                                if (nt.y < 110 || nt.y > 430) nt.vy *= -1;
+
+                                if (nt.cooldownTimer <= 0) {
+                                    nt.bindPhase = 'seeking';
+                                    nt.targetReceptor = receptors[Math.floor(Math.random() * receptors.length)];
+                                }
+                            } else if (nt.bindPhase === 'seeking') {
+                                let dx = (nt.targetReceptor.x - 8) - nt.x;
+                                let dy = nt.targetReceptor.y - nt.y;
+                                let dist = Math.sqrt(dx*dx + dy*dy);
+                                if (dist > 3) {
+                                    nt.x += dx * 0.05; nt.y += dy * 0.05;
+                                } else {
+                                    nt.bindPhase = 'bound';
+                                    nt.bindTimer = 300 + Math.random() * 500; // 停留在受體上0.3到0.8秒
+                                }
+                            } else if (nt.bindPhase === 'bound') {
+                                nt.x = nt.targetReceptor.x - 8;
+                                nt.y = nt.targetReceptor.y;
+                                nt.targetReceptor.bound = true;
+                                nt.targetReceptor.glow = 6 + Math.sin(timestamp * 0.01) * 4;
+                                anyBoundGlobal = true; 
+
+                                nt.bindTimer -= dt;
+                                if (nt.bindTimer <= 0) {
+                                    // 脫離並進入冷卻游離態
+                                    nt.bindPhase = 'cooldown';
+                                    nt.cooldownTimer = 400 + Math.random() * 800;
+                                    nt.targetReceptor = null;
+                                    nt.vx = (Math.random() * 2 - 1) * 2;
+                                    nt.vy = (Math.random() * 2 - 1) * 2;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                // 若有任何受體處於結合狀態，則觸發連續的波形
+                if (anyBoundGlobal && !cbReceptorInhibitor.checked) {
+                    stimWaveProgress += dt * 0.002;
+                    if (stimWaveProgress > 1) stimWaveProgress = 0;
+                    drawActionPotentialWave(false, stimWaveProgress);
+                }
+
+                degradedParticles.forEach(dp => {
+                    dp.x += dp.vx; dp.y += dp.vy; dp.alpha -= 0.015; 
+                });
+                degradedParticles = degradedParticles.filter(dp => dp.alpha > 0);
+
+                if ((effReup || effDeg) && activeCount === 0 && degradedParticles.length === 0) {
+                    state = 8; enzymes = []; 
+                    setStatus("<b>✔️ 正常模擬完成：</b> 突觸間隙無抑制劑，分子已被乾淨清除。", "var(--accent-green)", "var(--accent-green)");
+                    startBtn.innerText = "▶ 重新運行模擬"; startBtn.disabled = false; pauseBtn.disabled = true;
+                } else if (state7Timer > 8000) { 
+                    state = 8;
+                    if (cbReceptorInhibitor.checked) {
+                        setStatus("<b>✔️ 模擬完成（受體抑制）：</b> 分子雖有滯留，但因受體全程遭藥物阻斷，<u style='color:var(--accent-purple)'>突觸後神經元成功維持無信號狀態</u>。", "var(--accent-purple)", "var(--accent-purple)");
+                    } else if (cbReuptakeInhibitor.checked || cbDegradationInhibitor.checked) {
+                        setStatus("<b>⚠️ 毒理重症警告（過度興奮）：</b> 清除被抑制，神經遞質不斷地重複結合與脫離，<u style='color:var(--accent-red)'>導致突觸後神經元瘋狂激發脈衝信號！</u>", "var(--accent-red)", "var(--accent-red)");
+                    } else {
+                        setStatus("<b>⚠️ 警告：</b> 缺乏常規清除，遞質滯留於間隙，導致不規律過度刺激。", "var(--accent-red)", "var(--accent-red)");
+                    }
+                    startBtn.innerText = "▶ 更改設定並重新模擬"; startBtn.disabled = false; pauseBtn.disabled = true;
+                }
+            }
+
+            drawDynamicEntities();
+
+            if (state > 0 && state < 8 && !isPaused) {
+                animationId = requestAnimationFrame(mainLoop);
+            }
+        }
+
+        // 綁定暫停鍵
+        pauseBtn.addEventListener('click', () => {
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseBtn.innerText = "▶ 繼續";
+                pauseBtn.style.background = "var(--accent-blue)";
+                pauseBtn.style.color = "#ffffff";
+                statusText.innerHTML = "<b>⏸ 模擬已暫停。</b> 可以觀察當前突觸間隙與細胞膜狀態。";
+                statusText.style.color = "var(--accent-yellow)";
+            } else {
+                pauseBtn.innerText = "⏸ 暫停";
+                pauseBtn.style.background = "var(--bg-card)";
+                pauseBtn.style.color = "var(--accent-yellow)";
+                statusText.innerHTML = savedStatusHtml;
+                statusText.style.color = savedStatusColor;
+                lastTime = performance.now();
+                animationId = requestAnimationFrame(mainLoop);
+            }
+        });
+
+        startBtn.addEventListener('click', () => {
+            if (state === 0 || state === 8) {
+                initData();
+                state = 1; progress = 0; lastTime = performance.now(); isPaused = false;
+                startBtn.disabled = true; startBtn.innerText = "模擬運作中...";
+                pauseBtn.disabled = false;
+                pauseBtn.innerText = "⏸ 暫停";
+                pauseBtn.style.background = "var(--bg-card)";
+                pauseBtn.style.color = "var(--accent-yellow)";
+                setStatus("<b>【步驟 1/7】信號抵達：</b> 前一個神經元的電信號（軸突脈衝）抵達突觸末梢。", "var(--accent-yellow)", "var(--accent-yellow)");
+                cancelAnimationFrame(animationId);
+                mainLoop(performance.now());
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            cancelAnimationFrame(animationId);
+            state = 0; initData(); isPaused = false;
+            drawStaticStructure(); drawDynamicEntities();
+            pauseBtn.disabled = true;
+            pauseBtn.innerText = "⏸ 暫停";
+            pauseBtn.style.background = "var(--bg-card)";
+            pauseBtn.style.color = "var(--accent-yellow)";
+            setStatus("系統已重置。請設定側邊欄的抑制劑勾選框，並點擊「啟動」觀測化學反應。", "var(--accent-green)", "var(--text-main)");
+            startBtn.disabled = false; startBtn.innerText = "▶ 啟動神經脈衝傳遞";
+        });
+
+        initData();
+        drawStaticStructure();
+        drawDynamicEntities();
+    </script>
+</body>
+</html>

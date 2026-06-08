@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>滲透作用模擬器 — HinHin Biology</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-global: #f4f6f9;
+  --bg-panel: #ffffff;
+  
+  --tx-primary: #1a2332;
+  --tx-secondary: #4a5a70;
+  --tx-muted: #8a9ab0;
+  --border-color: #d4dbe6;
+  
+  /* Semantic Accents */
+  --accent-primary: #1976d2;
+  --accent-danger: #c62828;
+  --accent-success: #2e7d32;
+  --accent-warning: #e65100;
+  --accent-violet: #5e35b1;
+  
+  --radius: 4px;
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Monaco, 'IBM Plex Mono', monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-global);
+  color: var(--tx-primary);
+  min-height: 100vh;
+  padding: 24px 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* header */
+header {
+  margin-bottom: 4px;
+  border-bottom: 2px solid var(--tx-primary);
+  padding-bottom: 12px;
+}
+header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-primary);
+}
+header p {
+  font-size: 11px;
+  color: var(--tx-secondary);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+/* metrics bar */
+.met-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.met {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+}
+.met::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--border-color);
+}
+.met:nth-child(1)::before, .met:nth-child(3)::before {
+  background: var(--accent-primary);
+}
+.met:nth-child(2)::before, .met:nth-child(4)::before {
+  background: var(--accent-success);
+}
+.met .ml {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tx-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 6px;
+}
+.met .mv {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--tx-primary);
+}
+.met .mu {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--tx-secondary);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* two-column layout */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* apparatus cards */
+.app-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.app-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tx-primary);
+  text-align: center;
+  line-height: 1.5;
+  width: 100%;
+}
+.app-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius);
+  display: inline-block;
+  margin-top: 6px;
+}
+.tag-exp {
+  background: #fff3e0;
+  border: 1px solid var(--accent-warning);
+  color: var(--accent-warning);
+}
+.tag-ctrl {
+  background: #e3f2fd;
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+/* SVG Dwellers styling */
+svg {
+  background: #fafbfc;
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius);
+  padding: 6px;
+}
+svg text {
+  font-family: var(--font-mono) !important;
+}
+
+/* control panel */
+.ctrl-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.ctrl-card h3, .chart-card h3 {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  color: var(--tx-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+}
+.sr {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.sr:last-of-type {
+  margin-bottom: 14px;
+}
+.sl {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tx-secondary);
+  width: 112px;
+  flex-shrink: 0;
+}
+
+/* Custom Precision Instrument Sliders */
+input[type=range] {
+  -webkit-appearance: none;
+  flex: 1;
+  background: transparent;
+}
+input[type=range]:focus {
+  outline: none;
+}
+input[type=range]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 3px;
+  cursor: pointer;
+  background: var(--border-color);
+  border-radius: 1.5px;
+}
+input[type=range]::-webkit-slider-thumb {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--tx-secondary);
+  cursor: pointer;
+  -webkit-appearance: none;
+  margin-top: -4.5px;
+  border: 1px solid var(--bg-panel);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+input[type=range]:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+  background: var(--accent-primary);
+}
+input[type=range]::-moz-range-track {
+  width: 100%;
+  height: 3px;
+  cursor: pointer;
+  background: var(--border-color);
+  border-radius: 1.5px;
+}
+input[type=range]::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  border-radius: 50%;
+  background: var(--tx-secondary);
+  cursor: pointer;
+  border: 1px solid var(--bg-panel);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+  transition: transform 0.1s ease, background-color 0.1s ease;
+}
+input[type=range]:hover::-moz-range-thumb {
+  transform: scale(1.2);
+  background: var(--accent-primary);
+}
+
+.sv {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--tx-primary);
+  min-width: 56px;
+  text-align: right;
+  background: var(--bg-global);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--border-color);
+}
+
+/* buttons */
+.btn-row {
+  display: flex;
+  gap: 10px;
+}
+button {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-color);
+  background: var(--bg-panel);
+  color: var(--tx-primary);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  letter-spacing: 0.02em;
+}
+button:hover {
+  background: var(--bg-global);
+  border-color: var(--tx-secondary);
+}
+button.bp {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+}
+button.bp:hover {
+  background: #1565c0;
+  border-color: #1565c0;
+}
+button.bd {
+  background: var(--accent-danger);
+  color: #ffffff;
+  border-color: var(--accent-danger);
+}
+button.bd:hover {
+  background: #b71c1c;
+  border-color: #b71c1c;
+}
+
+/* insight */
+.insight {
+  background: var(--bg-global);
+  border-left: 3px solid var(--accent-primary);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--tx-secondary);
+  line-height: 1.6;
+  min-height: 52px;
+}
+
+/* chart */
+.chart-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.chart-wrap {
+  position: relative;
+  height: 200px;
+  width: 100%;
+}
+
+/* principles */
+.prin-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 4px;
+}
+.prin {
+  background: var(--bg-global);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  padding: 12px;
+}
+.prin .pt {
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--tx-primary);
+}
+.prin .pb {
+  font-size: 11px;
+  color: var(--tx-secondary);
+  line-height: 1.5;
+}
+
+@media(max-width:620px){
+  .cols { grid-template-columns: 1fr; }
+  .met-row { grid-template-columns: repeat(3, 1fr); }
+  .prin-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>滲透作用模擬器</h1>
+  <p>透析管實驗裝置 · HinHin Biology</p>
+</header>
+
+<div class="met-row">
+  <div class="met"><div class="ml">實驗裝置升高</div><div class="mv" id="m-rise-e">0.0</div><div class="mu">cm</div></div>
+  <div class="met"><div class="ml">對照裝置升高</div><div class="mv" id="m-rise-c">0.0</div><div class="mu">cm</div></div>
+  <div class="met"><div class="ml">ΔΨ（實驗）</div><div class="mv" id="m-psi-e">—</div><div class="mu">kPa</div></div>
+  <div class="met"><div class="ml">ΔΨ（對照）</div><div class="mv" id="m-psi-c">—</div><div class="mu">kPa</div></div>
+  <div class="met"><div class="ml">模擬時間</div><div class="mv" id="m-time">0</div><div class="mu">min</div></div>
+</div>
+
+<div class="cols">
+
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div class="app-card">
+      <div class="app-title">實驗裝置<br><span class="app-tag tag-exp" id="tag-e">管內 20% · 管外 0%</span></div>
+      <svg width="200" height="300" viewBox="0 0 200 300">
+        <defs>
+          <clipPath id="cce"><rect x="91" y="16" width="18" height="196"/></clipPath>
+        </defs>
+        <rect x="96" y="6" width="8" height="290" rx="4" fill="#c8c6be" opacity=".65"/>
+        <rect x="78" y="108" width="40" height="10" rx="5" fill="#c8c6be"/>
+        <rect x="66" y="105" width="14" height="17" rx="3" fill="#b0afa8"/>
+        <rect x="90" y="16" width="20" height="196" rx="5" fill="none" stroke="#888780" stroke-width="1.5"/>
+        <rect id="wce" x="91" y="182" width="18" height="30" fill="#378ADD" opacity=".7" clip-path="url(#cce)"/>
+        <line x1="70" y1="182" x2="124" y2="182" stroke="#888780" stroke-width="0.5" stroke-dasharray="4 3"/>
+        <path d="M22 198 L22 290 Q22 299 32 299 L168 299 Q178 299 178 290 L178 198Z" fill="none" stroke="#888780" stroke-width="1.5"/>
+        <path id="bwe" d="M23 245 L23 289 Q23 298 33 298 L167 298 Q177 298 177 289 L177 245Z" fill="#B5D4F4" opacity=".4"/>
+        <rect id="dte" x="80" y="228" width="40" height="68" rx="6" fill="none" stroke="#555" stroke-width="1.5"/>
+        <rect id="sie" x="81" y="254" width="38" height="40" rx="3" fill="#FAC775" opacity=".7"/>
+        <text id="lbl-outer-e" x="14" y="258" font-size="9" fill="#888780" text-anchor="middle" transform="rotate(-90,14,258)" font-family="-apple-system,sans-serif">外液</text>
+        <text id="lbl-inner-e" x="100" y="278" font-size="9" fill="#BA7517" text-anchor="middle" font-family="-apple-system,sans-serif">管內</text>
+        <text id="rise-lbl-e" x="68" y="186" font-size="10" fill="#185FA5" text-anchor="end" font-family="-apple-system,sans-serif">▲ 0.0 cm</text>
+      </svg>
+    </div>
+
+    <div class="ctrl-card">
+      <h3>實驗裝置參數</h3>
+      <div class="sr"><span class="sl">🌡 溫度 (°C)</span><input type="range" id="e-temp" min="5" max="45" value="25" step="1"><span class="sv" id="el-temp">25 °C</span></div>
+      <div class="sr"><span class="sl">🔵 管內濃度 (%)</span><input type="range" id="e-conc" min="0" max="40" value="20" step="1"><span class="sv" id="el-conc">20 %</span></div>
+      <div class="sr"><span class="sl">💧 管外濃度 (%)</span><input type="range" id="e-ext" min="0" max="40" value="0" step="1"><span class="sv" id="el-ext">0 %</span></div>
+      <div class="sr"><span class="sl">📐 透析膜表面積</span><input type="range" id="e-area" min="0.5" max="3" value="1" step="0.1"><span class="sv" id="el-area">1.0 ×</span></div>
+      <div class="sr"><span class="sl">🔬 膜透水性</span><input type="range" id="e-perm" min="0.2" max="3" value="1" step="0.1"><span class="sv" id="el-perm">1.0 ×</span></div>
+      <div class="insight" id="ins-e">透析管內的水勢較外液的水勢低，水分子經滲透流動至透析管內。</div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;">
+    <div class="app-card">
+      <div class="app-title">對照裝置<br><span class="app-tag tag-ctrl" id="tag-c">管內 0% · 管外 0%</span></div>
+      <svg width="200" height="300" viewBox="0 0 200 300">
+        <defs>
+          <clipPath id="ccc"><rect x="91" y="16" width="18" height="196"/></clipPath>
+        </defs>
+        <rect x="96" y="6" width="8" height="290" rx="4" fill="#c8c6be" opacity=".65"/>
+        <rect x="78" y="108" width="40" height="10" rx="5" fill="#c8c6be"/>
+        <rect x="66" y="105" width="14" height="17" rx="3" fill="#b0afa8"/>
+        <rect x="90" y="16" width="20" height="196" rx="5" fill="none" stroke="#888780" stroke-width="1.5"/>
+        <rect id="wcc" x="91" y="182" width="18" height="30" fill="#378ADD" opacity=".55" clip-path="url(#ccc)"/>
+        <line x1="70" y1="182" x2="124" y2="182" stroke="#888780" stroke-width="0.5" stroke-dasharray="4 3"/>
+        <path d="M22 198 L22 290 Q22 299 32 299 L168 299 Q178 299 178 290 L178 198Z" fill="none" stroke="#888780" stroke-width="1.5"/>
+        <path id="bwc" d="M23 245 L23 289 Q23 298 33 298 L167 298 Q177 298 177 289 L177 245Z" fill="#B5D4F4" opacity=".35"/>
+        <rect id="dtc" x="80" y="228" width="40" height="68" rx="6" fill="none" stroke="#555" stroke-width="1.5"/>
+        <rect id="sic" x="81" y="254" width="38" height="40" rx="3" fill="#B5D4F4" opacity=".5"/>
+        <text id="lbl-outer-c" x="14" y="258" font-size="9" fill="#888780" text-anchor="middle" transform="rotate(-90,14,258)" font-family="-apple-system,sans-serif">外液</text>
+        <text id="lbl-inner-c" x="100" y="278" font-size="9" fill="#185FA5" text-anchor="middle" font-family="-apple-system,sans-serif">管內</text>
+        <text id="rise-lbl-c" x="68" y="186" font-size="10" fill="#185FA5" text-anchor="end" font-family="-apple-system,sans-serif">— 0.0 cm</text>
+      </svg>
+    </div>
+
+    <div class="ctrl-card">
+      <h3>對照裝置參數</h3>
+      <div class="sr"><span class="sl">🌡 溫度 (°C)</span><input type="range" id="c-temp" min="5" max="45" value="25" step="1"><span class="sv" id="cl-temp">25 °C</span></div>
+      <div class="sr"><span class="sl">🔵 管內濃度 (%)</span><input type="range" id="c-conc" min="0" max="40" value="0" step="1"><span class="sv" id="cl-conc">0 %</span></div>
+      <div class="sr"><span class="sl">💧 管外濃度 (%)</span><input type="range" id="c-ext" min="0" max="40" value="0" step="1"><span class="sv" id="cl-ext">0 %</span></div>
+      <div class="sr"><span class="sl">📐 透析膜表面積</span><input type="range" id="c-area" min="0.5" max="3" value="1" step="0.1"><span class="sv" id="cl-area">1.0 ×</span></div>
+      <div class="sr"><span class="sl">🔬 膜透水性</span><input type="range" id="c-perm" min="0.2" max="3" value="1" step="0.1"><span class="sv" id="cl-perm">1.0 ×</span></div>
+      <div class="insight" id="ins-c">透析管內的水勢與外液的水勢相等，水分子進出速率相同，液面維持不變。</div>
+    </div>
+  </div>
+
+</div><div class="btn-row">
+  <button class="bp" id="btn-run" onclick="toggleRun()">▶ 開始模擬</button>
+  <button onclick="resetSim()">↺ 重設</button>
+</div>
+
+<div class="chart-card">
+  <h3>毛細管液面高度隨時間變化</h3>
+  <div class="chart-wrap"><canvas id="cc"></canvas></div>
+</div>
+
+<div class="ctrl-card">
+  <h3>影響滲透的因素 — 概念摘要</h3>
+  <div class="prin-grid">
+    <div class="prin"><div class="pt">🌡 溫度</div><div class="pb">溫度↑ → 水分子熱運動加快 → 滲透<em>速率</em>↑。平衡液面高度只由水勢差決定，與溫度無關。</div></div>
+    <div class="prin"><div class="pt">💧 水勢梯度</div><div class="pb">管內外溶質濃度差越大，ΔΨ 越大，淨水流越強，平衡液面越高。可用 π = iCRT 計算。</div></div>
+    <div class="prin"><div class="pt">📐 透析膜表面積</div><div class="pb">表面積↑ → 單位時間通過的水分子數↑ → 初始速率↑。平衡高度不受影響。</div></div>
+    <div class="prin"><div class="pt">🔬 膜透水性</div><div class="pb">透水性（如通道蛋白數目）↑ → 速率↑，不改變熱力學平衡高度。</div></div>
+    <div class="prin"><div class="pt">⚖️ 動態平衡</div><div class="pb">平衡時兩側水分子進出速率相等，靜水壓（水柱重）= 滲透壓差 ΔΨ。</div></div>
+    <div class="prin"><div class="pt">🔄 對照設計</div><div class="pb">當管內外濃度相同時，ΔΨ = 0，液面不移動，排除毛細管現象等干擾。</div></div>
+  </div>
+</div>
+
+</div><script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── Physics ──────────────────────────────────────────────────────────────────
+const R_GAS = 8.314;
+
+function molarity(pct) {
+  // sucrose MW 342.3, solution density ≈1.04 g/mL
+  return (pct / 100) * 1040 / 342.3;
+}
+
+function osmPressure(pct, tempC) {
+  // van't Hoff: π = iCRT, i=1 for sucrose
+  return molarity(pct) * R_GAS * (tempC + 273.15); // Pa
+}
+
+// Equilibrium rise (cm). Area/perm affect RATE only, NOT equilibrium.
+function eqRise(conc, ext, tempC) {
+  const dPi = osmPressure(conc, tempC) - osmPressure(ext, tempC); // Pa
+  // h = dPi / (rho * g), rho=1000 kg/m³, g=9.81 → h in metres
+  // scale to cm * 0.55 to fit display units
+  return (dPi / (1000 * 9.81)) * 100 * 0.55;
+}
+
+// Rate of rise (cm/sec of sim-time). Exponential approach to equilibrium.
+function riseRate(rise, eq, area, perm, tempC) {
+  const deficit = eq - rise;
+  // k: base 0.018/s, modulated by area, perm, temperature (Q10≈2 → ~2.5% per °C)
+  const k = 0.018 * area * perm * (1 + (tempC - 25) * 0.024);
+  return deficit * k;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let simRunning = false;
+let simT = 0;        // seconds of sim-time elapsed
+let riseE = 0;       // cm
+let riseC = 0;       // cm
+let rafId = null;
+let lastRafTs = null;
+const SIM_SPEED = 8; // 1 real second = SIM_SPEED sim-seconds
+
+// Chart data
+const chartLabels = [];
+const dsE = { label:'實驗裝置', data:[], borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,0.08)', tension:0.4, pointRadius:0, fill:true, borderWidth:1.5 };
+const dsC = { label:'對照裝置', data:[], borderColor:'#1D9E75', backgroundColor:'rgba(29,158,117,0.06)', tension:0.4, pointRadius:0, fill:true, borderWidth:1.5 };
+let chart = null;
+let lastChartMin = -1;
+
+// ── Param readers ─────────────────────────────────────────────────────────────
+function getPE() {
+  return {
+    temp: +document.getElementById('e-temp').value,
+    conc: +document.getElementById('e-conc').value,
+    ext:  +document.getElementById('e-ext').value,
+    area: +document.getElementById('e-area').value,
+    perm: +document.getElementById('e-perm').value,
+  };
+}
+function getPC() {
+  return {
+    temp: +document.getElementById('c-temp').value,
+    conc: +document.getElementById('c-conc').value,
+    ext:  +document.getElementById('c-ext').value,
+    area: +document.getElementById('c-area').value,
+    perm: +document.getElementById('c-perm').value,
+  };
+}
+
+// ── SVG updater ───────────────────────────────────────────────────────────────
+function updateApparatus(suffix, rise, conc, ext, area) {
+  // ── dialysis tube size (area 0.5–3 → width 24–64px, centred at x=100) ──
+  area = area || 1;
+  const tubeW = Math.round(24 + (area - 0.5) / 2.5 * 40); // 24–64 px
+  const tubeH = Math.round(52 + (area - 0.5) / 2.5 * 28); // 52–80 px
+  const tubeX = 100 - tubeW / 2;
+  const tubeY = 296 - tubeH; // bottom anchored at y=296
+  const dt = document.getElementById('dt' + suffix);
+  dt.setAttribute('x', tubeX);
+  dt.setAttribute('y', tubeY);
+  dt.setAttribute('width', tubeW);
+  dt.setAttribute('height', tubeH);
+  // capillary water column
+  const baseY = 182;
+  const pxPerCm = 4.5;
+  const riseClamp = Math.max(-25, Math.min(rise, 36)); // visual clamp
+  const risePx = riseClamp * pxPerCm;
+  const wc = document.getElementById('wc' + suffix);
+  const newTop = baseY - risePx;
+  const newH = 30 + risePx;
+  wc.setAttribute('y', newTop.toFixed(1));
+  wc.setAttribute('height', Math.max(2, newH).toFixed(1));
+
+  // rise label
+  const lbl = document.getElementById('rise-lbl-' + suffix);
+  lbl.setAttribute('y', (newTop + 4).toFixed(1));
+  const arrow = rise > 0.05 ? '▲' : rise < -0.05 ? '▼' : '—';
+  lbl.textContent = arrow + ' ' + Math.abs(rise).toFixed(1) + ' cm';
+  lbl.style.fill = rise > 0.05 ? '#185FA5' : rise < -0.05 ? '#A32D2D' : '#888780';
+
+  // inner solution colour & height (shrinks as water enters, follows tube size)
+  const si = document.getElementById('si' + suffix);
+  const innerH = Math.max(4, (tubeH * 0.58) - rise * 1.0);
+  const innerW = tubeW - 2;
+  si.setAttribute('x', (tubeX + 1).toFixed(0));
+  si.setAttribute('width', innerW.toFixed(0));
+  si.setAttribute('height', innerH.toFixed(1));
+  si.setAttribute('y', (tubeY + tubeH - innerH).toFixed(1));
+  const ratio = Math.min(conc / 40, 1);
+  const r = Math.round(180 + ratio * 65);
+  const g = Math.round(200 - ratio * 90);
+  si.style.fill = `rgb(${r},${g},50)`;
+  si.style.opacity = 0.3 + ratio * 0.55;
+
+  // outer solution: top must sit above dialysis tube top to fully submerge it
+  const bw = document.getElementById('bw' + suffix);
+  const outerTop = Math.min(tubeY - 6, 245);
+  bw.setAttribute('d', `M23 ${outerTop} L23 289 Q23 298 33 298 L167 298 Q177 298 177 289 L177 ${outerTop}Z`);
+  const eratio = Math.min(ext / 40, 1);
+  const er = Math.round(170 + eratio * 40);
+  const eg = Math.round(210 - eratio * 60);
+  bw.style.fill = `rgb(${er},${eg},${Math.round(240 - eratio * 40)})`;
+
+  // tag
+  const tag = document.getElementById('tag-' + suffix);
+  tag.textContent = '管內 ' + conc + '% · 管外 ' + ext + '%';
+}
+
+// ── Metrics & insights ────────────────────────────────────────────────────────
+function deltaPsi(p) {
+  return (osmPressure(p.conc, p.temp) - osmPressure(p.ext, p.temp)) / 1000; // kPa
+}
+
+function buildInsight(p, rise, eq) {
+  if (Math.abs(p.conc - p.ext) < 0.5) {
+    return '透析管內的水勢與外液的水勢相等，水分子進出速率相同，液面維持不變。';
+  }
+  if (p.conc > p.ext) {
+    return '透析管內的水勢較外液的水勢低，水分子經滲透流動至透析管內。';
+  }
+  return '透析管內的水勢較外液的水勢高，水分子經滲透流動至外液。';
+}
+
+function updateMetrics() {
+  const pe = getPE(), pc = getPC();
+  document.getElementById('m-rise-e').textContent = riseE.toFixed(1);
+  document.getElementById('m-rise-c').textContent = riseC.toFixed(1);
+  document.getElementById('m-psi-e').textContent = deltaPsi(pe).toFixed(1);
+  document.getElementById('m-psi-c').textContent = deltaPsi(pc).toFixed(1);
+  document.getElementById('m-time').textContent = Math.floor(simT / 60);
+}
+
+// ── Event Handlers ────────────────────────────────────────────────────────────
+function updateInsights() {
+  const pe = getPE(), pc = getPC();
+  document.getElementById('ins-e').textContent = buildInsight(pe, riseE, eqRise(pe.conc, pe.ext, pe.temp));
+  document.getElementById('ins-c').textContent = buildInsight(pc, riseC, eqRise(pc.conc, pc.ext, pc.temp));
+}
+
+function updateLabels() {
+  const pe = getPE(), pc = getPC();
+  document.getElementById('el-temp').textContent = pe.temp + ' °C';
+  document.getElementById('el-conc').textContent = pe.conc + ' %';
+  document.getElementById('el-ext').textContent  = pe.ext  + ' %';
+  document.getElementById('el-area').textContent = pe.area.toFixed(1) + ' ×';
+  document.getElementById('el-perm').textContent = pe.perm.toFixed(1) + ' ×';
+  document.getElementById('cl-temp').textContent = pc.temp + ' °C';
+  document.getElementById('cl-conc').textContent = pc.conc + ' %';
+  document.getElementById('cl-ext').textContent  = pc.ext  + ' %';
+  document.getElementById('cl-area').textContent = pc.area.toFixed(1) + ' ×';
+  document.getElementById('cl-perm').textContent = pc.perm.toFixed(1) + ' ×';
+  updateInsights();
+  updateMetrics();
+}
+
+// ── Chart ─────────────────────────────────────────────────────────────────────
+function initChart() {
+  const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+  const grid = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
+  const tick = '#888780';
+  chart = new Chart(document.getElementById('cc').getContext('2d'), {
+    type: 'line',
+    data: { labels: chartLabels, datasets: [dsE, dsC] },
+    options: {
+      animation: false,
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: tick, font: { size: 11 }, boxWidth: 12, padding: 10 }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: '時間（分鐘）', color: tick, font: { size: 11 } },
+          ticks: { color: tick, font: { size: 10 }, maxTicksLimit: 10 },
+          grid: { color: grid }
+        },
+        y: {
+          title: { display: true, text: '液面高度（cm）', color: tick, font: { size: 11 } },
+          ticks: { color: tick, font: { size: 10 } },
+          grid: { color: grid }
+        }
+      }
+    }
+  });
+}
+
+function pushChartPoint(minLabel) {
+  chartLabels.push(minLabel + '');
+  dsE.data.push(+riseE.toFixed(2));
+  dsC.data.push(+riseC.toFixed(2));
+  chart.update('none'); // 'none' = skip animation, faster
+}
+
+// ── Simulation loop ───────────────────────────────────────────────────────────
+function simStep(wallTs) {
+  if (!simRunning) return;
+  if (!lastRafTs) { lastRafTs = wallTs; rafId = requestAnimationFrame(simStep); return; }
+
+  const wallDt = Math.min(wallTs - lastRafTs, 64); // cap at ~2 missed frames
+  lastRafTs = wallTs;
+  const simDt = (wallDt / 1000) * SIM_SPEED; // seconds of sim-time
+
+  const pe = getPE(), pc = getPC();
+
+  const eqE = eqRise(pe.conc, pe.ext, pe.temp);
+  const eqC = eqRise(pc.conc, pc.ext, pc.temp);
+
+  textE = eqE;
+  riseE += riseRate(riseE, eqE, pe.area, pe.perm, pe.temp) * simDt;
+  riseC += riseRate(riseC, eqC, pc.area, pc.perm, pc.temp) * simDt;
+
+  simT += simDt;
+
+  // Push chart point once per sim-minute
+  const simMin = Math.floor(simT / 60);
+  if (simMin > lastChartMin) {
+    lastChartMin = simMin;
+    pushChartPoint(simMin);
+  }
+
+  updateApparatus('e', riseE, pe.conc, pe.ext, pe.area);
+  updateApparatus('c', riseC, pc.conc, pc.ext, pc.area);
+  updateMetrics();
+
+  rafId = requestAnimationFrame(simStep);
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+function toggleRun() {
+  const btn = document.getElementById('btn-run');
+  if (simRunning) {
+    simRunning = false;
+    lastRafTs = null;
+    cancelAnimationFrame(rafId);
+    btn.textContent = '▶ 繼續';
+    btn.className = 'bp';
+    updateInsights();
+  } else {
+    simRunning = true;
+    lastRafTs = null;
+    btn.textContent = '⏸ 暫停';
+    btn.className = 'bd';
+    rafId = requestAnimationFrame(simStep);
+  }
+}
+
+function resetSim() {
+  simRunning = false;
+  lastRafTs = null;
+  cancelAnimationFrame(rafId);
+  simT = 0; riseE = 0; riseC = 0; lastChartMin = -1;
+  chartLabels.length = 0;
+  dsE.data.length = 0;
+  dsC.data.length = 0;
+  chart.update('none');
+  updateApparatus('e', 0, getPE().conc, getPE().ext, getPE().area);
+  updateApparatus('c', 0, getPC().conc, getPC().ext, getPC().area);
+  updateMetrics();
+  updateInsights();
+  const btn = document.getElementById('btn-run');
+  btn.textContent = '▶ 開始模擬';
+  btn.className = 'bp';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+const sliders = ['e-temp','e-conc','e-ext','e-area','e-perm',
+                 'c-temp','c-conc','c-ext','c-area','c-perm'];
+sliders.forEach(id => document.getElementById(id).addEventListener('input', () => {
+  updateLabels();
+  updateApparatus('e', riseE, getPE().conc, getPE().ext, getPE().area);
+  updateApparatus('c', riseC, getPC().conc, getPC().ext, getPC().area);
+}));
+
+initChart();
+updateLabels();
+updateApparatus('e', 0, 20, 0, 1);
+updateApparatus('c', 0, 0, 0, 1);
+</script>
+</body>
+</html>

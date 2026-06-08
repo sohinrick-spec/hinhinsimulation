@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上肢拮抗肌模擬器 (手臂正向彎曲版) — HinHin Biology</title>
+    <style>
+        :root {
+            --primary-bg: #f4f6f9;
+            --panel-bg: #ffffff;
+            --text-main: #1a2332;
+            --text-sub: #4a5a70;
+            --text-muted: #8a9ab0;
+            --accent-cyan: #1976d2;
+            --muscle-contract: #c62828;
+            --bone-color: #e2e8f6;
+            --border-color: #d4dbe6;
+            --font-ui: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, "微軟正黑體", sans-serif;
+            --font-mono: 'IBM Plex Mono', 'SF Mono', Monaco, Consolas, monospace;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: row;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            max-width: 1000px;
+            width: 100%;
+            height: 650px;
+            overflow: hidden;
+        }
+
+        .visualization-panel {
+            flex: 1.2;
+            background-color: #fafbfc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .control-panel {
+            flex: 0.8;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            gap: 24px;
+            background-color: var(--panel-bg);
+            overflow-y: auto;
+        }
+
+        h1 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-main);
+            border-left: 3px solid var(--accent-cyan);
+            padding-left: 10px;
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+
+        h3 {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .status-card {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 12px 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .muscle-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-sub);
+        }
+
+        .muscle-state {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 4px;
+            text-transform: uppercase;
+        }
+
+        .state-contracted {
+            background-color: #ffebee;
+            color: var(--muscle-contract);
+            border: 1px solid rgba(198, 40, 40, 0.2);
+        }
+
+        .state-relaxed {
+            background-color: #f1f5f9;
+            color: var(--text-sub);
+            border: 1px solid var(--border-color);
+        }
+
+        .input-group {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            padding: 16px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .button-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        .control-btn {
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-sub);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .control-btn:hover {
+            background-color: #f1f5f9;
+            border-color: var(--text-muted);
+        }
+
+        .control-btn.active {
+            color: #ffffff;
+            background-color: var(--accent-cyan);
+            border-color: var(--accent-cyan);
+            box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+        }
+
+        .info-panel {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 16px;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: var(--text-sub);
+        }
+
+        .info-panel strong {
+            color: var(--text-main);
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .bone {
+            stroke: var(--bone-color);
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .joint-center {
+            fill: #64748b;
+            stroke: #ffffff;
+            stroke-width: 2.5;
+        }
+
+        .muscle-path {
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill-opacity: 0.9;
+            transition: d 0.3s cubic-bezier(0.25, 1, 0.5, 1), fill 0.3s ease;
+        }
+
+        #foreArm {
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .dynamic-text {
+            font-size: 12px;
+            font-weight: bold;
+            fill: var(--text-sub);
+            transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="visualization-panel">
+            <svg id="jointSvg" viewBox="0 0 500 600">
+                <line x1="300" y1="50" x2="300" y2="550" stroke="#f1f5f9" stroke-width="1" stroke-dasharray="4,4"/>
+                
+                <line x1="300" y1="90" x2="300" y2="300" stroke-width="32" class="bone" />
+                <line x1="300" y1="90" x2="300" y2="300" stroke="#94a3b8" stroke-width="1" />
+                
+                <g id="foreArm">
+                    <line x1="300" y1="300" x2="300" y2="520" stroke-width="24" class="bone" />
+                    <line x1="300" y1="300" x2="300" y2="520" stroke="#94a3b8" stroke-width="1" />
+                    <line x1="300" y1="520" x2="260" y2="540" stroke-width="16" class="bone" />
+                </g>
+
+                <path id="biceps" class="muscle-path" stroke="rgba(0,0,0,0.15)" stroke-width="1" />
+                <path id="triceps" class="muscle-path" stroke="rgba(0,0,0,0.15)" stroke-width="1" />
+
+                <circle cx="300" cy="300" r="8" class="joint-center" />
+                
+                <text id="bicepsLabel" class="dynamic-text" text-anchor="end">肱二頭肌 (屈肌)</text>
+                <text id="tricepsLabel" class="dynamic-text" text-anchor="start">肱三頭肌 (伸肌)</text>
+            </svg>
+        </div>
+
+        <div class="control-panel">
+            <div>
+                <h1>手臂骨骼肌與肘關節模擬</h1>
+                <p class="subtitle">正確解剖學模型：切換二頭肌與三頭肌的主動狀態，觀測上肢解剖學正向彎曲運動。</p>
+            </div>
+
+            <div class="input-group">
+                <h3>調節肌肉狀態 (Muscle State Selection)</h3>
+                <div class="button-container">
+                    <button id="btnBiceps" class="control-btn">肱二頭肌收縮 (手肘向前彎曲)</button>
+                    <button id="btnNormal" class="control-btn active">均等放鬆狀態 (微彎)</button>
+                    <button id="btnTriceps" class="control-btn">肱三頭肌收縮 (手肘向下伸直)</button>
+                </div>
+            </div>
+
+            <div>
+                <h3>即時肌電與張力遙測</h3>
+                <div class="status-grid">
+                    <div class="status-card">
+                        <span class="muscle-name">肱二頭肌 (Biceps / 前側屈肌)</span>
+                        <span id="bicepsState" class="muscle-state">--</span>
+                    </div>
+                    <div class="status-card">
+                        <span class="muscle-name">肱三頭肌 (Triceps / 後側伸肌)</span>
+                        <span id="tricepsState" class="muscle-state">--</span>
+                    </div>
+                    <div class="status-card">
+                        <span class="muscle-name">當前肘關節角度 (Elbow Angle)</span>
+                        <span id="angleValue" class="muscle-state state-relaxed" style="font-family: var(--font-mono);">0°</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <strong>上肢運動解剖說明：</strong><br>
+                1. <strong>手肘正向彎曲：</strong>當點擊「二頭肌收縮」時，前側的<strong>肱二頭肌（屈肌）</strong>主動收縮隆起，拉動前臂向<strong>前側（左側）</strong>抬起（呈 $+90^\circ$ 彎曲），後側三頭肌隨之被動拉長。<br>
+                2. <strong>手肘伸直：</strong>當點擊「三頭肌收縮」時，後側的<strong>肱三頭肌（伸肌）</strong>收縮拉直前臂，使肘關節回到 $0^\circ$ 完全垂直狀態。<br>
+                3. <strong>防分離幾何鎖定：</strong>修正了旋轉矩陣。在前臂向前划動時，肌肉止點依舊完美咬合在骨骼邊緣，不會發生脫臼分離。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const btnBiceps = document.getElementById('btnBiceps');
+        const btnNormal = document.getElementById('btnNormal');
+        const btnTriceps = document.getElementById('btnTriceps');
+        const angleValue = document.getElementById('angleValue');
+        
+        const foreArm = document.getElementById('foreArm');
+        const biceps = document.getElementById('biceps');
+        const triceps = document.getElementById('triceps');
+        
+        const bicepsState = document.getElementById('bicepsState');
+        const tricepsState = document.getElementById('tricepsState');
+
+        const bicepsLabel = document.getElementById('bicepsLabel');
+        const tricepsLabel = document.getElementById('tricepsLabel');
+
+        // 二維向量旋轉變換函數
+        function rotatePoint(x, y, cx, cy, angleDegrees) {
+            let angleRadians = (angleDegrees * Math.PI) / 180;
+            let cos = Math.cos(angleRadians);
+            let sin = Math.sin(angleRadians);
+            let nx = (cos * (x - cx)) - (sin * (y - cy)) + cx;
+            let ny = (sin * (x - cx)) + (cos * (y - cy)) + cy;
+            return { x: nx, y: ny };
+        }
+
+        // 核心渲染函數
+        function renderArm(angle, bicepsRatio, tricepsRatio) {
+            // 更新角度顯示 (取絕對值以便閱讀)
+            angleValue.innerText = Math.abs(angle) + '°';
+
+            // 執行前臂骨骼旋轉 (前向彎曲為正角度)
+            foreArm.setAttribute('transform', `rotate(${angle}, 300, 300)`);
+
+            // ==========================================
+            // 1. 肱二頭肌 (手臂前側 - 左邊)
+            // ==========================================
+            let bStartLeft = { x: 275, y: 90 };
+            let bStartRight = { x: 295, y: 90 };
+            
+            // 正確校準：止點位於前臂骨前緣 (0度時在 X:288, Y:340)
+            // 隨正向角度 (+90) 旋轉時，會往左上移動，完美咬合不分離
+            let bEndLeft = rotatePoint(286, 340, 300, 300, angle);
+            let bEndRight = rotatePoint(298, 335, 300, 300, angle);
+            
+            // 計算二頭肌肌腹隆起 (收縮時向左側膨脹 X減少)
+            let bBellyOuterX = 235 - (bicepsRatio * 45);
+            let bBellyInnerX = 285 - (bicepsRatio * 8);
+
+            let dBiceps = `
+                M ${bStartLeft.x} ${bStartLeft.y} 
+                Q ${bBellyOuterX} 195 ${bEndLeft.x} ${bEndLeft.y} 
+                L ${bEndRight.x} ${bEndRight.y} 
+                Q ${bBellyInnerX} 195 ${bStartRight.x} ${bStartRight.y} Z
+            `;
+            biceps.setAttribute('d', dBiceps);
+
+            // ==========================================
+            // 2. 肱三頭肌 (手臂後側 - 右邊)
+            // ==========================================
+            let tStartLeft = { x: 305, y: 90 };
+            let tStartRight = { x: 325, y: 90 };
+            
+            // 正確校準：止點位於前臂骨後緣/鷹嘴突 (0度時在 X:312, Y:335)
+            let tEndLeft = rotatePoint(302, 335, 300, 300, angle);
+            let tEndRight = rotatePoint(314, 340, 300, 300, angle);
+            
+            // 計算三頭肌肌腹隆起 (收縮時向右側膨脹 X增加)
+            let tBellyOuterX = 330 + (tricepsRatio * 40);
+            let tBellyInnerX = 310 + (tricepsRatio * 8);
+
+            let dTriceps = `
+                M ${tStartLeft.x} ${tStartLeft.y} 
+                Q ${tBellyInnerX} 195 ${tEndLeft.x} ${tEndLeft.y} 
+                L ${tEndRight.x} ${tEndRight.y} 
+                Q ${tBellyOuterX} 195 ${tStartRight.x} ${tStartRight.y} Z
+            `;
+            triceps.setAttribute('d', dTriceps);
+
+            // ==========================================
+            // 3. 顏色動態插值 (收縮變紅)
+            // ==========================================
+            let bR = Math.round(138 + (bicepsRatio * (198 - 138)));
+            let bG = Math.round(154 - (bicepsRatio * (154 - 40)));
+            let bB = Math.round(176 - (bicepsRatio * (176 - 40)));
+            biceps.setAttribute('fill', `rgb(${bR}, ${bG}, ${bB})`);
+
+            let tR = Math.round(138 + (tricepsRatio * (198 - 138)));
+            let tG = Math.round(154 - (tricepsRatio * (154 - 40)));
+            let tB = Math.round(176 - (tricepsRatio * (176 - 40)));
+            triceps.setAttribute('fill', `rgb(${tR}, ${tG}, ${tB})`);
+
+            // ==========================================
+            // 4. 動態標籤避障 (文字隨肌肉膨大水平推移，不重疊)
+            // ==========================================
+            bicepsLabel.setAttribute('transform', `translate(${bBellyOuterX - 15}, 195)`);
+            tricepsLabel.setAttribute('transform', `translate(${tBellyOuterX + 15}, 195)`);
+        }
+
+        // 按鈕狀態控制
+        function switchState(state) {
+            btnBiceps.classList.remove('active');
+            btnNormal.classList.remove('active');
+            btnTriceps.classList.remove('active');
+
+            if (state === 'biceps') {
+                btnBiceps.classList.add('active');
+                // 二頭肌收縮：向前正向彎曲 +90 度，二頭肌高度隆起
+                renderArm(90, 1.0, 0.0);
+                
+                bicepsState.innerText = "主動收縮 (Contracted)";
+                bicepsState.className = "muscle-state state-contracted";
+                tricepsState.innerText = "被動拉長 (Relaxed)";
+                tricepsState.className = "muscle-state state-relaxed";
+
+            } else if (state === 'triceps') {
+                btnTriceps.classList.add('active');
+                // 三頭肌收縮：垂直拉直成 0 度，三頭肌隆起
+                renderArm(0, 0.0, 1.0);
+
+                bicepsState.innerText = "被動放鬆 (Relaxed)";
+                bicepsState.className = "muscle-state state-relaxed";
+                tricepsState.innerText = "主動收縮 (Contracted)";
+                tricepsState.className = "muscle-state state-contracted";
+
+            } else {
+                btnNormal.classList.add('active');
+                // 微彎過渡狀態 (正向彎曲 +30 度)，維持靜息放鬆張力
+                renderArm(30, 0.2, 0.2);
+
+                bicepsState.innerText = "均衡張力 (Resting)";
+                bicepsState.className = "muscle-state state-relaxed";
+                tricepsState.innerText = "均衡張力 (Resting)";
+                tricepsState.className = "muscle-state state-relaxed";
+            }
+        }
+
+        btnBiceps.addEventListener('click', () => switchState('biceps'));
+        btnNormal.addEventListener('click', () => switchState('normal'));
+        btnTriceps.addEventListener('click', () => switchState('triceps'));
+        
+        // 初始載入微彎平衡狀態
+        switchState('normal');
+    </script>
+</body>
+</html>

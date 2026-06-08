@@ -1,0 +1,2097 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>細胞膜運輸模擬 — HinHin Biology</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  --bg-deep:       #f4f6f9;
+  --bg-panel:      #ffffff;
+  --bg-card:       #f0f2f5;
+  --bg-hover:      #e8ecf2;
+  --border:        #d4dbe6;
+  --border-bright: #b0bdd0;
+  --accent-cyan:   #1976d2;
+  --accent-teal:   #00897b;
+  --accent-amber:  #e65100;
+  --accent-rose:   #c62828;
+  --accent-violet: #5e35b1;
+  --accent-green:  #2e7d32;
+  --accent-water:  #0277bd;
+  --accent-ion:    #7b1fa2;
+  --text-primary:  #1a2332;
+  --text-secondary:#4a5a70;
+  --text-dim:      #8a9ab0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 52px;
+  background: var(--bg-panel);
+  border-bottom: 2px solid var(--border);
+  flex-shrink: 0;
+  gap: 16px;
+}
+.logo {
+  font-size: 12px; font-weight: 600; letter-spacing: 0.08em;
+  color: var(--accent-cyan); text-transform: uppercase;
+  white-space: nowrap; font-family: 'IBM Plex Mono', monospace;
+}
+.logo span { color: var(--text-secondary); font-weight: 400; }
+
+.tabs {
+  display: flex; gap: 2px;
+  background: var(--bg-deep); border-radius: 8px;
+  padding: 3px; flex: 1; max-width: 720px;
+}
+.tab-btn {
+  flex: 1; padding: 6px 8px;
+  background: transparent; border: none; border-radius: 6px;
+  color: var(--text-secondary); font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+  cursor: pointer; transition: background 0.18s, color 0.18s; white-space: nowrap;
+}
+.tab-btn:hover { background: var(--bg-card); color: var(--text-primary); }
+.tab-btn.active {
+  background: var(--accent-cyan); color: #ffffff;
+  box-shadow: none;
+}
+.header-right { display:flex; align-items:center; gap:8px; }
+.status-badge {
+  font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  color: var(--accent-teal); background: rgba(0,137,123,0.08);
+  border: 1px solid rgba(0,137,123,0.25);
+  border-radius: 4px; padding: 4px 10px; white-space: nowrap;
+}
+.vector-toggle {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: var(--text-secondary); background: var(--bg-card);
+  border: 1px solid var(--border-bright);
+  border-radius: 4px; padding: 4px 9px; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap;
+}
+.vector-toggle.active { color: var(--accent-amber); border-color: rgba(230,81,0,0.4); background: rgba(230,81,0,0.06); }
+
+.workspace { display: flex; flex: 1; overflow: hidden; }
+
+.sidebar {
+  width: 244px; flex-shrink: 0;
+  background: var(--bg-panel); border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+}
+.sidebar-section { padding: 13px 14px; border-bottom: 1px solid var(--border); }
+.section-label {
+  font-size: 9px; font-weight: 600; letter-spacing: 0.15em;
+  color: var(--text-dim); text-transform: uppercase;
+  margin-bottom: 12px; font-family: 'IBM Plex Mono', monospace;
+}
+.control-row { margin-bottom: 13px; }
+.control-row:last-child { margin-bottom: 0; }
+.control-header {
+  display: flex; justify-content: space-between;
+  align-items: baseline; margin-bottom: 5px;
+}
+.control-name { font-size: 11px; font-weight: 500; color: var(--text-primary); }
+.control-value { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent-cyan); }
+
+input[type=range] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 3px;
+  border-radius: 2px; background: var(--border); outline: none; cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+  background: var(--accent-cyan); box-shadow: 0 1px 3px rgba(25,118,210,0.35);
+  transition: transform 0.12s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+input[type=range]::-moz-range-thumb {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--accent-cyan); border: none;
+}
+
+.toggle-group { display: flex; gap: 4px; }
+.toggle-btn {
+  flex: 1; padding: 6px 4px; border-radius: 5px;
+  border: 1px solid var(--border-bright);
+  background: var(--bg-card); color: var(--text-secondary);
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 10px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.03em; text-align: center;
+}
+.toggle-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+.toggle-btn.active {
+  background: rgba(25,118,210,0.1); color: var(--accent-cyan);
+  border-color: rgba(25,118,210,0.4);
+}
+.toggle-btn.active-amber {
+  background: rgba(230,81,0,0.08); color: var(--accent-amber);
+  border-color: rgba(230,81,0,0.35);
+}
+.toggle-btn.active-rose {
+  background: rgba(198,40,40,0.08); color: var(--accent-rose);
+  border-color: rgba(198,40,40,0.35);
+}
+.toggle-btn.danger {
+  border-color: rgba(198,40,40,0.4); color: var(--accent-rose);
+}
+.toggle-btn.danger.active-rose { background:rgba(198,40,40,0.1); }
+
+.particle-type-header {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 9px; margin-top: 4px;
+}
+.type-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.type-label { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; }
+
+.sim-controls { display: flex; gap: 5px; }
+.btn {
+  flex: 1; padding: 8px 0; border: 1px solid var(--border-bright);
+  border-radius: 6px; background: var(--bg-card); color: var(--text-primary);
+  font-family: 'IBM Plex Sans', sans-serif; font-size: 11px; font-weight: 600;
+  cursor: pointer; transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
+  letter-spacing: 0.04em;
+}
+.btn:hover { background: var(--bg-hover); border-color: var(--accent-cyan); }
+.btn-play  { border-color: var(--accent-teal); color: var(--accent-teal); }
+.btn-play:hover  { background: rgba(0,137,123,0.08); }
+.btn-pause { border-color: var(--accent-amber); color: var(--accent-amber); }
+.btn-pause:hover { background: rgba(230,81,0,0.07); }
+.btn-reset { border-color: var(--accent-rose); color: var(--accent-rose); }
+.btn-reset:hover { background: rgba(198,40,40,0.07); }
+
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.stat-card {
+  background: var(--bg-deep); border: 1px solid var(--border);
+  border-radius: 6px; padding: 7px 9px;
+}
+.stat-label {
+  font-size: 8px; letter-spacing: 0.1em; color: var(--text-dim);
+  text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; margin-bottom: 2px;
+}
+.stat-value {
+  font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+  font-weight: 600; color: var(--accent-cyan);
+}
+.stat-value.amber { color: var(--accent-amber); }
+.stat-value.teal  { color: var(--accent-teal); }
+.stat-value.rose  { color: var(--accent-rose); }
+.stat-value.green { color: var(--accent-green); }
+.stat-value.violet{ color: var(--accent-violet); }
+
+.net-dir-row {
+  display:flex; align-items:center; gap:6px; margin-top:8px;
+  padding: 6px 8px; background: var(--bg-deep); border: 1px solid var(--border);
+  border-radius:6px;
+}
+.net-dir-label { font-size:9px; color:var(--text-dim); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.1em; }
+.net-dir-val { font-size:10px; font-weight:600; font-family:'IBM Plex Mono',monospace; margin-left:auto; }
+
+.module-info { padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.module-tag {
+  display: inline-block; font-size: 9px; font-weight: 600;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: 'IBM Plex Mono', monospace; padding: 3px 7px;
+  border-radius: 3px; margin-bottom: 7px; border: 1px solid transparent;
+}
+.module-desc { font-size: 10px; color: var(--text-secondary); line-height: 1.6; }
+
+.module-panel { display: none; }
+.module-panel.visible { display: block; }
+
+.main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.canvas-wrapper { flex: 3; position: relative; overflow: hidden; border-bottom: 1px solid var(--border); min-height: 0; }
+#simCanvas { display: block; width: 100%; height: 100%; }
+.canvas-labels {
+  position: absolute; inset: 0; pointer-events: none; display: flex;
+}
+.side-label { flex: 1; display: flex; align-items: flex-start; padding: 10px 14px; }
+.side-label span {
+  font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+  text-transform: uppercase; font-family: 'IBM Plex Mono', monospace; opacity: 0.4;
+}
+.side-label.left span  { color: var(--accent-cyan); }
+.side-label.right span { color: var(--accent-teal); }
+
+.eq-overlay {
+  position:absolute; inset:0; pointer-events:none;
+  display:flex; align-items:center; justify-content:center; opacity:0;
+  transition: opacity 0.5s;
+}
+.eq-overlay.show { opacity:1; }
+.eq-text {
+  font-family:'IBM Plex Mono',monospace; font-size:16px; font-weight:600;
+  color: var(--accent-cyan); letter-spacing: 0.1em; text-transform:uppercase; padding:10px 22px;
+  border: 1px solid rgba(25,118,210,0.4); border-radius:8px;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 2px 12px rgba(25,118,210,0.15);
+  animation: eqPulse 2s ease-in-out infinite;
+}
+@keyframes eqPulse {
+  0%,100%{opacity:0.85; transform:scale(1);}
+  50%{opacity:1; transform:scale(1.01);}
+}
+
+.lysis-overlay {
+  position:absolute; inset:0; pointer-events:none;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0;
+  transition: opacity 0.3s; background: rgba(198,40,40,0.04);
+}
+.lysis-overlay.show { opacity:1; }
+.lysis-text {
+  font-family:'IBM Plex Mono',monospace; font-size:20px; font-weight:700;
+  color: var(--accent-rose); letter-spacing:0.1em; margin-bottom:6px;
+}
+.lysis-sub { font-size:11px; color:rgba(198,40,40,0.7); font-family:'IBM Plex Mono',monospace; }
+
+.chart-wrapper {
+  flex: 0 0 180px;
+  position: relative; background: var(--bg-panel);
+  border-top: 1px solid var(--border);
+}
+#chartCanvas { display: block; width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">細胞膜的運輸<span>軒軒模擬器</span></div>
+  <nav class="tabs" id="tabNav">
+    <button class="tab-btn active" data-module="simple">簡單擴散</button>
+    <button class="tab-btn" data-module="facilitated">協助擴散</button>
+    <button class="tab-btn" data-module="osmosis">滲透作用</button>
+    <button class="tab-btn" data-module="active">主動運輸</button>
+  </nav>
+  <div class="header-right">
+    <button class="vector-toggle" id="vectorToggle">⟶ 速度向量 關</button>
+    <div class="status-badge" id="statusBadge">● 執行中</div>
+  </div>
+</header>
+
+<div class="workspace">
+  <aside class="sidebar">
+
+    <div class="module-info">
+      <div class="module-tag" id="moduleTag">簡單擴散</div>
+      <div class="module-desc" id="moduleDesc">小分子沿濃度梯度的被動運輸。</div>
+    </div>
+
+    <!-- ═══ MODULE 1: SIMPLE DIFFUSION ═══ -->
+    <div class="module-panel visible" id="panel-simple">
+      <div class="sidebar-section">
+        <div class="section-label">薄膜</div>
+        <div class="control-row">
+          <div class="control-header"><span class="control-name">薄膜類型</span></div>
+          <div class="toggle-group">
+            <button class="toggle-btn" data-target="sd-membrane" data-value="none" id="sd-mem-none">無</button>
+            <button class="toggle-btn active" data-target="sd-membrane" data-value="semi" id="sd-mem-semi">半透膜</button>
+          </div>
+        </div>
+        <div class="control-row" id="sd-pore-row">
+          <div class="control-header">
+            <span class="control-name">孔道寬度 W<sub>孔</sub></span>
+            <span class="control-value" id="sd-val-pore">14 px</span>
+          </div>
+          <input type="range" id="sd-pore" min="4" max="36" value="14" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">α型 — 小分子</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#1976d2; box-shadow:0 1px 3px rgba(25,118,210,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-cyan)">α 粒子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">數量（A側）</span>
+            <span class="control-value" id="sd-val-alpha-count">40</span>
+          </div>
+          <input type="range" id="sd-alpha-count" min="0" max="100" value="40" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">直徑 D<sub>α</sub></span>
+            <span class="control-value" id="sd-val-alpha-size">5 px</span>
+          </div>
+          <input type="range" id="sd-alpha-size" min="3" max="12" value="5" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">β型 — 大分子</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#c62828; box-shadow:0 1px 3px rgba(198,40,40,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-rose)">β 粒子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">數量（A側）</span>
+            <span class="control-value" id="sd-val-beta-count">20</span>
+          </div>
+          <input type="range" id="sd-beta-count" min="0" max="80" value="20" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">直徑 D<sub>β</sub></span>
+            <span class="control-value" id="sd-val-beta-size">10 px</span>
+          </div>
+          <input type="range" id="sd-beta-size" min="6" max="18" value="10" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">環境</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溫度 T</span>
+            <span class="control-value" id="sd-val-temp">310 K</span>
+          </div>
+          <input type="range" id="sd-temp" min="200" max="500" value="310" step="5">
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MODULE 2: FACILITATED DIFFUSION ═══ -->
+    <div class="module-panel" id="panel-facilitated">
+      <div class="sidebar-section">
+        <div class="section-label">蛋白質類型</div>
+        <div class="control-row">
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="fd-chan-btn" data-fd-protein="channel">通道蛋白</button>
+            <button class="toggle-btn" id="fd-carr-btn" data-fd-protein="carrier">載體蛋白</button>
+          </div>
+        </div>
+        <div class="control-row" id="fd-protein-info" style="margin-top:6px">
+          <div style="font-size:10px;color:var(--text-secondary);line-height:1.55" id="fd-protein-desc">
+            固定開放孔道。尺寸符合的受質即時通過，運輸速率與濃度成線性關係。
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">受質</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">數量（A側）</span>
+            <span class="control-value" id="fd-val-count">50</span>
+          </div>
+          <input type="range" id="fd-count" min="5" max="150" value="50" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">粒子大小</span>
+            <span class="control-value" id="fd-val-size">5 px</span>
+          </div>
+          <input type="range" id="fd-size" min="3" max="10" value="5" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">膜蛋白</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">蛋白質數量</span>
+            <span class="control-value" id="fd-val-proteins">5</span>
+          </div>
+          <input type="range" id="fd-proteins" min="1" max="12" value="5" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溫度 T</span>
+            <span class="control-value" id="fd-val-temp">310 K</span>
+          </div>
+          <input type="range" id="fd-temp" min="200" max="500" value="310" step="5">
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MODULE 3: OSMOSIS ═══ -->
+    <div class="module-panel" id="panel-osmosis">
+      <div class="sidebar-section">
+        <div class="section-label">細胞類型</div>
+        <div class="control-row">
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="os-rbc-btn">動物細胞（紅血球）</button>
+            <button class="toggle-btn" id="os-plant-btn">植物細胞</button>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">水分子</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#29b6f6; box-shadow:0 0 6px #29b6f688"></div>
+          <span class="type-label" style="color:var(--accent-water)">H₂O（自由水）</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">水分子數量</span>
+            <span class="control-value" id="os-val-water">80</span>
+          </div>
+          <input type="range" id="os-water" min="20" max="200" value="80" step="10">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">水分子大小</span>
+            <span class="control-value" id="os-val-water-size">4 px</span>
+          </div>
+          <input type="range" id="os-water-size" min="2" max="7" value="4" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">溶質（A側）</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#ffab40; box-shadow:0 0 6px #ffab4088"></div>
+          <span class="type-label" style="color:var(--accent-amber)">溶質分子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溶質數量（A側）</span>
+            <span class="control-value" id="os-val-solute-a">0</span>
+          </div>
+          <input type="range" id="os-solute-a" min="0" max="60" value="0" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溶質大小（A側）</span>
+            <span class="control-value" id="os-val-sol-size-a">9 px</span>
+          </div>
+          <input type="range" id="os-sol-size-a" min="6" max="16" value="9" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">溶質（B側）</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#ffab40; box-shadow:0 0 6px #ffab4088"></div>
+          <span class="type-label" style="color:var(--accent-amber)">溶質分子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溶質數量（B側）</span>
+            <span class="control-value" id="os-val-solute">20</span>
+          </div>
+          <input type="range" id="os-solute" min="0" max="60" value="20" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溶質大小（B側）</span>
+            <span class="control-value" id="os-val-sol-size">9 px</span>
+          </div>
+          <input type="range" id="os-sol-size" min="6" max="16" value="9" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">薄膜</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">孔道大小（水通道蛋白）</span>
+            <span class="control-value" id="os-val-pore">8 px</span>
+          </div>
+          <input type="range" id="os-pore" min="5" max="12" value="8" step="1">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">水通道蛋白數量</span>
+            <span class="control-value" id="os-val-aqp-count">6</span>
+          </div>
+          <input type="range" id="os-aqp-count" min="1" max="16" value="6" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">即時水分狀態</div>
+        <div class="net-dir-row" id="os-net-row">
+          <span class="net-dir-label">淨流向</span>
+          <span class="net-dir-val" id="os-net-dir" style="color:var(--accent-water)">—</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px">
+          <span class="net-dir-label">A側水分子</span>
+          <span class="net-dir-val" id="os-water-a-count" style="color:var(--accent-cyan)">—</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px">
+          <span class="net-dir-label">B側水分子</span>
+          <span class="net-dir-val" id="os-water-b-count" style="color:var(--accent-teal)">—</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px">
+          <span class="net-dir-label">A側滲透濃度</span>
+          <span class="net-dir-val" id="os-osmo-a" style="color:var(--accent-amber)">—</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px">
+          <span class="net-dir-label">B側滲透濃度</span>
+          <span class="net-dir-val" id="os-osmo-b" style="color:var(--accent-amber)">—</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px" id="os-turgor-row">
+          <span class="net-dir-label">膨壓 Ψ<sub>p</sub></span>
+          <span class="net-dir-val" id="os-turgor-val" style="color:var(--accent-violet)">0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MODULE 4: ACTIVE TRANSPORT ═══ -->
+    <div class="module-panel" id="panel-active">
+      <div class="sidebar-section">
+        <div class="section-label">離子設置</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#7b1fa2; box-shadow:0 1px 3px rgba(123,31,162,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-ion)">Na⁺ 離子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">初始濃度（A側）</span>
+            <span class="control-value" id="at-val-ions">40</span>
+          </div>
+          <input type="range" id="at-ions" min="10" max="100" value="40" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">離子大小</span>
+            <span class="control-value" id="at-val-ion-size">5 px</span>
+          </div>
+          <input type="range" id="at-ion-size" min="3" max="9" value="5" step="1">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">ATP 能量</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#2e7d32; box-shadow:0 1px 3px rgba(46,125,50,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-green)">ATP 分子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">ATP 可用量</span>
+            <span class="control-value" id="at-val-atp">20</span>
+          </div>
+          <input type="range" id="at-atp" min="5" max="60" value="20" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header"><span class="control-name">呼吸抑制劑（CN⁻）</span></div>
+          <div class="toggle-group">
+            <button class="toggle-btn active" id="at-cn-off">關閉</button>
+            <button class="toggle-btn danger" id="at-cn-on">氰化物開啟</button>
+          </div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">運輸資訊</div>
+        <div style="font-size:10px;color:var(--text-secondary);line-height:1.65">
+          載體蛋白捕獲離子 → ATP水解 → 構型改變 → 離子逆梯度釋放。ADP漂離。被動洩漏維持動態穩態。
+        </div>
+        <div class="net-dir-row" style="margin-top:10px">
+          <span class="net-dir-label">ATP已水解</span>
+          <span class="net-dir-val" id="at-atp-used" style="color:var(--accent-green)">0</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px">
+          <span class="net-dir-label">漂浮ADP</span>
+          <span class="net-dir-val" id="at-adp-count" style="color:var(--accent-amber)">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SIMULATION CONTROLS ═══ -->
+    <div class="sidebar-section" style="margin-top:auto">
+      <div class="section-label">模擬控制</div>
+      <div class="sim-controls">
+        <button class="btn btn-play"  id="btnPlay">▶ 播放</button>
+        <button class="btn btn-pause" id="btnPause">⏸</button>
+        <button class="btn btn-reset" id="btnReset">↺</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">即時統計</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label" id="statAlabel">A側粒子</div>
+          <div class="stat-value" id="statA">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="statBlabel">B側粒子</div>
+          <div class="stat-value teal" id="statB">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="statKElabel">平均動能</div>
+          <div class="stat-value amber" id="statKE">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" id="stat4label">穿越次數</div>
+          <div class="stat-value rose" id="statExtra">0</div>
+        </div>
+        <div class="stat-card" style="grid-column:span 2">
+          <div class="stat-label" id="statRateLabel">淨 ΔN/Δt</div>
+          <div class="stat-value violet" id="statRate">0.0 /s</div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+
+  <div class="main-panel">
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <canvas id="simCanvas"></canvas>
+      <div class="canvas-labels">
+        <div class="side-label left"><span id="labelLeft">細胞外</span></div>
+        <div class="side-label right"><span id="labelRight">細胞質</span></div>
+      </div>
+      <div class="eq-overlay" id="eqOverlay">
+        <div class="eq-text">⇌ 已達動態平衡</div>
+      </div>
+      <div class="lysis-overlay" id="lysisOverlay">
+        <div class="lysis-text">💥 細胞溶解</div>
+        <div class="lysis-sub">滲透壓超出細胞膜承受範圍</div>
+      </div>
+    </div>
+    <div class="chart-wrapper">
+
+  <div id="chartControls"
+       style="
+       position:absolute;
+       top:6px;
+       right:10px;
+       z-index:10;
+       display:flex;
+       gap:6px;">
+
+    <button class="toggle-btn active"
+            id="showAlphaBtn">
+      α粒子
+    </button>
+
+    <button class="toggle-btn active"
+            id="showBetaBtn">
+      β粒子
+    </button>
+
+  </div>
+
+  <canvas id="chartCanvas"></canvas>
+
+</div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const canvas    = document.getElementById('simCanvas');
+const ctx       = canvas.getContext('2d');
+const chartCvs  = document.getElementById('chartCanvas');
+const chartCtx  = chartCvs.getContext('2d');
+
+function dpr() { return window.devicePixelRatio || 1; }
+function W()   { return canvas.width  / dpr(); }
+function H()   { return canvas.height / dpr(); }
+function MX()  { return W() * 0.5; }
+function CW()  { return chartCvs.width  / dpr(); }
+function CH()  { return chartCvs.height / dpr(); }
+
+function resizeCanvases() {
+  const wrap  = document.getElementById('canvasWrapper');
+  const cwrap = document.querySelector('.chart-wrapper');
+  const d = dpr();
+  canvas.width   = wrap.clientWidth  * d;
+  canvas.height  = wrap.clientHeight * d;
+  canvas.style.width  = wrap.clientWidth  + 'px';
+  canvas.style.height = wrap.clientHeight + 'px';
+  ctx.scale(d, d);
+  chartCvs.width  = cwrap.clientWidth  * d;
+  chartCvs.height = cwrap.clientHeight * d;
+  chartCvs.style.width  = cwrap.clientWidth  + 'px';
+  chartCvs.style.height = cwrap.clientHeight + 'px';
+  chartCtx.scale(d, d);
+}
+
+let currentModule = 'simple';
+let running       = true;
+let showVectors   = false;
+let animFrame     = null;
+let frameCount    = 0;
+let lastTime      = 0;
+let lastTempSD    = 310, lastTempFD = 310;
+
+const sdState = { membrane: 'semi', alphaCount:40, alphaSize:5, betaCount:20, betaSize:10, pore:14, temp:310 };
+const fdState = { proteinType:'channel', count:50, size:5, proteins:5, temp:310 };
+const osState = { cellType:'animal', waterCount:80, waterSize:4, soluteCount:20, soluteCountA:0, soluteSize:9, soluteSizeA:9, poreSize:8, aqpCount:6 };
+const atState = { ionCount:40, ionSize:5, atpCount:20, cyanideOn:false };
+let particles         = [];
+let transportProteins = [];
+let adpParticles      = [];
+let atpParticles      = [];
+let lysisDebris       = [];
+
+const RING = 300;
+let graphData = {
+  time: [],
+  alphaA: [],
+  alphaB: [],
+  betaA: [],
+  betaB: [],
+  xs: [],
+  ys: []
+};
+let showAlphaGraph = true;
+let showBetaGraph = true;
+let crossingCount = 0;
+let crossWindow   = [];
+const RATE_WINDOW = 120;
+
+let eqFrames        = 0;
+let eqShown         = false;
+let lysisTriggered  = false;
+let atpUsedTotal    = 0;
+
+let volumeB = 1.0;
+const LYSIS_THRESHOLD = 1.4;
+window._osNetDir = 0; window._osNetRate = 0; window._osmoA = 0; window._osmoB = 0;
+
+const MEM_THICK  = 8;
+const HALF_MEM   = MEM_THICK / 2;
+const PORE_GAP   = 10;
+
+function buildSimplePores(poreW, height, count=4) {
+  if (poreW<=0) return [];
+  const total  = count * poreW + (count+1) * PORE_GAP;
+  const topPad = (height - total) / 2;
+  const pores  = [];
+  let y = topPad + PORE_GAP;
+  for (let i=0;i<count;i++) { pores.push({y0:y, y1:y+poreW}); y+=poreW+PORE_GAP; }
+  return pores;
+}
+
+function buildAquaporinPores(poreW, height, count=6) {
+  return buildSimplePores(poreW, height, count);
+}
+
+function buildProteinSites(count, height, proteinType) {
+  const spacing = height / (count + 1);
+  const sites   = [];
+  for (let i=0;i<count;i++) {
+    const cy = spacing * (i+1);
+    const halfH = proteinType==='carrier' ? 14 : 11;
+    sites.push({ cx:MX(), cy, y0:cy-halfH, y1:cy+halfH,
+      state:'open', bindTimer:0, boundParticle:null, type:proteinType });
+  }
+  return sites;
+}
+
+function buildPumpSites(count, height) {
+  const spacing = height / (count+1);
+  const pumps   = [];
+  for (let i=0;i<count;i++) {
+    const cy = spacing*(i+1);
+    pumps.push({ cx:MX(), cy, y0:cy-13, y1:cy+13,
+      state:'open', bindTimer:0, boundIon:null, flashing:0 });
+  }
+  return pumps;
+}
+
+const K_SCALE = 0.013;
+function mbVelocity(temp, radius) {
+  const mass  = radius*radius*radius;
+  const sigma = Math.sqrt(K_SCALE * temp / mass);
+  const u1=Math.random(), u2=Math.random();
+  const mag = sigma * Math.sqrt(-2*Math.log(u1+1e-10));
+  return { vx: mag*Math.cos(2*Math.PI*u2), vy: mag*Math.sin(2*Math.PI*u2) };
+}
+
+const C_ALPHA  = ['#1565c0','#1976d2','#0d47a1','#1e88e5'];
+const C_BETA   = ['#b71c1c','#c62828','#d32f2f','#e53935'];
+const C_SUBSTR = ['#00695c','#00897b','#00796b','#26a69a'];
+const C_WATER  = ['#0277bd','#0288d1','#01579b','#039be5'];
+const C_SOLUTE = ['#e65100','#ef6c00','#bf360c','#f57c00'];
+const C_ION    = ['#6a1b9a','#7b1fa2','#4a148c','#8e24aa'];
+const C_ATP    = ['#1b5e20','#2e7d32','#388e3c','#43a047'];
+const C_ADP    = ['#e65100','#f57c00','#ef6c00','#ff8f00'];
+
+let _pid = 0;
+class Particle {
+  constructor(x, y, r, temp, ptype='alpha', side=null) {
+    this.id    = _pid++;
+    this.x=x; this.y=y; this.r=r;
+    this.mass  = r*r*r;
+    this.ptype = ptype;
+    const pal  = { alpha:C_ALPHA, beta:C_BETA, substrate:C_SUBSTR,
+                   water:C_WATER, solute:C_SOLUTE, ion:C_ION, atp:C_ATP, adp:C_ADP }[ptype] || C_ALPHA;
+    this.color = pal[this.id % pal.length];
+    const v    = mbVelocity(temp, r);
+    this.vx=v.vx; this.vy=v.vy;
+    this.side  = side || (x < MX() ? 'A' : 'B');
+    this.bound = false;
+    this.boundTo = null;
+    this.offset  = null;
+    this.isBoundWater = false;
+    this.life  = -1;
+  }
+  recolor() {
+    const ns = this.x < MX() ? 'A' : 'B';
+    if (ns !== this.side) this.side = ns;
+  }
+}
+
+function safeRadius(baseR, count) {
+  const area = W()*H();
+  const total = count * Math.PI * baseR*baseR;
+  return total > 0.25*area ? Math.sqrt(0.25*area/(count*Math.PI)) : baseR;
+}
+
+function tryPlace(xMin, xMax, yMin, yMax, r, existing) {
+  for (let t=0;t<300;t++) {
+    const x=xMin+Math.random()*(xMax-xMin), y=yMin+Math.random()*(yMax-yMin);
+    let ok=true;
+    for (const q of existing) {
+      if ((x-q.x)**2+(y-q.y)**2 < (r+q.r+1)**2) { ok=false; break; }
+    }
+    if (ok) return {x,y};
+  }
+  return { x:xMin+Math.random()*(xMax-xMin), y:yMin+Math.random()*(yMax-yMin) };
+}
+
+function hexRgba(hex, a) {
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function spawnModule() {
+  _pid=0; particles=[]; transportProteins=[]; adpParticles=[]; atpParticles=[];
+  lysisDebris=[]; crossingCount=0; crossWindow=[]; graphData = {
+  time: [],
+  alphaA: [],
+  alphaB: [],
+  betaA: [],
+  betaB: [],
+  xs: [],
+  ys: []
+};
+  eqFrames=0; eqShown=false; lysisTriggered=false; volumeB=1.0; atpUsedTotal=0;
+  window._osNetDir=0; window._osNetRate=0; window._osmoA=0; window._osmoB=0;
+  document.getElementById('eqOverlay').classList.remove('show');
+  document.getElementById('lysisOverlay').classList.remove('show');
+
+  const w=W(), h=H(), mx=MX();
+  const aL=4, aR=mx-HALF_MEM-4;
+  const bL=mx+HALF_MEM+4, bR=w-4;
+  const yN=4, yX=h-4;
+
+  if (currentModule==='simple') {
+    lastTempSD = sdState.temp;
+    const ac=sdState.alphaCount, as_=safeRadius(sdState.alphaSize, sdState.alphaCount+sdState.betaCount);
+    const bc=sdState.betaCount,  bs_=safeRadius(sdState.betaSize,  sdState.alphaCount+sdState.betaCount);
+    for (let i=0;i<ac;i++) {
+      const p=tryPlace(aL+as_,aR-as_,yN+as_,yX-as_,as_,particles);
+      particles.push(new Particle(p.x,p.y,as_,sdState.temp,'alpha'));
+    }
+    for (let i=0;i<bc;i++) {
+      const p=tryPlace(aL+bs_,aR-bs_,yN+bs_,yX-bs_,bs_,particles);
+      particles.push(new Particle(p.x,p.y,bs_,sdState.temp,'beta'));
+    }
+  }
+
+  if (currentModule==='facilitated') {
+    lastTempFD = fdState.temp;
+    const n=fdState.count, r=safeRadius(fdState.size,n);
+    for (let i=0;i<n;i++) {
+      const p=tryPlace(aL+r,aR-r,yN+r,yX-r,r,particles);
+      particles.push(new Particle(p.x,p.y,r,fdState.temp,'substrate'));
+    }
+    transportProteins = buildProteinSites(fdState.proteins,h,fdState.proteinType);
+  }
+
+  if (currentModule==='osmosis') {
+    const wn=osState.waterCount, wr=osState.waterSize;
+    const sn=osState.soluteCount, sr=osState.soluteSize;
+    const snA=osState.soluteCountA||0, srA=osState.soluteSizeA;
+    const hydrationR = sr * 2.2;
+    const hydrationRA = srA * 2.2;
+
+    const wA = Math.round(wn * 0.5), wB = wn - wA; // 50/50 split: movement is purely osmotic
+    for (let i=0;i<wA;i++) {
+      const p=tryPlace(aL+wr,aR-wr,yN+wr,yX-wr,wr,particles);
+      const wp=new Particle(p.x,p.y,wr,310,'water','A'); particles.push(wp);
+    }
+    for (let i=0;i<wB;i++) {
+      const p=tryPlace(bL+wr,bR-wr,yN+wr,yX-wr,wr,particles);
+      const wp=new Particle(p.x,p.y,wr,310,'water','B'); particles.push(wp);
+    }
+    for (let i=0;i<sn;i++) {
+      const p=tryPlace(bL+sr,bR-sr,yN+sr,yX-sr,sr,particles);
+      const sp=new Particle(p.x,p.y,sr,310,'solute','B');
+      sp.hydrationR = hydrationR;
+      particles.push(sp);
+    }
+    for (let i=0;i<snA;i++) {
+      const p=tryPlace(aL+srA,aR-srA,yN+srA,yX-srA,srA,particles);
+      const sp=new Particle(p.x,p.y,srA,310,'solute','A');
+      sp.hydrationR = hydrationRA;
+      particles.push(sp);
+    }
+  }
+
+  if (currentModule==='active') {
+    const n=atState.ionCount, r=safeRadius(atState.ionSize, atState.ionCount);
+    for (let i=0;i<n;i++) {
+      const p=tryPlace(aL+r,aR-r,yN+r,yX-r,r,particles);
+      particles.push(new Particle(p.x,p.y,r,310,'ion','A'));
+    }
+    if (!atState.cyanideOn) {
+      const atpR=4;
+      for (let i=0;i<atState.atpCount;i++) {
+        const p=tryPlace(bL+atpR,bR-atpR,yN+atpR,yX-atpR,atpR,atpParticles.concat(particles));
+        atpParticles.push(new Particle(p.x,p.y,atpR,310,'atp','B'));
+      }
+    }
+    transportProteins = buildPumpSites(4, h);
+  }
+}
+
+function physicsStep(dt) {
+  const w=W(), h=H(), mx=MX();
+  const SUB=3, dts=dt/SUB;
+  const isSD=currentModule==='simple', isFD=currentModule==='facilitated';
+  const isOS=currentModule==='osmosis', isAT=currentModule==='active';
+  const noMem=isSD && sdState.membrane==='none';
+
+  const poreW = isSD ? sdState.pore : (isOS ? osState.poreSize : 0);
+  const pores = (isSD && !noMem) ? buildSimplePores(poreW, h) :
+                (isOS ? buildAquaporinPores(poreW, h, osState.aqpCount) : []);
+
+  // ── PRE-COMPUTE OSMOLALITY for directional osmotic bias ────────────────
+  // osmolality = solute / (solute + free-water) — higher value = lower water potential
+  let osmoA_pre=0, osmoB_pre=0;
+  if (isOS) {
+    let sA=0,sB=0,fwA=0,fwB=0;
+    for (const p of particles) {
+      if (p.ptype==='solute')                      { p.x<mx ? sA++ : sB++; }
+      else if (p.ptype==='water') { p.x<mx ? fwA++ : fwB++; }
+    }
+    const tA=sA+fwA, tB=sB+fwB;
+    osmoA_pre = tA>0 ? sA/tA : 0;
+    osmoB_pre = tB>0 ? sB/tB : 0;
+  }
+
+  if (isOS) {
+    // ── Soft hydration attraction ─────────────────────────────────────────
+    // Water molecules are attracted toward nearby solutes via a gentle
+    // distance-dependent force (like electrostatic dipole attraction).
+    // They slow down inside the hydration shell but keep moving freely —
+    // no sticking, just clustering. This avoids the misconception that
+    // water physically adheres to solute particles.
+    const solutes = particles.filter(p=>p.ptype==='solute');
+    const waters  = particles.filter(p=>p.ptype==='water');
+    for (const wm of waters) {
+      for (const s of solutes) {
+        const dx = s.x - wm.x, dy = s.y - wm.y;
+        const dist = Math.hypot(dx, dy) || 0.01;
+        const shell = s.hydrationR;
+        if (dist < shell * 1.4) {
+          // Attraction force: stronger closer in, fades to zero at edge
+          const strength = 0.012 * Math.max(0, 1 - dist / (shell * 1.4));
+          wm.vx += (dx / dist) * strength;
+          wm.vy += (dy / dist) * strength;
+          // Dampen speed inside the shell (viscous drag) so water lingers
+          if (dist < shell) {
+            const drag = 0.88;
+            wm.vx *= drag; wm.vy *= drag;
+          }
+        }
+      }
+    }
+  }
+
+  if (isAT && !atState.cyanideOn && frameCount % 60 === 0) {
+    const atpR=4;
+    while (atpParticles.length < atState.atpCount) {
+      const p=tryPlace(mx+HALF_MEM+atpR, w-atpR, 4+atpR, h-atpR, atpR, atpParticles);
+      atpParticles.push(new Particle(p.x,p.y,atpR,310,'atp','B'));
+    }
+  }
+
+  for (let sub=0;sub<SUB;sub++) {
+    const allMoving = [...particles, ...atpParticles, ...adpParticles];
+    for (const p of allMoving) {
+      if (p.bound) continue;
+
+      p.x+=p.vx*dts; p.y+=p.vy*dts;
+      if (p.y-p.r<0)   { p.y=p.r;     p.vy= Math.abs(p.vy); }
+      if (p.y+p.r>h)   { p.y=h-p.r;   p.vy=-Math.abs(p.vy); }
+      if (p.x-p.r<0)   { p.x=p.r;     p.vx= Math.abs(p.vx); }
+      if (p.x+p.r>w)   { p.x=w-p.r;   p.vx=-Math.abs(p.vx); }
+
+      if (p.ptype==='adp' && p.life>0) { p.life--; continue; }
+      if (p.ptype==='atp') {
+        if (p.x-p.r < mx+HALF_MEM) { p.x=mx+HALF_MEM+p.r+0.5; p.vx=Math.abs(p.vx); }
+        continue;
+      }
+
+      if (noMem) { p.recolor(); continue; }
+
+      const memL=mx-HALF_MEM, memR=mx+HALF_MEM;
+      if (p.x+p.r>memL && p.x-p.r<memR) {
+        const prevSide=p.side;
+
+        if (isFD) {
+          let handled=false;
+          for (const site of transportProteins) {
+            if (p.y+p.r>site.y0 && p.y-p.r<site.y1) {
+              if (site.type==='channel') {
+                handled = p.r*2 < (site.y1-site.y0)*0.9;
+              } else {
+                if (site.state==='open' && !p.bound && prevSide==='A') {
+                  site.state='busy'; site.bindTimer=30; site.boundParticle=p;
+                  p.bound=true; p.vx=0; p.vy=0; p.x=mx; p.y=site.cy; handled=true;
+                } else if (site.state==='busy') {
+                  if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+                  else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+                  handled=true;
+                }
+              }
+              break;
+            }
+          }
+          if (!handled) {
+            if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+            else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+          }
+        } else if (isOS) {
+          // ── OSMOSIS FIX: use <= so water (r=4) can fit pore (w=8)
+          // Also loosen y-check by p.r to handle particle-centre vs pore-edge alignment
+          let canCross=false;
+          if (p.ptype==='water') {
+            for (const pore of pores) {
+              const poreCy=(pore.y0+pore.y1)*0.5;
+              if (Math.abs(p.y-poreCy) < (pore.y1-pore.y0)*0.5 + p.r && p.r*2<=poreW) {
+                canCross=true; break;
+              }
+            }
+          }          // ── OSMOTIC BIAS ────────────────────────────────────────────────────
+          // Water crosses toward the side with HIGHER osmolality (lower water potential).
+          // biasAtoB > 0 → B more concentrated → water should flow A→B;
+          // block reverse crossings proportionally to the gradient.
+          if (canCross) {
+            const biasAtoB = osmoB_pre - osmoA_pre;
+            if (prevSide==='B' && biasAtoB > 0.01) {
+              // Going B→A against osmotic gradient — block with graded probability
+              if (Math.random() < Math.min(0.82, biasAtoB * 3.5)) canCross=false;
+            } else if (prevSide==='A' && biasAtoB < -0.01) {
+              // Going A→B against osmotic gradient (A more concentrated)
+              if (Math.random() < Math.min(0.82, -biasAtoB * 3.5)) canCross=false;
+            }
+          }
+          if (canCross && osState.cellType==='plant' && prevSide==='A') {
+            const turgor = Math.max(0, volumeB - 1.0) * 3.0;
+            if (Math.random() < turgor * 0.4) canCross=false;
+          }
+          if (!canCross) {
+            if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+            else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+          }
+        } else if (isAT) {
+          if (p.ptype==='ion') {
+            let handled=false;
+            for (const pump of transportProteins) {
+              if (p.y+p.r>pump.y0 && p.y-p.r<pump.y1) {
+                if (pump.state==='open' && !p.bound && prevSide==='A') {
+                  pump.state='bound'; pump.boundIon=p;
+                  p.bound=true; p.vx=0; p.vy=0; p.x=mx; p.y=pump.cy; handled=true;
+                } else if (pump.state!=='open') {
+                  if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+                  else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+                  handled=true;
+                }
+                break;
+              }
+            }
+            if (!handled) {
+              const leakSide = prevSide==='B' && Math.random()<0.001;
+              if (leakSide) { /* allow crossing */ }
+              else if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+              else                    { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+            }
+          }
+        } else {
+          let inPore=false;
+          for (const pore of pores) {
+            if (p.y-p.r>=pore.y0 && p.y+p.r<=pore.y1 && p.r*2<=poreW) { inPore=true; break; }
+          }
+          if (!inPore) {
+            if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+            else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+          }
+        }
+
+        const ns=p.x<mx?'A':'B';
+        if (ns!==prevSide) {
+          crossingCount++; crossWindow.push({frame:frameCount, dir:ns==='B'?1:-1}); p.side=ns;
+          if (isOS && p.ptype==='water') {
+            if (ns==='B') volumeB+=0.004;
+            else          volumeB=Math.max(1.0, volumeB-0.004);
+          }
+        } else p.recolor();
+      } else p.recolor();
+    }
+
+    if (sub===0 && isFD) {
+      for (const site of transportProteins) {
+        if (site.state==='busy') {
+          site.bindTimer--;
+          if (site.bindTimer<=0) {
+            const bp=site.boundParticle;
+            if (bp) {
+              bp.bound=false; bp.x=mx+HALF_MEM+bp.r+2; bp.y=site.cy;
+              const v=mbVelocity(fdState.temp,bp.r); bp.vx=Math.abs(v.vx); bp.vy=v.vy; bp.side='B';
+              crossingCount++; crossWindow.push({frame:frameCount,dir:1});
+            }
+            site.state='open'; site.boundParticle=null;
+          }
+        }
+      }
+    }
+
+    if (sub===0 && isAT) {
+      for (const pump of transportProteins) {
+        if (pump.state==='bound') {
+          const mx2=MX();
+          for (let ai=atpParticles.length-1;ai>=0;ai--) {
+            const atp=atpParticles[ai];
+            if (Math.hypot(atp.x-mx2, atp.y-pump.cy) < (HALF_MEM+20)) {
+              atpParticles.splice(ai,1);
+              const adp=new Particle(mx2+HALF_MEM+8, pump.cy+Math.random()*6-3, 4, 310,'adp','B');
+              adp.life=180; adp.vx=(Math.random()-0.5)*1.5; adp.vy=(Math.random()-0.5)*1.5;
+              adpParticles.push(adp);
+              atpUsedTotal++;
+              pump.state='ready'; pump.bindTimer=20; pump.flashing=10;
+              break;
+            }
+          }
+        }
+        if (pump.state==='ready') {
+          pump.bindTimer--;
+          if (pump.flashing>0) pump.flashing--;
+          if (pump.bindTimer<=0) {
+            const ion=pump.boundIon;
+            if (ion) {
+              ion.bound=false;
+              ion.x=mx+HALF_MEM+ion.r+2; ion.y=pump.cy;
+              const v=mbVelocity(310,ion.r); ion.vx=Math.abs(v.vx); ion.vy=v.vy; ion.side='B';
+              crossingCount++; crossWindow.push({frame:frameCount,dir:1});
+            }
+            pump.state='open'; pump.boundIon=null;
+          }
+        }
+      }
+      adpParticles = adpParticles.filter(p=>p.life>0);
+    }
+
+    if (sub===0 && isOS && osState.cellType==='animal' && !lysisTriggered && volumeB>=LYSIS_THRESHOLD) {
+      triggerLysis();
+    }
+
+    const physParticles = [...particles.filter(p=>!p.bound),
+                           ...atpParticles, ...adpParticles];
+    const cellSize=Math.max(18, (physParticles[0]?.r||5)*3);
+    const gW=Math.ceil(w/cellSize);
+    const grid=new Map();
+    for (const p of physParticles) {
+      const cx=Math.floor(p.x/cellSize), cy=Math.floor(p.y/cellSize);
+      const k=cy*gW+cx;
+      if (!grid.has(k)) grid.set(k,[]);
+      grid.get(k).push(p);
+    }
+    const seen=new Set();
+    for (const a of physParticles) {
+      const cx=Math.floor(a.x/cellSize), cy=Math.floor(a.y/cellSize);
+      const nbrs=[];
+      for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++) {
+        const c=grid.get((cy+dy)*gW+(cx+dx)); if(c) nbrs.push(...c);
+      }
+      for (const b of nbrs) {
+        if (b===a) continue;
+        const key=a.id<b.id?a.id*1e7+b.id:b.id*1e7+a.id;
+        if (seen.has(key)) continue; seen.add(key);
+        const ddx=b.x-a.x, ddy=b.y-a.y, d2=ddx*ddx+ddy*ddy, md=a.r+b.r;
+        if (d2>=md*md) continue;
+        const d=Math.sqrt(d2)||1e-4, nx=ddx/d, ny=ddy/d, ov=md-d, mt=a.mass+b.mass;
+        a.x-=nx*ov*(b.mass/mt); a.y-=ny*ov*(b.mass/mt);
+        b.x+=nx*ov*(a.mass/mt); b.y+=ny*ov*(a.mass/mt);
+        const dv=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+        if (dv<=0) continue;
+        const imp=2*dv/mt;
+        a.vx-=imp*b.mass*nx; a.vy-=imp*b.mass*ny;
+        b.vx+=imp*a.mass*nx; b.vy+=imp*a.mass*ny;
+      }
+    }
+  }
+
+  const T=isSD?sdState.temp:isFD?fdState.temp:310;
+  const vMax=Math.sqrt(K_SCALE*T)*7;
+  for (const p of [...particles,...atpParticles,...adpParticles]) {
+    if (p.bound) continue;
+    const spd=Math.hypot(p.vx,p.vy);
+    if (spd>vMax) { const f=vMax/spd; p.vx*=f; p.vy*=f; }
+  }
+
+  const oldest=frameCount-RATE_WINDOW;
+  while (crossWindow.length && crossWindow[0].frame<oldest) crossWindow.shift();
+}
+
+function triggerLysis() {
+  lysisTriggered=true;
+  document.getElementById('lysisOverlay').classList.add('show');
+  running=false;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame=null; }
+  document.getElementById('statusBadge').textContent='💥 細胞溶解';
+  const mx=MX(), w=W(), h=H();
+  for (let i=0;i<60;i++) {
+    const p=new Particle(mx+HALF_MEM+Math.random()*(w*0.5-HALF_MEM),
+      Math.random()*h, 3+Math.random()*4, 800, 'beta');
+    p.color=`hsl(${Math.random()*40+340},90%,${50+Math.random()*20}%)`;
+    p.life=120+Math.random()*80;
+    lysisDebris.push(p);
+  }
+  drawFrame(); drawChart();
+}
+
+function drawBackground() {
+  const w=W(), h=H(), mx=MX();
+  ctx.fillStyle='rgba(25,118,210,0.025)'; ctx.fillRect(0,0,mx-HALF_MEM,h);
+  ctx.fillStyle='rgba(0,137,123,0.025)'; ctx.fillRect(mx+HALF_MEM,0,w-mx-HALF_MEM,h);
+  ctx.strokeStyle='rgba(0,0,0,0.03)'; ctx.lineWidth=1;
+  for (let x=0;x<w;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke(); }
+  for (let y=0;y<h;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke(); }
+}
+
+function drawOsmosisMembrane(pores) {
+  const w=W(), h=H(), mx=MX();
+  ctx.fillStyle='#c8d8e8';
+  let y=0;
+  for (const pore of pores) { ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,pore.y0-y); y=pore.y1; }
+  ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,h-y);
+  const g=ctx.createLinearGradient(mx-14,0,mx+14,0);
+  g.addColorStop(0,'rgba(100,160,210,0)'); g.addColorStop(0.45,'rgba(120,170,220,0.3)');
+  g.addColorStop(0.55,'rgba(120,170,220,0.3)'); g.addColorStop(1,'rgba(100,160,210,0)');
+  ctx.fillStyle=g; ctx.fillRect(mx-14,0,28,h);
+  for (const pore of pores) {
+    const ph=pore.y1-pore.y0;
+    const pg=ctx.createLinearGradient(mx-14,0,mx+14,0);
+    pg.addColorStop(0,'rgba(2,119,189,0)'); pg.addColorStop(0.5,'rgba(2,119,189,0.15)');
+    pg.addColorStop(1,'rgba(2,119,189,0)');
+    ctx.fillStyle=pg; ctx.fillRect(mx-14,pore.y0,28,ph);
+    ctx.strokeStyle='rgba(2,119,189,0.5)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(mx-HALF_MEM,pore.y0);ctx.lineTo(mx+HALF_MEM,pore.y0);
+    ctx.moveTo(mx-HALF_MEM,pore.y1);ctx.lineTo(mx+HALF_MEM,pore.y1);
+    ctx.stroke();
+    ctx.fillStyle='rgba(2,119,189,0.7)';
+    ctx.font="600 7px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+    ctx.fillText('水通道',mx,pore.y0-2);
+  }
+  if (osState.cellType==='plant') {
+    const turgor=Math.max(0,(volumeB-1.0)*3.0);
+    const barH=Math.min(h*0.8, turgor*60);
+    const barY=(h-barH)/2;
+    const tg=ctx.createLinearGradient(mx+HALF_MEM+2,0,mx+HALF_MEM+10,0);
+    tg.addColorStop(0,`rgba(94,53,177,${Math.min(0.5,turgor*0.35)})`);
+    tg.addColorStop(1,'rgba(94,53,177,0)');
+    ctx.fillStyle=tg; ctx.fillRect(mx+HALF_MEM+2,barY,8,barH);
+  }
+  if (volumeB>1.01) {
+    const excess=(volumeB-1.0);
+    ctx.strokeStyle=`rgba(2,119,189,${Math.min(0.5,excess*2)})`;
+    ctx.lineWidth=1.5; ctx.setLineDash([3,5]);
+    const lineY=h*(0.15+excess*0.2);
+    ctx.beginPath(); ctx.moveTo(mx+HALF_MEM+2,lineY); ctx.lineTo(w-2,lineY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=`rgba(2,119,189,${Math.min(0.7,excess*2)})`;
+    ctx.font="700 9px 'IBM Plex Mono',monospace"; ctx.textAlign='right';
+    ctx.fillText(`▲ 體積 +${(excess*100).toFixed(0)}%`,w-8,lineY-3);
+  }
+}
+
+function drawActiveMembrane(pumps) {
+  const w=W(), h=H(), mx=MX();
+  const sorted=[...pumps].sort((a,b)=>a.y0-b.y0);
+  ctx.fillStyle='#d0c8e0';
+  let y=0;
+  for (const s of sorted) { ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,s.y0-y); y=s.y1; }
+  ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,h-y);
+  const g=ctx.createLinearGradient(mx-14,0,mx+14,0);
+  g.addColorStop(0,'rgba(94,53,177,0)'); g.addColorStop(0.45,'rgba(94,53,177,0.2)');
+  g.addColorStop(0.55,'rgba(94,53,177,0.2)'); g.addColorStop(1,'rgba(94,53,177,0)');
+  ctx.fillStyle=g; ctx.fillRect(mx-14,0,28,h);
+  for (const pump of pumps) {
+    const isbound=pump.state==='bound'||pump.state==='ready';
+    const flashing=pump.flashing>0;
+    const color=flashing?'#2e7d32':isbound?'#7b1fa2':'#5e35b1';
+    const cx=mx, cy=pump.cy, rw=HALF_MEM+5, ph=pump.y1-pump.y0;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx,cy-ph*0.2,rw,ph*0.32,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,isbound?0.2:0.1); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,flashing?1.0:isbound?0.8:0.5); ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx,cy+ph*0.2,rw,ph*0.32,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,isbound?0.2:0.1); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,flashing?1.0:isbound?0.8:0.5); ctx.stroke();
+    ctx.beginPath(); ctx.rect(cx-rw,cy-ph*0.12,rw*2,ph*0.24);
+    ctx.fillStyle=isbound?hexRgba(color,0.25):'rgba(94,53,177,0.04)'; ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=hexRgba(color,0.85);
+    ctx.font="600 8px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+    const lbl=pump.state==='open'?'載體蛋白':pump.state==='bound'?'離子↑':'ATP→';
+    ctx.fillText(lbl,cx,pump.y0-3);
+  }
+}
+
+function drawSimpleMembrane(pores) {
+  const w=W(), h=H(), mx=MX();
+  ctx.fillStyle='#b8ccd8';
+  let y=0;
+  for (const pore of pores) { ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,pore.y0-y); y=pore.y1; }
+  ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,h-y);
+  const g=ctx.createLinearGradient(mx-14,0,mx+14,0);
+  g.addColorStop(0,'rgba(80,120,160,0)'); g.addColorStop(0.45,'rgba(90,130,170,0.3)');
+  g.addColorStop(0.55,'rgba(90,130,170,0.3)'); g.addColorStop(1,'rgba(80,120,160,0)');
+  ctx.fillStyle=g; ctx.fillRect(mx-14,0,28,h);
+  for (const pore of pores) {
+    const ph=pore.y1-pore.y0;
+    const pg=ctx.createLinearGradient(mx-14,0,mx+14,0);
+    pg.addColorStop(0,'rgba(25,118,210,0)'); pg.addColorStop(0.5,'rgba(25,118,210,0.12)');
+    pg.addColorStop(1,'rgba(25,118,210,0)');
+    ctx.fillStyle=pg; ctx.fillRect(mx-14,pore.y0,28,ph);
+    ctx.strokeStyle='rgba(25,118,210,0.45)'; ctx.lineWidth=1;
+    ctx.beginPath();
+    ctx.moveTo(mx-HALF_MEM,pore.y0);ctx.lineTo(mx+HALF_MEM,pore.y0);
+    ctx.moveTo(mx-HALF_MEM,pore.y1);ctx.lineTo(mx+HALF_MEM,pore.y1);
+    ctx.stroke();
+  }
+}
+
+function drawFacilitatedMembrane(sites) {
+  const w=W(), h=H(), mx=MX();
+  const sorted=[...sites].sort((a,b)=>a.y0-b.y0);
+  ctx.fillStyle='#b8ccd8'; let y=0;
+  for (const s of sorted) { ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,s.y0-y); y=s.y1; }
+  ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,h-y);
+  const g=ctx.createLinearGradient(mx-14,0,mx+14,0);
+  g.addColorStop(0,'rgba(80,120,160,0)'); g.addColorStop(0.45,'rgba(90,130,170,0.3)');
+  g.addColorStop(0.55,'rgba(90,130,170,0.3)'); g.addColorStop(1,'rgba(80,120,160,0)');
+  ctx.fillStyle=g; ctx.fillRect(mx-14,0,28,h);
+  for (const site of sites) {
+    const ph=site.y1-site.y0, busy=site.state==='busy', isCarrier=site.type==='carrier';
+    const color=isCarrier?(busy?'#e65100':'#5e35b1'):'#00897b';
+    const cx=mx, cy=site.cy, rw=HALF_MEM+4, rh=ph*0.4;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx,cy-rh*0.5,rw,rh*0.6,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,busy?0.25:0.12); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,busy?0.9:0.55); ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx,cy+rh*0.5,rw,rh*0.6,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,busy?0.25:0.12); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,busy?0.9:0.55); ctx.stroke();
+    ctx.beginPath(); ctx.rect(cx-rw,cy-rh*0.15,rw*2,rh*0.3);
+    ctx.fillStyle=busy?hexRgba(color,0.3):'rgba(25,118,210,0.04)'; ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=hexRgba(color,0.85); ctx.font="600 8px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+    ctx.fillText(isCarrier?(busy?'忙碌':'空閒'):'通道',cx,site.y0-3);
+  }
+}
+
+function drawParticle(p) {
+  let alpha=1;
+  if (p.ptype==='adp') {
+    alpha = p.life>0 ? Math.min(1, p.life/30) : 0;
+    if (alpha<=0) return;
+  }
+
+  if (p.bound) {
+    const pulse=0.6+0.4*Math.sin(frameCount*0.18);
+    const gl=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.5);
+    gl.addColorStop(0,hexRgba(p.color,0.3*pulse)); gl.addColorStop(1,hexRgba(p.color,0));
+    ctx.fillStyle=gl;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2.5,0,Math.PI*2); ctx.fill();
+  }
+
+  if (p.ptype==='solute' && p.hydrationR) {
+    // Draw attraction zone as a soft filled gradient — visually shows the
+    // region where water is drawn in, without implying rigid attachment
+    const zg = ctx.createRadialGradient(p.x,p.y, p.r, p.x,p.y, p.hydrationR);
+    zg.addColorStop(0, 'rgba(255,171,64,0.10)');
+    zg.addColorStop(1, 'rgba(255,171,64,0.00)');
+    ctx.fillStyle = zg;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.hydrationR,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.hydrationR,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,171,64,0.18)'; ctx.lineWidth=1; ctx.setLineDash([2,4]); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  const glow=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.4);
+  glow.addColorStop(0,hexRgba(p.color,0.12*alpha)); glow.addColorStop(1,hexRgba(p.color,0));
+  ctx.fillStyle=glow;
+  ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2.4,0,Math.PI*2); ctx.fill();
+
+  const grad=ctx.createRadialGradient(p.x-p.r*0.3,p.y-p.r*0.3,p.r*0.05,p.x,p.y,p.r);
+  grad.addColorStop(0,hexRgba(p.color,0.95*alpha)); grad.addColorStop(1,hexRgba(p.color,0.6*alpha));
+  ctx.fillStyle=grad;
+  ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=hexRgba(p.color,0.65*alpha); ctx.lineWidth=0.7; ctx.stroke();
+
+  if (showVectors && !p.bound && p.ptype!=='adp') {
+    const spd=Math.hypot(p.vx,p.vy);
+    if (spd>0.05) {
+      const len=Math.min(spd*8, 24);
+      const ex=p.x+p.vx/spd*len, ey=p.y+p.vy/spd*len;
+      ctx.save();
+      ctx.strokeStyle=hexRgba(p.color, 0.4);
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(ex,ey);
+      const angle=Math.atan2(ey-p.y, ex-p.x);
+      const ahLen=5;
+      ctx.moveTo(ex,ey);
+      ctx.lineTo(ex-ahLen*Math.cos(angle-0.4), ey-ahLen*Math.sin(angle-0.4));
+      ctx.moveTo(ex,ey);
+      ctx.lineTo(ex-ahLen*Math.cos(angle+0.4), ey-ahLen*Math.sin(angle+0.4));
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+}
+
+function drawFrame() {
+  const w=W(), h=H();
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#f4f6f9'; ctx.fillRect(0,0,w,h);
+  drawBackground();
+  const isSD=currentModule==='simple', isFD=currentModule==='facilitated';
+  const isOS=currentModule==='osmosis', isAT=currentModule==='active';
+  const noMem=isSD && sdState.membrane==='none';
+
+  if (noMem) {
+    ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1; ctx.setLineDash([6,6]);
+    ctx.beginPath(); ctx.moveTo(MX(),0); ctx.lineTo(MX(),h); ctx.stroke(); ctx.setLineDash([]);
+  } else if (isSD) {
+    drawSimpleMembrane(buildSimplePores(sdState.pore,h));
+  } else if (isFD) {
+    drawFacilitatedMembrane(transportProteins);
+  } else if (isOS) {
+    drawOsmosisMembrane(buildAquaporinPores(osState.poreSize,h,osState.aqpCount));
+    // ── Net water movement arrow overlay ──────────────────────────────────
+    const dir = window._osNetDir || 0;
+    const osmoA = window._osmoA || 0, osmoB = window._osmoB || 0;
+    if (dir !== 0) {
+      const mx2=MX(), arrowY=h*0.08, arrowLen=Math.min(w*0.18, 80);
+      const ax1 = dir===1 ? mx2-arrowLen-10 : mx2+10;
+      const ax2 = dir===1 ? mx2-10 : mx2+arrowLen+10;
+      const gradA = ctx.createLinearGradient(ax1,0,ax2,0);
+      gradA.addColorStop(0,'rgba(2,119,189,0.0)');
+      gradA.addColorStop(1,'rgba(2,119,189,0.55)');
+      ctx.save();
+      ctx.strokeStyle = gradA;
+      ctx.lineWidth = 5;
+      ctx.lineCap = 'round';
+      ctx.setLineDash([8,4]);
+      ctx.beginPath(); ctx.moveTo(ax1,arrowY); ctx.lineTo(ax2,arrowY); ctx.stroke();
+      ctx.setLineDash([]);
+      // arrowhead
+      ctx.fillStyle = 'rgba(2,119,189,0.75)';
+      ctx.beginPath();
+      const ah=10, aw=7;
+      if (dir===1) {
+        ctx.moveTo(ax2,arrowY); ctx.lineTo(ax2-ah,arrowY-aw); ctx.lineTo(ax2-ah,arrowY+aw);
+      } else {
+        ctx.moveTo(ax1,arrowY); ctx.lineTo(ax1+ah,arrowY-aw); ctx.lineTo(ax1+ah,arrowY+aw);
+      }
+      ctx.closePath(); ctx.fill();
+      // label
+      ctx.fillStyle='rgba(1,87,155,0.85)';
+      ctx.font="bold 9px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+      const labelX = dir===1 ? (ax1+ax2)/2 : (ax1+ax2)/2;
+      ctx.fillText(dir===1?'水淨流向 B →':'← 水淨流向 A', labelX, arrowY-12);
+      // osmolality mini-bar
+      const barW=60, barH=6, barX=mx2-barW/2, barY2=arrowY+16;
+      ctx.fillStyle='rgba(200,220,235,0.6)'; ctx.fillRect(barX,barY2,barW,barH);
+      const fracA=osmoA/(osmoA+osmoB+0.001);
+      ctx.fillStyle='rgba(2,119,189,0.45)'; ctx.fillRect(barX,barY2,barW*fracA,barH);
+      ctx.strokeStyle='rgba(2,119,189,0.3)'; ctx.lineWidth=1; ctx.strokeRect(barX,barY2,barW,barH);
+      ctx.fillStyle='rgba(1,87,155,0.7)'; ctx.font="8px 'IBM Plex Mono',monospace";
+      ctx.textAlign='right'; ctx.fillText((osmoA*100).toFixed(0)+'%', barX-3, barY2+barH-1);
+      ctx.textAlign='left';  ctx.fillText((osmoB*100).toFixed(0)+'%', barX+barW+3, barY2+barH-1);
+      ctx.restore();
+    } else if (osmoA>0.005||osmoB>0.005) {
+      // equilibrium label
+      ctx.save();
+      ctx.fillStyle='rgba(0,137,123,0.7)';
+      ctx.font="bold 9px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+      ctx.fillText('≈ 滲透平衡', MX(), h*0.07);
+      ctx.restore();
+    }
+  } else if (isAT) {
+    drawActiveMembrane(transportProteins);
+  }
+
+  for (const p of lysisDebris) {
+    if (p.life<=0) continue;
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.05; p.life--;
+    const a=p.life/200;
+    ctx.fillStyle=hexRgba(p.color,a);
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+  }
+
+  for (const p of [...particles,...atpParticles,...adpParticles]) drawParticle(p);
+  frameCount++;
+}
+
+function collectGraphPoint() {
+  const mx=MX();
+  let cA=0, cB=0;
+  for (const p of particles) if (!p.bound) { if (p.x<mx) cA++; else cB++; }
+  const rate=crossWindow.length;
+
+  if (currentModule === 'simple') {
+
+let alphaA=0;
+let alphaB=0;
+let betaA=0;
+let betaB=0;
+
+for(const p of particles){
+
+    if(p.ptype==='alpha'){
+        if(p.x<mx) alphaA++;
+        else alphaB++;
+    }
+
+    if(p.ptype==='beta'){
+        if(p.x<mx) betaA++;
+        else betaB++;
+    }
+}
+
+    graphData.time.push(graphData.time.length);
+
+    graphData.alphaA.push(alphaA);
+    graphData.alphaB.push(alphaB);
+
+    graphData.betaA.push(betaA);
+    graphData.betaB.push(betaB);
+} else if (currentModule==='facilitated') {
+    graphData.xs.push(fdState.count); graphData.ys.push(rate);
+  } else if (currentModule==='osmosis') {
+    const wB=particles.filter(p=>p.ptype==='water'&&p.x>mx).length;
+    graphData.xs.push(graphData.xs.length); graphData.ys.push(wB);
+  } else if (currentModule==='active') {
+    const ionB=particles.filter(p=>p.ptype==='ion'&&p.x>mx).length;
+    graphData.xs.push(ionB); graphData.ys.push(atpUsedTotal);
+  }
+  if (graphData.xs.length>RING) { graphData.xs.shift(); graphData.ys.shift(); }
+}
+
+function drawChart() {
+  const cw=CW(), ch=CH();
+  chartCtx.clearRect(0,0,cw,ch);
+  chartCtx.fillStyle='#f8fafc'; chartCtx.fillRect(0,0,cw,ch);
+  const PAD={top:22,right:20,bottom:38,left:50};
+  const pw=cw-PAD.left-PAD.right, ph=ch-PAD.top-PAD.bottom;
+  if (pw<20||ph<10) return;
+
+  let xLabel,yLabel,lineColor,theoryColor;
+  let xMin,xMax,yMin,yMax,showTheory=false;
+
+  if (currentModule==='simple') {
+    xLabel='時間';
+  yLabel='粒子數';
+
+  lineColor='#1976d2';
+
+    xMin = 0;
+
+    xMax = Math.max(
+        50,
+        graphData.time.length
+    );
+
+    yMin = 0;
+
+    yMax = Math.max(
+        sdState.alphaCount,
+        sdState.betaCount,
+        10
+    );
+
+    showTheory = false;
+  } else if (currentModule==='facilitated') {
+    xLabel='受質數量（A側）'; yLabel='運輸速率';
+    lineColor=fdState.proteinType==='carrier'?'#e65100':'#00897b';
+    theoryColor=fdState.proteinType==='carrier'?'rgba(230,81,0,0.15)':'rgba(0,137,123,0.15)';
+    xMin=0; xMax=160; yMin=0; yMax=RATE_WINDOW*1.1; showTheory=true;
+  } else if (currentModule==='osmosis') {
+    xLabel='時間（幀 × 20）'; yLabel='B側水分子數';
+    lineColor='#0277bd'; theoryColor='rgba(2,119,189,0.15)';
+    xMin=0; xMax=Math.max(50,graphData.xs.length);
+    yMin=0; yMax=Math.max(10,osState.waterCount);
+    showTheory=false;
+  } else if (currentModule==='active') {
+    xLabel='B側離子數'; yLabel='ATP水解量';
+    lineColor='#7b1fa2'; theoryColor='rgba(123,31,162,0.15)';
+    xMin=0; xMax=Math.max(10,atState.ionCount);
+    yMin=0; yMax=Math.max(10,atpUsedTotal||10);
+    showTheory=false;
+  } else {
+    chartCtx.fillStyle='rgba(0,0,0,0.3)'; chartCtx.font="11px 'IBM Plex Mono',monospace";
+    chartCtx.textAlign='center'; chartCtx.fillText('圖表不適用',cw/2,ch/2); return;
+  }
+
+  function tX(v){return PAD.left+(v-xMin)/(xMax-xMin)*pw;}
+  function tY(v){return PAD.top+ph-(v-yMin)/(yMax-yMin)*ph;}
+
+  chartCtx.strokeStyle='rgba(0,0,0,0.07)'; chartCtx.lineWidth=1;
+  const xTicks=5,yTicks=4;
+  for (let i=0;i<=xTicks;i++){const x=PAD.left+i*pw/xTicks;chartCtx.beginPath();chartCtx.moveTo(x,PAD.top);chartCtx.lineTo(x,PAD.top+ph);chartCtx.stroke();}
+  for (let i=0;i<=yTicks;i++){const y=PAD.top+i*ph/yTicks;chartCtx.beginPath();chartCtx.moveTo(PAD.left,y);chartCtx.lineTo(PAD.left+pw,y);chartCtx.stroke();}
+
+  chartCtx.strokeStyle='rgba(0,0,0,0.25)'; chartCtx.lineWidth=1.5;
+  chartCtx.beginPath();
+  chartCtx.moveTo(PAD.left,PAD.top); chartCtx.lineTo(PAD.left,PAD.top+ph);
+  chartCtx.lineTo(PAD.left+pw,PAD.top+ph); chartCtx.stroke();
+
+  chartCtx.fillStyle='rgba(60,80,110,0.85)'; chartCtx.font="9px 'IBM Plex Mono',monospace";
+  chartCtx.textAlign='center';
+  for (let i=0;i<=xTicks;i++){chartCtx.fillText((xMin+i*(xMax-xMin)/xTicks).toFixed(0),PAD.left+i*pw/xTicks,PAD.top+ph+12);}
+  chartCtx.textAlign='right';
+  for (let i=0;i<=yTicks;i++){chartCtx.fillText((yMin+i*(yMax-yMin)/yTicks).toFixed(0),PAD.left-5,PAD.top+ph-i*ph/yTicks+3);}
+  chartCtx.fillStyle='rgba(60,80,110,0.65)'; chartCtx.font="8px 'IBM Plex Mono',monospace";
+  chartCtx.textAlign='center'; chartCtx.fillText(xLabel,PAD.left+pw/2,ch-4);
+  chartCtx.save(); chartCtx.translate(10,PAD.top+ph/2); chartCtx.rotate(-Math.PI/2);
+  chartCtx.fillText(yLabel,0,0); chartCtx.restore();
+
+  const modLabelMap={
+    simple:'粒子數量變化',
+    facilitated:fdState.proteinType==='carrier'?'米氏動力學':'通道蛋白：線性運輸',
+    osmosis:'滲透水通量（B側）',
+    active:'主動運輸：ATP → 功'
+  };
+  chartCtx.fillStyle=lineColor; chartCtx.globalAlpha=0.7;
+  chartCtx.font="8px 'IBM Plex Mono',monospace"; chartCtx.textAlign='right';
+  chartCtx.fillText(modLabelMap[currentModule]||'',PAD.left+pw-2,PAD.top-6);
+  chartCtx.globalAlpha=1;
+
+
+
+if(currentModule === 'simple'){
+
+    function drawSeries(data,color){
+
+        if(data.length < 2) return;
+
+        chartCtx.beginPath();
+
+        for(let i=0;i<data.length;i++){
+
+            const x=tX(i);
+            const y=tY(data[i]);
+
+            if(i===0)
+                chartCtx.moveTo(x,y);
+            else
+                chartCtx.lineTo(x,y);
+        }
+
+        chartCtx.strokeStyle=color;
+        chartCtx.lineWidth=2;
+        chartCtx.stroke();
+    }
+
+    if(showAlphaGraph){
+
+        drawSeries(
+            graphData.alphaA,
+            '#1565c0'
+        );
+
+        drawSeries(
+            graphData.alphaB,
+            '#00897b'
+        );
+    }
+
+    if(showBetaGraph){
+
+        drawSeries(
+            graphData.betaA,
+            '#c62828'
+        );
+
+        drawSeries(
+            graphData.betaB,
+            '#e65100'
+        );
+    }
+
+    return;
+  }
+  if (graphData.xs.length<2) return;
+}
+
+function updateStats() {
+  const mx=MX();
+  const isSD=currentModule==='simple', isFD=currentModule==='facilitated';
+  const isOS=currentModule==='osmosis', isAT=currentModule==='active';
+  let cA=0, cB=0, ke=0, keCount=0, extra=0;
+
+  if (isOS) {
+    // ── Count ALL water molecules (free + bound) for totals; KE from free water only ──
+    for (const p of particles) {
+      if (p.ptype==='water') {
+        p.x<mx ? cA++ : cB++;  // count regardless of bound state
+        if (!p.bound) { ke+=0.5*p.mass*(p.vx**2+p.vy**2); keCount++; }
+      }
+    }
+    const solAcount = particles.filter(p=>p.ptype==='solute'&&p.x<mx).length;
+    const solBcount = particles.filter(p=>p.ptype==='solute'&&p.x>mx).length;
+    extra = solBcount + solAcount; // total solute particles
+    document.getElementById('statAlabel').textContent='水分子(A)';
+    document.getElementById('statBlabel').textContent='水分子(B)';
+    document.getElementById('statKElabel').textContent='動能(H₂O)';
+    document.getElementById('stat4label').textContent='溶質總數';
+    document.getElementById('statRateLabel').textContent='水通量 /s';
+
+  } else if (isAT) {
+    // ── Count only Na⁺ ions ────────────────────────────────────────────
+    for (const p of particles) {
+      if (p.ptype==='ion') {
+        if (!p.bound) { p.x<mx ? cA++ : cB++; }
+        ke+=0.5*p.mass*(p.vx**2+p.vy**2); keCount++;
+      }
+    }
+    extra = atpParticles.length; // remaining ATP
+    document.getElementById('statAlabel').textContent='Na⁺(A側)';
+    document.getElementById('statBlabel').textContent='Na⁺(B側)';
+    document.getElementById('statKElabel').textContent='動能(Na⁺)';
+    document.getElementById('stat4label').textContent='ATP剩餘';
+    document.getElementById('statRateLabel').textContent='運輸速率 /s';
+
+  } else if (isFD) {
+    // ── Count substrate molecules ──────────────────────────────────────
+    for (const p of particles) {
+      if (!p.bound) { p.x<mx ? cA++ : cB++; }
+      ke+=0.5*p.mass*(p.vx**2+p.vy**2); keCount++;
+    }
+    extra = crossingCount;
+    document.getElementById('statAlabel').textContent='受質(A側)';
+    document.getElementById('statBlabel').textContent='受質(B側)';
+    document.getElementById('statKElabel').textContent='平均動能';
+    document.getElementById('stat4label').textContent='已運輸';
+    document.getElementById('statRateLabel').textContent='運輸速率 /s';
+
+  } else { // simple diffusion
+    for (const p of particles) {
+      if (!p.bound) { p.x<mx ? cA++ : cB++; }
+      ke+=0.5*p.mass*(p.vx**2+p.vy**2); keCount++;
+    }
+    extra = crossingCount;
+    document.getElementById('statAlabel').textContent='A側粒子';
+    document.getElementById('statBlabel').textContent='B側粒子';
+    document.getElementById('statKElabel').textContent='平均動能';
+    document.getElementById('stat4label').textContent='穿越次數';
+    document.getElementById('statRateLabel').textContent='淨 ΔN/Δt';
+  }
+
+  document.getElementById('statA').textContent=cA;
+  document.getElementById('statB').textContent=cB;
+  document.getElementById('statKE').textContent=keCount>0?(ke/keCount).toFixed(2):'—';
+  document.getElementById('statExtra').textContent=extra;
+
+  const netRate=(crossWindow.length/(RATE_WINDOW/60)).toFixed(1);
+  document.getElementById('statRate').textContent=netRate+' /s';
+
+  if (isOS) {
+    // ── Net flow direction: compare osmolality (solute/total) per side ──
+    const wA=particles.filter(p=>p.ptype==='water'&&p.x<mx).length;
+    const wB=particles.filter(p=>p.ptype==='water'&&p.x>mx).length;
+    const sA=particles.filter(p=>p.ptype==='solute'&&p.x<mx).length;
+    const sB=particles.filter(p=>p.ptype==='solute'&&p.x>mx).length;
+    const tA=wA+sA, tB=wB+sB;
+    const osmoA=tA>0?sA/tA:0, osmoB=tB>0?sB/tB:0;
+    const netEl=document.getElementById('os-net-dir');
+    // Count recent water crossings by direction
+    const now=frameCount;
+    let toB=0, toA=0;
+    for (const c of crossWindow) {
+      if (particles[0]?.ptype==='water'||true) { // all crossings in osmosis are water
+        if (c.dir===1) toB++; else toA++;
+      }
+    }
+    const netToB = toB - toA;
+    if      (osmoB > osmoA+0.02) {
+      netEl.textContent=`→ A→B  净: +${Math.abs(netToB)}`;
+      netEl.style.color='#0277bd';
+    } else if (osmoA > osmoB+0.02) {
+      netEl.textContent=`← B→A  净: +${Math.abs(netToB)}`;
+      netEl.style.color='#01579b';
+    } else {
+      netEl.textContent='≈ 滲透平衡';
+      netEl.style.color='var(--accent-teal)';
+    }
+    document.getElementById('os-water-a-count').textContent=wA;
+    document.getElementById('os-water-b-count').textContent=wB;
+    document.getElementById('os-osmo-a').textContent=(osmoA*100).toFixed(1)+'%';
+    document.getElementById('os-osmo-b').textContent=(osmoB*100).toFixed(1)+'%';
+    const turgor=Math.max(0,(volumeB-1.0)*3.0);
+    document.getElementById('os-turgor-val').textContent=turgor.toFixed(2);
+    // Store for canvas overlay
+    window._osNetDir = osmoB>osmoA+0.02?1:(osmoA>osmoB+0.02?-1:0);
+    window._osNetRate = netToB;
+    window._osmoA = osmoA; window._osmoB = osmoB;
+  }
+  if (isAT) {
+    document.getElementById('at-atp-used').textContent=atpUsedTotal;
+    document.getElementById('at-adp-count').textContent=adpParticles.length;
+  }
+
+  const rate=crossWindow.length;
+  if (rate<=2 && particles.length>0 && !eqShown) {
+    eqFrames++;
+    if (eqFrames>=120) {
+      eqShown=true;
+      document.getElementById('eqOverlay').classList.add('show');
+      setTimeout(()=>document.getElementById('eqOverlay').classList.remove('show'), 4000);
+    }
+  } else { eqFrames=0; }
+
+  if (frameCount%20===0) collectGraphPoint();
+}
+
+function loop(ts) {
+  if (!running) { animFrame=null; return; }
+  const dt=Math.min(ts-lastTime,30); lastTime=ts;
+  physicsStep(dt); drawFrame();
+  if (frameCount%6===0) updateStats();
+  if (frameCount % 10 === 0) {
+    drawChart();
+}
+  animFrame=requestAnimationFrame(loop);
+}
+
+function startLoop() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  running=true; lastTime=performance.now();
+  document.getElementById('statusBadge').textContent='● 執行中';
+  animFrame=requestAnimationFrame(loop);
+}
+function pauseLoop() {
+  running=false;
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame=null; }
+  document.getElementById('statusBadge').textContent='⏸ 已暫停';
+}
+
+const MODULE_META = {
+  simple:      { label:'簡單擴散',      bg:'rgba(25,118,210,0.08)',    tc:'#1565c0',  bc:'rgba(25,118,210,0.3)',    left:'細胞外',right:'細胞質',
+                 desc:'小分子沿濃度梯度的被動運輸。兩種粒子（α、β）展示孔道的尺寸排除效應。' },
+  facilitated: { label:'協助擴散', bg:'rgba(0,137,123,0.08)',    tc:'#00695c',  bc:'rgba(0,137,123,0.3)',    left:'細胞外',right:'細胞質',
+                 desc:'通道蛋白允許即時通過；載體蛋白展示米氏飽和動力學。' },
+osmosis:     { label:'滲透作用',               bg:'rgba(2,119,189,0.08)',   tc:'#01579b',             bc:'rgba(2,119,189,0.3)',   left:'A 側',right:'B 側',                 desc:'水分子透過水通道蛋白依滲透壓移動。溶質形成水化殼；結合水無法穿越。植物膨壓與動物溶解對比。' },
+  active:      { label:'主動運輸',      bg:'rgba(123,31,162,0.08)',   tc:'#4a148c',   bc:'rgba(123,31,162,0.3)',   left:'細胞外（低[Na⁺]）',right:'細胞質（高[Na⁺]）',
+                 desc:'Na⁺/K⁺-ATP酶載體蛋白結合離子，等待ATP水解後翻轉構型，將離子逆梯度釋放。被動洩漏維持動態穩態。' },
+};
+
+function switchModule(mod) {
+  currentModule=mod;
+  const m=MODULE_META[mod];
+  const tag=document.getElementById('moduleTag');
+  tag.textContent=m.label;
+  tag.style.cssText=`background:${m.bg};color:${m.tc};border:1px solid ${m.bc}`;
+  document.getElementById('moduleDesc').textContent=m.desc;
+  document.getElementById('labelLeft').textContent=m.left||'細胞外';
+  document.getElementById('labelRight').textContent=m.right||'細胞質';
+  ['simple','facilitated','osmosis','active'].forEach(k=>{
+    document.getElementById('panel-'+k).classList.toggle('visible',k===mod);
+  });
+  spawnModule();
+  if (!running) startLoop();
+}
+
+function wireSD(id,stateKey,display,suffix,respawn,rescaleTemp) {
+  const el=document.getElementById(id),dsp=document.getElementById(display);
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+suffix; sdState[stateKey]=v;
+    if (rescaleTemp){const r=Math.sqrt(v/lastTempSD);for(const p of particles){p.vx*=r;p.vy*=r;}lastTempSD=v;}
+    else if (respawn) spawnModule();
+    if (!running) drawFrame();
+  });
+}
+
+document.getElementById('sd-mem-none').addEventListener('click',()=>{
+  sdState.membrane='none';
+  document.getElementById('sd-mem-none').classList.add('active');
+  document.getElementById('sd-mem-semi').classList.remove('active');
+  document.getElementById('sd-pore-row').style.opacity='0.3';
+  document.getElementById('sd-pore-row').style.pointerEvents='none';
+  if (!running) drawFrame();
+});
+document.getElementById('sd-mem-semi').addEventListener('click',()=>{
+  sdState.membrane='semi';
+  document.getElementById('sd-mem-semi').classList.add('active');
+  document.getElementById('sd-mem-none').classList.remove('active');
+  document.getElementById('sd-pore-row').style.opacity='1';
+  document.getElementById('sd-pore-row').style.pointerEvents='auto';
+  if (!running) drawFrame();
+});
+
+wireSD('sd-pore','pore','sd-val-pore',' px',false,false);
+wireSD('sd-alpha-count','alphaCount','sd-val-alpha-count','',true,false);
+wireSD('sd-alpha-size','alphaSize','sd-val-alpha-size',' px',true,false);
+wireSD('sd-beta-count','betaCount','sd-val-beta-count','',true,false);
+wireSD('sd-beta-size','betaSize','sd-val-beta-size',' px',true,false);
+wireSD('sd-temp','temp','sd-val-temp',' K',false,true);
+
+function wireFD(id,stateKey,display,suffix,respawn,rescaleTemp) {
+  const el=document.getElementById(id),dsp=document.getElementById(display);
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+suffix; fdState[stateKey]=v;
+    if (rescaleTemp){const r=Math.sqrt(v/lastTempFD);for(const p of particles){p.vx*=r;p.vy*=r;}lastTempFD=v;}
+    else if (respawn) spawnModule();
+    else transportProteins=buildProteinSites(fdState.proteins,H(),fdState.proteinType);
+    if (!running) drawFrame();
+  });
+}
+
+wireFD('fd-count','count','fd-val-count','',true,false);
+wireFD('fd-size','size','fd-val-size',' px',true,false);
+wireFD('fd-proteins','proteins','fd-val-proteins','',false,false);
+wireFD('fd-temp','temp','fd-val-temp',' K',false,true);
+
+const FD_PROTEIN_DESC={
+  channel:'固定開放孔道。尺寸符合的受質即時通過，運輸速率與濃度成線性關係。',
+  carrier:'在A側結合受質，凍結（構型變化）後在B側釋放。高濃度時展現米氏飽和現象。',
+};
+document.getElementById('fd-chan-btn').addEventListener('click',()=>{
+  fdState.proteinType='channel';
+  document.getElementById('fd-chan-btn').classList.add('active');
+  document.getElementById('fd-carr-btn').classList.remove('active');
+  document.getElementById('fd-protein-desc').textContent=FD_PROTEIN_DESC.channel;
+  spawnModule(); if (!running) drawFrame();
+});
+document.getElementById('fd-carr-btn').addEventListener('click',()=>{
+  fdState.proteinType='carrier';
+  document.getElementById('fd-carr-btn').classList.add('active');
+  document.getElementById('fd-chan-btn').classList.remove('active');
+  document.getElementById('fd-protein-desc').textContent=FD_PROTEIN_DESC.carrier;
+  spawnModule(); if (!running) drawFrame();
+});
+
+function wireOS(id,stateKey,display,suffix,respawn) {
+  const el=document.getElementById(id),dsp=document.getElementById(display);
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+suffix; osState[stateKey]=v;
+    if (respawn) spawnModule(); if (!running) drawFrame();
+  });
+}
+wireOS('os-water','waterCount','os-val-water','',true);
+wireOS('os-water-size','waterSize','os-val-water-size',' px',true);
+wireOS('os-solute','soluteCount','os-val-solute','',true);
+wireOS('os-solute-a','soluteCountA','os-val-solute-a','',true);
+wireOS('os-sol-size','soluteSize','os-val-sol-size',' px',true);
+wireOS('os-sol-size-a','soluteSizeA','os-val-sol-size-a',' px',true);
+wireOS('os-pore','poreSize','os-val-pore',' px',false);
+wireOS('os-aqp-count','aqpCount','os-val-aqp-count','',false);
+
+document.getElementById('os-rbc-btn').addEventListener('click',()=>{
+  osState.cellType='animal';
+  document.getElementById('os-rbc-btn').classList.add('active');
+  document.getElementById('os-plant-btn').classList.remove('active');
+  spawnModule(); if (!running) startLoop();
+});
+document.getElementById('os-plant-btn').addEventListener('click',()=>{
+  osState.cellType='plant';
+  document.getElementById('os-plant-btn').classList.add('active');
+  document.getElementById('os-rbc-btn').classList.remove('active');
+  spawnModule(); if (!running) startLoop();
+});
+
+function wireAT(id,stateKey,display,suffix,respawn) {
+  const el=document.getElementById(id),dsp=document.getElementById(display);
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+suffix; atState[stateKey]=v;
+    if (respawn) spawnModule(); if (!running) drawFrame();
+  });
+}
+wireAT('at-ions','ionCount','at-val-ions','',true);
+wireAT('at-ion-size','ionSize','at-val-ion-size',' px',true);
+wireAT('at-atp','atpCount','at-val-atp','',false);
+
+document.getElementById('at-cn-off').addEventListener('click',()=>{
+  atState.cyanideOn=false;
+  document.getElementById('at-cn-off').classList.add('active');
+  document.getElementById('at-cn-on').classList.remove('active-rose');
+  const atpR=4; const w=W(), h=H(), mx=MX();
+  while (atpParticles.length<atState.atpCount) {
+    const p=tryPlace(mx+HALF_MEM+atpR,w-atpR,4+atpR,h-atpR,atpR,atpParticles);
+    atpParticles.push(new Particle(p.x,p.y,atpR,310,'atp','B'));
+  }
+});
+document.getElementById('at-cn-on').addEventListener('click',()=>{
+  atState.cyanideOn=true;
+  document.getElementById('at-cn-on').classList.add('active-rose');
+  document.getElementById('at-cn-off').classList.remove('active');
+  // 氰化物：不立即清空 ATP，改由載體蛋白自然消耗（停止補充即可）
+});
+
+document.getElementById('tabNav').addEventListener('click',e=>{
+  const btn=e.target.closest('.tab-btn');
+  if (!btn) return;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  switchModule(btn.dataset.module);
+});
+
+document.getElementById('vectorToggle').addEventListener('click',()=>{
+  showVectors=!showVectors;
+  const btn=document.getElementById('vectorToggle');
+  btn.classList.toggle('active',showVectors);
+  btn.textContent=showVectors?'⟶ 速度向量 開':'⟶ 速度向量 關';
+});
+
+document.getElementById('btnPlay').addEventListener('click',()=>{ if (!running) startLoop(); });
+document.getElementById('btnPause').addEventListener('click',pauseLoop);
+document.getElementById('btnReset').addEventListener('click',()=>{
+  spawnModule(); if (!running) startLoop();
+});
+
+const resizeObs=new ResizeObserver(()=>{
+  resizeCanvases(); spawnModule();
+  if (!running) { drawFrame(); drawChart(); }
+});
+resizeObs.observe(document.getElementById('canvasWrapper'));
+resizeObs.observe(document.querySelector('.chart-wrapper'));
+
+window.addEventListener('load',()=>{
+  resizeCanvases(); switchModule('simple'); startLoop();
+});
+document.getElementById('showAlphaBtn').onclick = () => {
+
+    showAlphaGraph = !showAlphaGraph;
+
+    document
+      .getElementById('showAlphaBtn')
+      .classList.toggle('active');
+
+};
+
+document.getElementById('showBetaBtn').onclick = () => {
+
+    showBetaGraph = !showBetaGraph;
+
+    document
+      .getElementById('showBetaBtn')
+      .classList.toggle('active');
+
+};
+</script>
+</body>
+</html>

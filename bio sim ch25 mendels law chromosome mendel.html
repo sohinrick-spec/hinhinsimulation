@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>遺傳定律模擬器 — HinHin Biology</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --canvas-bg: #111216;
+            --tab-bg: #e2e8f0;
+            --tab-active: #3b82f6;
+        }
+        /* iPad 觸控與版面最佳化 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f8fafc;
+            margin: 0;
+            padding: 15px;
+            color: #334155;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .container {
+            max-width: 100%;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            box-sizing: border-box;
+        }
+        h1 { text-align: center; color: var(--primary); margin: 0 0 5px 0; font-size: 26px; }
+        .subtitle { text-align: center; color: #64748b; margin-bottom: 20px; font-size: 15px; }
+        
+        /* Tabs */
+        .tabs { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+        .tab-btn {
+            padding: 14px 18px; font-size: 15px; font-weight: 600; border: none;
+            border-radius: 8px; background: var(--tab-bg); color: #475569;
+            cursor: pointer; transition: all 0.2s ease; touch-action: manipulation;
+        }
+        .tab-btn.active {
+            background: var(--tab-active); color: white;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+        }
+
+        .educational-note {
+            background-color: #f0fdf4; border-left: 5px solid #2ecc71; padding: 15px;
+            border-radius: 8px; margin-bottom: 20px; line-height: 1.6; font-size: 15px; color: #166534;
+        }
+
+        /* Setup Panel */
+        .setup-panel {
+            display: flex; justify-content: space-around; background: #f1f5f9; padding: 16px;
+            border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; flex-wrap: wrap; gap: 15px;
+        }
+        .setup-group { display: flex; align-items: center; }
+        .setup-group label { font-weight: 600; margin-right: 10px; color: var(--primary); font-size: 15px; cursor: pointer; }
+        .setup-group select { padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 15px; background: white; cursor: pointer; outline: none; }
+        .setup-group input[type="checkbox"] { transform: scale(1.4); margin-right: 10px; cursor: pointer; }
+
+        /* Canvas */
+        .canvas-container {
+            position: relative; width: 100%; background: var(--canvas-bg); border-radius: 14px;
+            overflow: hidden; box-shadow: inset 0 4px 12px rgba(0,0,0,0.4);
+        }
+        canvas { display: block; width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
+
+        /* Controls */
+        .control-bar { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 20px 0; }
+        .btn {
+            padding: 14px 22px; font-size: 16px; font-weight: 600; color: white; border: none;
+            border-radius: 10px; cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); touch-action: manipulation;
+        }
+        .btn-rep { background-color: #8b5cf6; }
+        .btn-rep:hover { background-color: #7c3aed; transform: translateY(-2px); }
+        .btn-meiosis { background-color: #3b82f6; }
+        .btn-meiosis:hover { background-color: #2563eb; transform: translateY(-2px); }
+        .btn-fertilize { background-color: #10b981; }
+        .btn-fertilize:hover { background-color: #059669; transform: translateY(-2px); }
+        .btn-fast { background-color: #f59e0b; }
+        .btn-fast:hover { background-color: #d97706; transform: translateY(-2px); }
+        
+        .btn:active { transform: translateY(1px); }
+        .btn:disabled { background-color: #94a3b8; cursor: not-allowed; transform: none; opacity: 0.6; }
+
+        /* Stats Panel */
+        .stats-dashboard {
+            background: #fff8f1; border: 2px solid #fed7aa; border-radius: 12px;
+            padding: 18px; margin-top: 15px; text-align: center; transition: all 0.3s;
+        }
+        .stats-title { font-size: 18px; font-weight: bold; color: #9a3412; margin-bottom: 12px; display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .stats-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
+        .stat-box {
+            background: white; border: 1px solid #fdba74; border-radius: 8px;
+            padding: 10px 18px; font-size: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); color: #431407;
+        }
+        .btn-reset {
+            background: #ef4444; color: white; border: none; padding: 8px 16px;
+            border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: bold; touch-action: manipulation;
+        }
+        .btn-reset:active { background: #dc2626; }
+
+        /* Status Panel */
+        .status-panel {
+            background: #1e293b; color: #f8fafc; padding: 18px 24px; border-radius: 10px;
+            font-size: 16px; line-height: 1.6; min-height: 55px; display: flex; align-items: center;
+            justify-content: center; text-align: center; border: 1px solid #334155; margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>染色體視角遺傳模擬器</h1>
+    <div class="subtitle">涵蓋單基因、獨立分配、連鎖互換，支援大數法則統計驗證（植物配子版）</div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchMode('mono', this)">第一定律：單基因 (形狀 R/r)</button>
+        <button class="tab-btn" onclick="switchMode('di', this)">第二定律：雙基因獨立分配 (形狀+顏色)</button>
+        <button class="tab-btn" style="background-color: #fde047; color: #854d0e;" onclick="switchMode('linked', this)">進階：連鎖基因與互換 (Crossing Over)</button>
+    </div>
+
+    <div class="educational-note" id="edu-note"></div>
+
+    <div class="setup-panel" id="setup-mono">
+        <div class="setup-group">
+            <label>父本 (♂)：</label>
+            <select id="p1-select-mono" onchange="resetSimulation()">
+                <option value="Rr" selected>雜合子 (Rr) - 光滑</option>
+                <option value="RR">顯性純合子 (RR) - 光滑</option>
+                <option value="rr">隱性純合子 (rr) - 皺褶</option>
+            </select>
+        </div>
+        <div class="setup-group">
+            <label>母本 (♀)：</label>
+            <select id="p2-select-mono" onchange="resetSimulation()">
+                <option value="Rr" selected>雜合子 (Rr) - 光滑</option>
+                <option value="RR">顯性純合子 (RR) - 光滑</option>
+                <option value="rr">隱性純合子 (rr) - 皺褶</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="setup-panel" id="setup-di" style="display: none;">
+        <div class="setup-group">
+            <label>父本 (♂)：</label>
+            <select id="p1-select-di" onchange="resetSimulation()">
+                <option value="RrYy" selected>雙雜合子 (RrYy) - 光黃</option>
+                <option value="RRYY">雙顯純合 (RRYY) - 光黃</option>
+                <option value="rryy">雙隱純合 (rryy) - 皺綠</option>
+                <option value="Rryy">雜/純合 (Rryy) - 光綠</option>
+            </select>
+        </div>
+        <div class="setup-group">
+            <label>母本 (♀)：</label>
+            <select id="p2-select-di" onchange="resetSimulation()">
+                <option value="RrYy" selected>雙雜合子 (RrYy) - 光黃</option>
+                <option value="RRYY">雙顯純合 (RRYY) - 光黃</option>
+                <option value="rryy">雙隱純合 (rryy) - 皺綠</option>
+                <option value="rrYy">純/雜合 (rrYy) - 皺黃</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="setup-panel" id="setup-linked" style="display: none; background: #fef9c3; border-color: #fde047;">
+        <div class="setup-group">
+            <label>父本連鎖相 (♂)：</label>
+            <select id="p1-select-linked" onchange="resetSimulation()">
+                <option value="RY/ry" selected>互引相 (RY 連鎖 / ry 連鎖)</option>
+                <option value="Ry/rY">互斥相 (Ry 連鎖 / rY 連鎖)</option>
+            </select>
+        </div>
+        <div class="setup-group">
+            <label>母本連鎖相 (♀)：</label>
+            <select id="p2-select-linked" onchange="resetSimulation()">
+                <option value="RY/ry" selected>互引相 (RY 連鎖 / ry 連鎖)</option>
+                <option value="Ry/rY">互斥相 (Ry 連鎖 / rY 連鎖)</option>
+            </select>
+        </div>
+        <div class="setup-group" style="background: #fef08a; padding: 6px 14px; border-radius: 8px;">
+            <label for="cb-crossover" style="color: #b45309; margin: 0;">
+                <input type="checkbox" id="cb-crossover" onchange="resetSimulation()">
+                發生基因互換 (Crossing Over)
+            </label>
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div class="canvas-container">
+            <canvas id="geneticCanvas" width="1020" height="840"></canvas>
+        </div>
+
+        <div class="control-bar">
+            <button class="btn btn-rep" id="btn-rep" onclick="runReplication()">1. 進行 DNA 複製 (X型)</button>
+            <button class="btn btn-meiosis" id="btn-meiosis" onclick="runMeiosis()" disabled>2. 減數分裂 (產生配子)</button>
+            <button class="btn btn-fertilize" id="btn-fertilize" onclick="runFertilization(1)" disabled>3. 單次隨機受精</button>
+            <button class="btn btn-fast" id="btn-fast" onclick="runFertilization(1000)" disabled>4. 快速產生 1000 子代</button>
+        </div>
+
+        <div class="stats-dashboard" id="stats-panel">
+            <p style="color:#9a3412; margin:0; font-size:16px;">尚未產生子代。點擊「單次隨機受精」或「快速產生1000子代」來驗證大數法則。</p>
+        </div>
+
+        <div class="status-panel" id="status-text">
+            親本體細胞已準備就緒。請點擊「1. 進行 DNA 複製」。
+        </div>
+    </div>
+</div>
+
+<script>
+    // iOS Safari Polyfill 保障相容性
+    if (!CanvasRenderingContext2D.prototype.roundRect) {
+        CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+            if (typeof r === 'undefined') r = 0;
+            this.moveTo(x + r, y);
+            this.arcTo(x + w, y, x + w, y + h, r);
+            this.arcTo(x + w, y + h, x, y + h, r);
+            this.arcTo(x, y + h, x, y, r);
+            this.arcTo(x, y, x + w, y, r);
+            return this;
+        };
+    }
+
+    const canvas = document.getElementById('geneticCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let currentMode = 'mono'; 
+    let state = 'init'; 
+    let p1Genotype = null, p2Genotype = null;
+    let p1PickedIndex = 0, p2PickedIndex = 0;
+    
+    let p1LinkedGametes = [];
+    let p2LinkedGametes = [];
+
+    // 表現型統計資料庫
+    let phenotypeStats = {};
+
+    const colors = {
+        p1Chr1A: '#38bdf8', p1Chr1B: '#0284c7', 
+        p2Chr1A: '#f87171', p2Chr1B: '#b91c1c', 
+        p1Chr2A: '#818cf8', p1Chr2B: '#4f46e5',
+        p2Chr2A: '#fb923c', p2Chr2B: '#c2410c',
+        geneRDom: '#16a34a', geneRRec: '#7c3aed', 
+        geneYDom: '#eab308', geneYRec: '#22c55e', 
+        centromere: '#ea580c'
+    };
+
+    function setupCanvasDPR() {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = 1020 * dpr;
+        canvas.height = 840 * dpr;
+        ctx.scale(dpr, dpr);
+    }
+
+    window.onload = function() {
+        setupCanvasDPR();
+        switchMode('mono');
+    };
+    
+    window.onresize = function() {
+        setupCanvasDPR();
+        draw();
+    };
+
+    // 更新統計儀表板 UI
+    function updateStatsUI() {
+        const container = document.getElementById('stats-panel');
+        let total = Object.values(phenotypeStats).reduce((a, b) => a + b, 0);
+        
+        if (total === 0) {
+            container.innerHTML = '<p style="color:#9a3412; margin:0; font-size:16px;">尚未產生子代。點擊「單次隨機受精」或「快速產生1000子代」來驗證大數法則。</p>';
+            return;
+        }
+        
+        let html = `<div class="stats-title">📊 子代表現型即時統計 (樣本數: ${total}) <button onclick="resetStats()" class="btn-reset">重置統計</button></div>`;
+        html += `<div class="stats-grid">`;
+        
+        // 為了讓比例顯示更穩定，將結果進行排序
+        let sortedKeys = Object.keys(phenotypeStats).sort((a,b) => phenotypeStats[b] - phenotypeStats[a]);
+        
+        for (let pheno of sortedKeys) {
+            let count = phenotypeStats[pheno];
+            let percentage = ((count / total) * 100).toFixed(1);
+            html += `<div class="stat-box"><strong>${pheno}</strong>: ${count} 顆 (${percentage}%)</div>`;
+        }
+        html += `</div>`;
+        container.innerHTML = html;
+    }
+
+    function resetStats() {
+        phenotypeStats = {};
+        updateStatsUI();
+        
+        // 如果狀態處於受精階段，退回到減數分裂狀態，清空畫布下半部
+        if (state === 'fertilization') {
+            state = 'meiosis';
+            document.getElementById('status-text').innerHTML = `【統計已重置】請點擊「單次隨機受精」或「快速產生1000子代」重新收集數據。`;
+            draw();
+        }
+    }
+
+    function switchMode(mode, btnElement = null) {
+        currentMode = mode;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        
+        if (btnElement) {
+            btnElement.classList.add('active');
+        } else {
+            if(mode === 'mono') document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            else if(mode === 'di') document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            else if(mode === 'linked') document.querySelectorAll('.tab-btn')[2].classList.add('active');
+        }
+        
+        document.getElementById('setup-mono').style.display = 'none';
+        document.getElementById('setup-di').style.display = 'none';
+        document.getElementById('setup-linked').style.display = 'none';
+
+        if (mode === 'mono') {
+            document.getElementById('setup-mono').style.display = 'flex';
+            document.getElementById('edu-note').innerHTML = `<strong>💡 第一定律：單基因遺傳（分離定律）：</strong><br>觀察單一對同源染色體（攜帶 R/r 豌豆形狀基因）在形成雌雄配子時如何分離。`;
+        } else if (mode === 'di') {
+            document.getElementById('setup-di').style.display = 'flex';
+            document.getElementById('edu-note').innerHTML = `<strong>💡 第二定律：雙基因獨立分配：</strong><br>形狀 (R/r) 與顏色 (Y/y) 基因位於<strong>「非同源染色體」</strong>上。產生配子時自由組合，必產生 <strong>4 種</strong>等比例的雌雄配子。`;
+        } else if (mode === 'linked') {
+            document.getElementById('setup-linked').style.display = 'flex';
+            document.getElementById('edu-note').innerHTML = `<strong>💡 進階：基因連鎖與互換：</strong><br>形狀與顏色基因位於<strong>「同一條染色體」</strong>上。勾選「互換」可觀察同源染色體片段交換，產生重組型配子！`;
+        }
+        resetSimulation();
+    }
+
+    // 修復了之前導致死機的 Syntax Error 語法錯誤
+    function generateLinkedGametes(pGenotype, colA, colB, isCrossover) {
+        let g1 = { r: pGenotype[0].r, y: pGenotype[0].y, cTop: colA, cBot: colA, type: '親代型' };
+        let g2 = { r: pGenotype[1].r, y: pGenotype[1].y, cTop: colB, cBot: colB, type: '親代型' };
+
+        if (!isCrossover) {
+            return [g1, g2];
+        } else {
+            let g3 = { r: pGenotype[0].r, y: pGenotype[1].y, cTop: colA, cBot: colB, type: '重組型' };
+            let g4 = { r: pGenotype[1].r, y: pGenotype[0].y, cTop: colB, cBot: colA, type: '重組型' };
+            return [g1, g2, g3, g4];
+        }
+    }
+
+    function resetSimulation() {
+        if (currentMode === 'mono') {
+            p1Genotype = document.getElementById('p1-select-mono').value;
+            p2Genotype = document.getElementById('p2-select-mono').value;
+        } else if (currentMode === 'di') {
+            p1Genotype = document.getElementById('p1-select-di').value;
+            p2Genotype = document.getElementById('p2-select-di').value;
+        } else if (currentMode === 'linked') {
+            const parseLinked = (val) => {
+                const parts = val.split('/');
+                return [ { r: parts[0][0], y: parts[0][1] }, { r: parts[1][0], y: parts[1][1] } ];
+            };
+            p1Genotype = parseLinked(document.getElementById('p1-select-linked').value);
+            p2Genotype = parseLinked(document.getElementById('p2-select-linked').value);
+            
+            const isCrossover = document.getElementById('cb-crossover').checked;
+            p1LinkedGametes = generateLinkedGametes(p1Genotype, colors.p1Chr1A, colors.p1Chr1B, isCrossover);
+            p2LinkedGametes = generateLinkedGametes(p2Genotype, colors.p2Chr1A, colors.p2Chr1B, isCrossover);
+        }
+
+        state = 'init';
+        phenotypeStats = {}; // 清空統計
+        updateStatsUI();
+        
+        document.getElementById('btn-rep').disabled = false;
+        document.getElementById('btn-meiosis').disabled = true;
+        document.getElementById('btn-fertilize').disabled = true;
+        document.getElementById('btn-fast').disabled = true;
+        document.getElementById('status-text').innerText = "親本體細胞準備就緒。請點擊「1. 進行 DNA 複製」。";
+        draw();
+    }
+
+    // 繪製實體豌豆表現型
+    function drawPea(ctx, cx, cy, radius, isRound, isYellow) {
+        ctx.save();
+        const fillColor = isYellow ? '#facc15' : '#4ade80'; 
+        const shadowColor = isYellow ? '#ca8a04' : '#16a34a';
+        const wrinkleLine = isYellow ? '#b45309' : '#15803d';
+
+        if (isRound) {
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, Math.PI*2);
+            ctx.fillStyle = fillColor; ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = shadowColor; ctx.stroke();
+            // 圓潤高光
+            ctx.beginPath();
+            ctx.ellipse(cx - radius*0.3, cy - radius*0.3, radius*0.4, radius*0.2, -Math.PI/4, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.6)'; ctx.fill();
+        } else {
+            ctx.beginPath();
+            const points = 16;
+            for (let i = 0; i <= points; i++) {
+                const angle = (i / points) * Math.PI * 2;
+                const r = radius * (0.88 + 0.12 * Math.sin(angle * 7));
+                const px = cx + Math.cos(angle) * r;
+                const py = cy + Math.sin(angle) * r;
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fillStyle = fillColor; ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = shadowColor; ctx.stroke();
+            
+            // 皺褶紋理
+            ctx.beginPath();
+            ctx.moveTo(cx - radius*0.5, cy - radius*0.2);
+            ctx.quadraticCurveTo(cx, cy + radius*0.4, cx + radius*0.4, cy);
+            ctx.moveTo(cx - radius*0.2, cy + radius*0.4);
+            ctx.quadraticCurveTo(cx + radius*0.3, cy + radius*0.7, cx + radius*0.5, cy + radius*0.1);
+            ctx.strokeStyle = wrinkleLine; ctx.lineWidth = 2.5; ctx.lineCap = 'round'; ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(cx - radius*0.2, cy - radius*0.3, radius*0.15, 0, Math.PI*2);
+            ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawChromosome(x, y, height, label1, label2, cTop, cBot, isSelected = false, opacity = 1, shape = 'I') {
+        ctx.save();
+        ctx.globalAlpha = opacity;
+
+        if (isSelected && state !== 'init') {
+            ctx.shadowBlur = 12; ctx.shadowColor = '#10b981';
+            ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3;
+        } else {
+            ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1;
+        }
+
+        const width = 16;
+        const armHeight = (height - 14) / 2;
+        const gene1Y = y - (height / 4) - 4;
+        const gene2Y = y + (height / 4) + 4;
+        
+        const drawGeneBox = (cx, cy, label) => {
+            if (!label) return;
+            let boxColor;
+            if (label === 'R') boxColor = colors.geneRDom;
+            else if (label === 'r') boxColor = colors.geneRRec;
+            else if (label === 'Y') boxColor = colors.geneYDom;
+            else if (label === 'y') boxColor = colors.geneYRec;
+            
+            const textColor = (label === 'Y' || label === 'y') ? '#000000' : '#ffffff'; 
+
+            ctx.shadowBlur = 0; ctx.fillStyle = boxColor;
+            ctx.beginPath(); ctx.roundRect(cx - 13, cy - 11, 26, 22, 5); ctx.fill();
+            ctx.strokeStyle = (label==='Y'||label==='y') ? '#d97706' : '#ffffff'; ctx.stroke();
+            ctx.fillStyle = textColor; ctx.font = 'bold 15px system-ui'; 
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(label, cx, cy);
+        };
+
+        if (shape === 'I') {
+            ctx.beginPath(); ctx.fillStyle = cTop;
+            ctx.roundRect(x - width/2, y - height/2, width, armHeight, width/2); ctx.fill();
+            if (isSelected && state !== 'init') ctx.stroke();
+            
+            ctx.beginPath(); ctx.fillStyle = cBot;
+            ctx.roundRect(x - width/2, y + 7, width, armHeight, width/2); ctx.fill();
+            if (isSelected && state !== 'init') ctx.stroke();
+
+            ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI*2); ctx.fillStyle = colors.centromere; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+            
+            drawGeneBox(x, gene1Y, label1);
+            if(label2) drawGeneBox(x, gene2Y, label2);
+
+        } else if (shape === 'X') {
+            const offset = 9;
+            ctx.beginPath(); ctx.fillStyle = cTop;
+            ctx.roundRect(x - offset - width/2, y - height/2, width, armHeight, width/2); ctx.fill();
+            ctx.beginPath(); ctx.fillStyle = cBot;
+            ctx.roundRect(x - offset - width/2, y + 7, width, armHeight, width/2); ctx.fill();
+            if (isSelected) ctx.stroke();
+            
+            ctx.beginPath(); ctx.fillStyle = cTop;
+            ctx.roundRect(x + offset - width/2, y - height/2, width, armHeight, width/2); ctx.fill();
+            ctx.beginPath(); ctx.fillStyle = cBot;
+            ctx.roundRect(x + offset - width/2, y + 7, width, armHeight, width/2); ctx.fill();
+            if (isSelected) ctx.stroke();
+
+            ctx.beginPath(); ctx.ellipse(x, y, 11, 7, 0, 0, Math.PI*2); ctx.fillStyle = colors.centromere; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke();
+            
+            drawGeneBox(x - offset, gene1Y, label1);
+            drawGeneBox(x + offset, gene1Y, label1);
+            if(label2){
+                drawGeneBox(x - offset, gene2Y, label2);
+                drawGeneBox(x + offset, gene2Y, label2);
+            }
+        }
+        ctx.restore();
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, 1020, 840);
+        const COL_SEP = 510; 
+
+        const drawSectionLabel = (text, y) => {
+            ctx.font = '500 15px system-ui'; ctx.fillStyle = '#64748b'; ctx.textAlign = 'left';
+            ctx.fillText(text, 40, y);
+        };
+
+        drawSectionLabel('親本體細胞 (2n) - 未複製', 35);
+        ctx.fillStyle = '#f8fafc'; ctx.font = 'bold 18px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('父本 (♂)', 250, 35);
+        ctx.fillText('母本 (♀)', 770, 35);
+
+        const sInit = state === 'init' ? 1 : 0.2;
+        const sRep = state === 'replicated' ? 1 : 0.2;
+        
+        ctx.beginPath(); ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+        ctx.moveTo(COL_SEP, 20); ctx.lineTo(COL_SEP, 170);
+
+        // ================= 單基因 =================
+        if (currentMode === 'mono') {
+            drawChromosome(220, 110, 105, p1Genotype[0], null, colors.p1Chr1A, colors.p1Chr1A, false, sInit, 'I');
+            drawChromosome(280, 110, 105, p1Genotype[1], null, colors.p1Chr1B, colors.p1Chr1B, false, sInit, 'I');
+            drawChromosome(740, 110, 105, p2Genotype[0], null, colors.p2Chr1A, colors.p2Chr1A, false, sInit, 'I');
+            drawChromosome(800, 110, 105, p2Genotype[1], null, colors.p2Chr1B, colors.p2Chr1B, false, sInit, 'I');
+
+            if (state !== 'init') {
+                drawSectionLabel('DNA 已複製 (2n)', 210);
+                ctx.moveTo(COL_SEP, 210); ctx.lineTo(COL_SEP, 360);
+                drawChromosome(220, 290, 105, p1Genotype[0], null, colors.p1Chr1A, colors.p1Chr1A, false, sRep, 'X');
+                drawChromosome(290, 290, 105, p1Genotype[1], null, colors.p1Chr1B, colors.p1Chr1B, false, sRep, 'X');
+                drawChromosome(730, 290, 105, p2Genotype[0], null, colors.p2Chr1A, colors.p2Chr1A, false, sRep, 'X');
+                drawChromosome(800, 290, 105, p2Genotype[1], null, colors.p2Chr1B, colors.p2Chr1B, false, sRep, 'X');
+            }
+
+            if (state === 'meiosis' || state === 'fertilization') {
+                drawSectionLabel('單倍體配子 (n)', 390);
+                ctx.moveTo(COL_SEP, 390); ctx.lineTo(COL_SEP, 550);
+                ctx.font = '14px system-ui'; ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center';
+                
+                const p1_0 = state === 'fertilization' && p1PickedIndex === 0;
+                const p1_1 = state === 'fertilization' && p1PickedIndex === 1;
+                ctx.fillText('雄配子 A', 160, 400); drawChromosome(160, 490, 85, p1Genotype[0], null, colors.p1Chr1A, colors.p1Chr1A, p1_0, p1_0||state==='meiosis'?1:0.2, 'I');
+                ctx.fillText('雄配子 B', 340, 400); drawChromosome(340, 490, 85, p1Genotype[1], null, colors.p1Chr1B, colors.p1Chr1B, p1_1, p1_1||state==='meiosis'?1:0.2, 'I');
+
+                const p2_0 = state === 'fertilization' && p2PickedIndex === 0;
+                const p2_1 = state === 'fertilization' && p2PickedIndex === 1;
+                ctx.fillText('雌配子 A', 680, 400); drawChromosome(680, 490, 85, p2Genotype[0], null, colors.p2Chr1A, colors.p2Chr1A, p2_0, p2_0||state==='meiosis'?1:0.2, 'I');
+                ctx.fillText('雌配子 B', 860, 400); drawChromosome(860, 490, 85, p2Genotype[1], null, colors.p2Chr1B, colors.p2Chr1B, p2_1, p2_1||state==='meiosis'?1:0.2, 'I');
+            }
+
+            if (state === 'fertilization') {
+                drawSectionLabel('受精卵子代 (2n) — 顯示最近一次生成的結果', 590);
+                const g1 = p1Genotype[p1PickedIndex], g2 = p2Genotype[p2PickedIndex];
+                drawChromosome(480, 700, 105, g1, null, p1PickedIndex===0?colors.p1Chr1A:colors.p1Chr1B, p1PickedIndex===0?colors.p1Chr1A:colors.p1Chr1B, true, 1, 'I');
+                drawChromosome(540, 700, 105, g2, null, p2PickedIndex===0?colors.p2Chr1A:colors.p2Chr1B, p2PickedIndex===0?colors.p2Chr1A:colors.p2Chr1B, true, 1, 'I');
+
+                let finalG = (g1==='r'&&g2==='R') ? 'Rr' : g1+g2;
+                ctx.textAlign='left'; ctx.fillStyle='#fff'; ctx.font='bold 24px system-ui';
+                ctx.fillText(`基因型: ${finalG}`, 150, 680);
+                
+                const isRound = finalG.includes('R');
+                const phenoText = `表現型: ${isRound ? '光滑' : '皺褶'}豌豆`;
+                ctx.font='600 18px system-ui'; ctx.fillStyle = isRound ? '#4ade80' : '#c084fc';
+                ctx.fillText(phenoText, 150, 720);
+                
+                let textW = ctx.measureText(phenoText).width;
+                drawPea(ctx, 150 + textW + 40, 712, 26, isRound, true); 
+            }
+        } 
+        // ================= 雙基因獨立分配 =================
+        else if (currentMode === 'di') {
+            drawChromosome(170, 110, 105, p1Genotype[0], null, colors.p1Chr1A, colors.p1Chr1A, false, sInit, 'I');
+            drawChromosome(220, 110, 105, p1Genotype[1], null, colors.p1Chr1B, colors.p1Chr1B, false, sInit, 'I');
+            drawChromosome(280, 115, 75, p1Genotype[2], null, colors.p1Chr2A, colors.p1Chr2A, false, sInit, 'I'); 
+            drawChromosome(330, 115, 75, p1Genotype[3], null, colors.p1Chr2B, colors.p1Chr2B, false, sInit, 'I');
+            
+            drawChromosome(690, 110, 105, p2Genotype[0], null, colors.p2Chr1A, colors.p2Chr1A, false, sInit, 'I');
+            drawChromosome(740, 110, 105, p2Genotype[1], null, colors.p2Chr1B, colors.p2Chr1B, false, sInit, 'I');
+            drawChromosome(800, 115, 75, p2Genotype[2], null, colors.p2Chr2A, colors.p2Chr2A, false, sInit, 'I');
+            drawChromosome(850, 115, 75, p2Genotype[3], null, colors.p2Chr2B, colors.p2Chr2B, false, sInit, 'I');
+
+            if (state !== 'init') {
+                drawSectionLabel('DNA 已複製 (2n)', 210);
+                ctx.moveTo(COL_SEP, 210); ctx.lineTo(COL_SEP, 360);
+                drawChromosome(160, 290, 105, p1Genotype[0], null, colors.p1Chr1A, colors.p1Chr1A, false, sRep, 'X');
+                drawChromosome(225, 290, 105, p1Genotype[1], null, colors.p1Chr1B, colors.p1Chr1B, false, sRep, 'X');
+                drawChromosome(290, 295, 75, p1Genotype[2], null, colors.p1Chr2A, colors.p1Chr2A, false, sRep, 'X');
+                drawChromosome(350, 295, 75, p1Genotype[3], null, colors.p1Chr2B, colors.p1Chr2B, false, sRep, 'X');
+                
+                drawChromosome(670, 290, 105, p2Genotype[0], null, colors.p2Chr1A, colors.p2Chr1A, false, sRep, 'X');
+                drawChromosome(735, 290, 105, p2Genotype[1], null, colors.p2Chr1B, colors.p2Chr1B, false, sRep, 'X');
+                drawChromosome(800, 295, 75, p2Genotype[2], null, colors.p2Chr2A, colors.p2Chr2A, false, sRep, 'X');
+                drawChromosome(860, 295, 75, p2Genotype[3], null, colors.p2Chr2B, colors.p2Chr2B, false, sRep, 'X');
+            }
+
+            if (state === 'meiosis' || state === 'fertilization') {
+                drawSectionLabel('產生 4 種可能配子 (n)', 390);
+                ctx.moveTo(COL_SEP, 390); ctx.lineTo(COL_SEP, 550);
+                const combi = [{r:0,y:2}, {r:0,y:3}, {r:1,y:2}, {r:1,y:3}];
+                ctx.font = '14px system-ui'; ctx.textAlign = 'center';
+                
+                for(let i=0; i<4; i++) {
+                    const cx = 80 + i*115;
+                    const isSel = (state === 'fertilization' && p1PickedIndex === i);
+                    const op = isSel || state==='meiosis' ? 1 : 0.2;
+                    ctx.fillStyle = '#94a3b8'; ctx.fillText(`雄配子 ${i+1}`, cx+15, 400);
+                    drawChromosome(cx, 490, 85, p1Genotype[combi[i].r], null, combi[i].r===0?colors.p1Chr1A:colors.p1Chr1B, combi[i].r===0?colors.p1Chr1A:colors.p1Chr1B, isSel, op, 'I');
+                    drawChromosome(cx+30, 495, 60, p1Genotype[combi[i].y], null, combi[i].y===2?colors.p1Chr2A:colors.p1Chr2B, combi[i].y===2?colors.p1Chr2A:colors.p1Chr2B, isSel, op, 'I');
+                }
+                for(let i=0; i<4; i++) {
+                    const cx = 570 + i*115;
+                    const isSel = (state === 'fertilization' && p2PickedIndex === i);
+                    const op = isSel || state==='meiosis' ? 1 : 0.2;
+                    ctx.fillStyle = '#94a3b8'; ctx.fillText(`雌配子 ${i+1}`, cx+15, 400);
+                    drawChromosome(cx, 490, 85, p2Genotype[combi[i].r], null, combi[i].r===0?colors.p2Chr1A:colors.p2Chr1B, combi[i].r===0?colors.p2Chr1A:colors.p2Chr1B, isSel, op, 'I');
+                    drawChromosome(cx+30, 495, 60, p2Genotype[combi[i].y], null, combi[i].y===2?colors.p2Chr2A:colors.p2Chr2B, combi[i].y===2?colors.p2Chr2A:colors.p2Chr2B, isSel, op, 'I');
+                }
+            }
+
+            if (state === 'fertilization') {
+                drawSectionLabel('雙基因受精卵子代 (2n) — 顯示最近一次生成的結果', 590);
+                const combi = [{r:0,y:2}, {r:0,y:3}, {r:1,y:2}, {r:1,y:3}];
+                const p1T_L = p1Genotype[combi[p1PickedIndex].r], p1T_C = combi[p1PickedIndex].r === 0 ? colors.p1Chr1A : colors.p1Chr1B;
+                const p1Y_L = p1Genotype[combi[p1PickedIndex].y], p1Y_C = combi[p1PickedIndex].y === 2 ? colors.p1Chr2A : colors.p1Chr2B;
+                const p2T_L = p2Genotype[combi[p2PickedIndex].r], p2T_C = combi[p2PickedIndex].r === 0 ? colors.p2Chr1A : colors.p2Chr1B;
+                const p2Y_L = p2Genotype[combi[p2PickedIndex].y], p2Y_C = combi[p2PickedIndex].y === 2 ? colors.p2Chr2A : colors.p2Chr2B;
+
+                drawChromosome(410, 700, 105, p1T_L, null, p1T_C, p1T_C, true, 1, 'I');
+                drawChromosome(460, 700, 105, p2T_L, null, p2T_C, p2T_C, true, 1, 'I');
+                drawChromosome(540, 705, 75, p1Y_L, null, p1Y_C, p1Y_C, true, 1, 'I');
+                drawChromosome(590, 705, 75, p2Y_L, null, p2Y_C, p2Y_C, true, 1, 'I');
+
+                const finalG = [p1T_L, p2T_L].sort().reverse().join('') + [p1Y_L, p2Y_L].sort().reverse().join('');
+                ctx.textAlign='left'; ctx.fillStyle='#fff'; ctx.font='bold 24px system-ui';
+                ctx.fillText(`子代基因型: ${finalG}`, 80, 680);
+                
+                const isRound = finalG.includes('R');
+                const isYellow = finalG.includes('Y');
+                const phenoText = `表現型: ${(isRound?'光滑':'皺褶')}${(isYellow?'黃色':'綠色')}豌豆`;
+                
+                ctx.font='600 18px system-ui'; ctx.fillStyle = '#4ade80';
+                ctx.fillText(phenoText, 80, 720);
+                
+                let textW = ctx.measureText(phenoText).width;
+                drawPea(ctx, 80 + textW + 40, 712, 26, isRound, isYellow);
+            }
+        }
+        // ================= 雙基因連鎖互換 =================
+        else if (currentMode === 'linked') {
+            const chrLen = 140; 
+            
+            drawChromosome(210, 110, chrLen, p1Genotype[0].r, p1Genotype[0].y, colors.p1Chr1A, colors.p1Chr1A, false, sInit, 'I');
+            drawChromosome(290, 110, chrLen, p1Genotype[1].r, p1Genotype[1].y, colors.p1Chr1B, colors.p1Chr1B, false, sInit, 'I');
+            
+            drawChromosome(730, 110, chrLen, p2Genotype[0].r, p2Genotype[0].y, colors.p2Chr1A, colors.p2Chr1A, false, sInit, 'I');
+            drawChromosome(810, 110, chrLen, p2Genotype[1].r, p2Genotype[1].y, colors.p2Chr1B, colors.p2Chr1B, false, sInit, 'I');
+
+            if (state !== 'init') {
+                drawSectionLabel('DNA 已複製 (2n)', 210);
+                ctx.moveTo(COL_SEP, 210); ctx.lineTo(COL_SEP, 360);
+                
+                drawChromosome(210, 290, chrLen, p1Genotype[0].r, p1Genotype[0].y, colors.p1Chr1A, colors.p1Chr1A, false, sRep, 'X');
+                drawChromosome(290, 290, chrLen, p1Genotype[1].r, p1Genotype[1].y, colors.p1Chr1B, colors.p1Chr1B, false, sRep, 'X');
+                
+                drawChromosome(730, 290, chrLen, p2Genotype[0].r, p2Genotype[0].y, colors.p2Chr1A, colors.p2Chr1A, false, sRep, 'X');
+                drawChromosome(810, 290, chrLen, p2Genotype[1].r, p2Genotype[1].y, colors.p2Chr1B, colors.p2Chr1B, false, sRep, 'X');
+            }
+
+            if (state === 'meiosis' || state === 'fertilization') {
+                const isCrossover = document.getElementById('cb-crossover').checked;
+                drawSectionLabel(isCrossover ? '發生互換！列出全部 4 種配子 (n)' : '完全連鎖，僅產生 2 種配子 (n)', 390);
+                ctx.moveTo(COL_SEP, 390); ctx.lineTo(COL_SEP, 550);
+                
+                for (let i = 0; i < p1LinkedGametes.length; i++) {
+                    let g = p1LinkedGametes[i];
+                    let cx = p1LinkedGametes.length === 2 ? 160 + i * 180 : 80 + i * 100;
+                    let isSel = (state === 'fertilization' && p1PickedIndex === i);
+                    let op = isSel || state === 'meiosis' ? 1 : 0.2;
+
+                    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.font = '14px system-ui';
+                    ctx.fillText(`雄配子 ${i+1}`, cx, 395);
+                    if (p1LinkedGametes.length === 4) {
+                        ctx.fillStyle = g.type === '重組型' ? '#eab308' : '#94a3b8';
+                        ctx.font = 'bold 12px system-ui';
+                        ctx.fillText(`(${g.type})`, cx, 415);
+                    }
+                    drawChromosome(cx, 490, 110, g.r, g.y, g.cTop, g.cBot, isSel, op, 'I');
+                }
+
+                for (let i = 0; i < p2LinkedGametes.length; i++) {
+                    let g = p2LinkedGametes[i];
+                    let cx = p2LinkedGametes.length === 2 ? 680 + i * 180 : 600 + i * 100;
+                    let isSel = (state === 'fertilization' && p2PickedIndex === i);
+                    let op = isSel || state === 'meiosis' ? 1 : 0.2;
+
+                    ctx.fillStyle = '#94a3b8'; ctx.textAlign = 'center'; ctx.font = '14px system-ui';
+                    ctx.fillText(`雌配子 ${i+1}`, cx, 395);
+                    if (p2LinkedGametes.length === 4) {
+                        ctx.fillStyle = g.type === '重組型' ? '#eab308' : '#94a3b8';
+                        ctx.font = 'bold 12px system-ui';
+                        ctx.fillText(`(${g.type})`, cx, 415);
+                    }
+                    drawChromosome(cx, 490, 110, g.r, g.y, g.cTop, g.cBot, isSel, op, 'I');
+                }
+            }
+
+            if (state === 'fertilization') {
+                drawSectionLabel('連鎖基因受精卵子代 (2n) — 顯示最近一次生成的結果', 590);
+                
+                const g1 = p1LinkedGametes[p1PickedIndex];
+                const g2 = p2LinkedGametes[p2PickedIndex];
+
+                drawChromosome(470, 700, 130, g1.r, g1.y, g1.cTop, g1.cBot, true, 1, 'I');
+                drawChromosome(550, 700, 130, g2.r, g2.y, g2.cTop, g2.cBot, true, 1, 'I');
+
+                const rStr = [g1.r, g2.r].sort().reverse().join('');
+                const yStr = [g1.y, g2.y].sort().reverse().join('');
+                const finalG = rStr + yStr;
+                
+                ctx.textAlign='left'; ctx.fillStyle='#fff'; ctx.font='bold 24px system-ui';
+                ctx.fillText(`子代基因型: ${finalG}`, 80, 680);
+                
+                const isRound = finalG.includes('R');
+                const isYellow = finalG.includes('Y');
+                const phenoText = `表現型: ${(isRound?'光滑':'皺褶')}${(isYellow?'黃色':'綠色')}豌豆`;
+                
+                ctx.font='600 18px system-ui'; ctx.fillStyle = '#4ade80';
+                ctx.fillText(phenoText, 80, 720);
+                
+                let textW = ctx.measureText(phenoText).width;
+                drawPea(ctx, 80 + textW + 40, 712, 26, isRound, isYellow);
+            }
+        }
+        
+        ctx.stroke();
+    }
+
+    function runReplication() {
+        state = 'replicated';
+        document.getElementById('btn-rep').disabled = true;
+        document.getElementById('btn-meiosis').disabled = false;
+        document.getElementById('status-text').innerText = "【DNA 複製】所有染色體複製為 X 型。請點擊「2. 減數分裂」。";
+        draw();
+    }
+
+    function runMeiosis() {
+        state = 'meiosis';
+        document.getElementById('btn-meiosis').disabled = true;
+        document.getElementById('btn-fertilize').disabled = false; 
+        document.getElementById('btn-fast').disabled = false; 
+        
+        let msg = "";
+        if (currentMode === 'mono') {
+            msg = "【減數分裂】同源染色體分離，形成雌雄配子。";
+        } else if (currentMode === 'di') {
+            msg = "【獨立分配定律】非同源染色體自由組合！產生了 4 種配子。";
+        } else if (currentMode === 'linked') {
+            const isCrossover = document.getElementById('cb-crossover').checked;
+            if (isCrossover) {
+                msg = "【發生互換】同源染色體的非姊妹染色分體交換了片段！產生了「重組型」配子！";
+            } else {
+                msg = "【完全連鎖】未發生互換，同一染色體上的基因綁定在一起。只產生親代型配子。";
+            }
+        }
+        
+        document.getElementById('status-text').innerText = msg + " 請點擊下方按鈕進行隨機受精。";
+        draw();
+    }
+
+    function runFertilization(times = 1) {
+        state = 'fertilization';
+        
+        for (let i = 0; i < times; i++) {
+            let finalG = "";
+            let isRound = false;
+            let isYellow = true; 
+
+            if (currentMode === 'mono') {
+                p1PickedIndex = Math.floor(Math.random() * 2);
+                p2PickedIndex = Math.floor(Math.random() * 2);
+                const g1 = p1Genotype[p1PickedIndex], g2 = p2Genotype[p2PickedIndex];
+                finalG = (g1==='r'&&g2==='R') ? 'Rr' : g1+g2;
+                isRound = finalG.includes('R');
+            } else if (currentMode === 'di') {
+                p1PickedIndex = Math.floor(Math.random() * 4);
+                p2PickedIndex = Math.floor(Math.random() * 4);
+                const combi = [{r:0,y:2}, {r:0,y:3}, {r:1,y:2}, {r:1,y:3}];
+                const p1T = p1Genotype[combi[p1PickedIndex].r], p1Y = p1Genotype[combi[p1PickedIndex].y];
+                const p2T = p2Genotype[combi[p2PickedIndex].r], p2Y = p2Genotype[combi[p2PickedIndex].y];
+                finalG = [p1T, p2T].sort().reverse().join('') + [p1Y, p2Y].sort().reverse().join('');
+                isRound = finalG.includes('R');
+                isYellow = finalG.includes('Y');
+            } else if (currentMode === 'linked') {
+                p1PickedIndex = Math.floor(Math.random() * p1LinkedGametes.length);
+                p2PickedIndex = Math.floor(Math.random() * p2LinkedGametes.length);
+                const g1 = p1LinkedGametes[p1PickedIndex], g2 = p2LinkedGametes[p2PickedIndex];
+                finalG = [g1.r, g2.r].sort().reverse().join('') + [g1.y, g2.y].sort().reverse().join('');
+                isRound = finalG.includes('R');
+                isYellow = finalG.includes('Y');
+            }
+
+            // 紀錄表現型統計數據
+            let phenoStr = "";
+            if (currentMode === 'mono') {
+                phenoStr = isRound ? "光滑" : "皺褶";
+            } else {
+                phenoStr = (isRound ? "光滑" : "皺褶") + (isYellow ? "黃色" : "綠色");
+            }
+            phenotypeStats[phenoStr] = (phenotypeStats[phenoStr] || 0) + 1;
+        }
+        
+        updateStatsUI();
+        
+        if (times === 1) {
+            document.getElementById('status-text').innerHTML = `【受精成功】已產生 1 個新子代！畫面上顯示為最新結果。<br><span style="color:#4ade80;">💡 您可以狂按「單次隨機受精」，或直接點擊「快速產生 1000 子代」來加速實驗。</span>`;
+        } else {
+            document.getElementById('status-text').innerHTML = `【批量受精完成】已瞬間隨機產生 ${times} 個子代並納入統計！<br><span style="color:#facc15;">💡 觀察上方儀表板，大樣本下的比例是否極度接近理論值？</span>`;
+        }
+        
+        draw();
+    }
+</script>
+
+</body>
+</html>

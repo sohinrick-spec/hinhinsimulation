@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人眼屈光與視力矯正 — HinHin Biology</title>
+    <style>
+        :root {
+            /* 1. Precision Lab Color Palette & Sharp High Contrast */
+            --primary-bg: #f4f6f9;         /* Global Light ice-blue/gray background */
+            --panel-bg: #ffffff;           /* Pure White main panels */
+            --text-main: #1a2332;          /* Primary text: Deep Navy */
+            --text-sub: #4a5a70;           /* Secondary text: Slate Blue */
+            --text-muted: #8a9ab0;         /* Dim/Muted labels: Gray */
+            
+            /* Semantic Accent Colors mapped precisely to specification */
+            --primary: #1976d2;            /* Primary Cyan for general active states */
+            --primary-hover: #115293;      
+            --success: #2e7d32;            /* Success Green for verified tracking states */
+            --warning: #e65100;            /* Warning Amber for secondary warnings */
+            --danger: #c62828;             /* Danger/Reset Rose for errors */
+            
+            --border: #d4dbe6;             /* Crisp thin 1px border */
+            
+            /* 2. Typography Rules */
+            --font-ui: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "微軟正黑體", sans-serif;
+            --font-mono: 'IBM Plex Mono', Monaco, Consolas, monospace;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 3. Outer Frame & Layout Partitioning (Dense Device Console) */
+        .simulator-container {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px; /* Micro-radius */
+            box-shadow: none; /* Eliminated heavy box-shadows */
+            display: flex;
+            width: 1050px;
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        /* Left Side: Instrument Configuration Console Panel */
+        .controls-panel {
+            width: 320px;
+            padding: 24px;
+            background-color: #fafbfc;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        /* Right Side: Instrument Signal Viewport Frame */
+        .canvas-panel {
+            flex: 1;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: var(--panel-bg);
+            position: relative;
+        }
+
+        h2 {
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+            text-transform: uppercase;
+            border-left: 3px solid var(--primary);
+            padding-left: 8px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 10px;
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px; /* Micro-radius */
+        }
+
+        .control-label {
+            font-weight: 600;
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Grid Matrix Segmented Action Matrix */
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+        }
+
+        /* Compact Layout Overrides for specific button alignment cases */
+        .control-group:nth-of-type(1) .btn-group {
+            grid-template-columns: 1fr;
+        }
+        
+        .control-group:nth-of-type(3) .btn-group {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        button {
+            padding: 6px 10px;
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 4px; /* Micro-radius */
+            color: var(--text-sub);
+            font-family: var(--font-ui);
+            font-weight: 500;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            text-align: left;
+        }
+
+        button:hover {
+            border-color: #b4c2d4;
+            color: var(--text-main);
+            background-color: #f1f5f9;
+        }
+
+        button.active {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff !important; /* Perfect visibility override */
+            font-weight: 600;
+        }
+
+        /* 4. Ultra-thin Minimalist Range Slider Module */
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            margin: 8px 0;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        /* Track Architecture */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Minimal Instrument Micro Target Thumbs */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px; /* Centers thumb on 3px track */
+            background-color: var(--primary);
+            height: 13px;
+            width: 13px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            background-color: var(--primary);
+            height: 9px;
+            width: 9px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+        
+        input[type="range"]:hover::-moz-range-thumb {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]:disabled::-webkit-slider-thumb {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        input[type="range"]:disabled::-moz-range-thumb {
+            background-color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* 5. Precision Telemetry Terminal Output Panel */
+        .status-box {
+            margin-top: auto;
+            padding: 14px;
+            border-radius: 4px;
+            background-color: #ffffff;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--border);
+            font-size: 12.5px;
+            line-height: 1.6;
+        }
+
+        /* Telemetry Numerical Contexts & Technical Status Requirements */
+        .status-box strong {
+            font-family: var(--font-ui);
+            color: var(--text-main);
+        }
+
+        canvas {
+            border: 1px solid var(--border);
+            border-radius: 4px; /* Micro-radius viewport */
+            background-color: #ffffff;
+            box-shadow: none;
+        }
+
+        .description {
+            margin-top: 14px;
+            font-size: 12px;
+            color: var(--text-sub);
+            text-align: left;
+            line-height: 1.6;
+            width: 100%;
+            border-top: 1px dashed var(--border);
+            padding-top: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="simulator-container">
+        <div class="controls-panel">
+            <h2>光學參數控制</h2>
+            
+            <div class="control-group">
+                <span class="control-label">1. 眼睛狀態 (Eye Condition)</span>
+                <div class="btn-group">
+                    <button id="btn-eye-normal" class="active" onclick="setEye('normal')">正常 (Normal)</button>
+                    <button id="btn-eye-myopia" onclick="setEye('myopia')">近視 (長眼球)</button>
+                    <button id="btn-eye-hyperopia" onclick="setEye('hyperopia')">遠視 (短眼球)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">2. 觀察目標 (Object Distance)</span>
+                <div class="btn-group">
+                    <button id="btn-target-far" class="active" onclick="setTarget('far')">遠處 (平行光)</button>
+                    <button id="btn-target-near" onclick="setTarget('near')">近處 (發散光)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">3. 鏡片種類 (Lens Type)</span>
+                <div class="btn-group">
+                    <button id="btn-lens-none" class="active" onclick="setLens('none')">無 (None)</button>
+                    <button id="btn-lens-flat" onclick="setLens('flat')">平光鏡</button>
+                    <button id="btn-lens-concave" onclick="setLens('concave')">凹透鏡 (發散)</button>
+                    <button id="btn-lens-convex" onclick="setLens('convex')">凸透鏡 (會聚)</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <span class="control-label">4. 鏡片曲率 / 度數 (Lens Power)</span>
+                <input type="range" id="lens-power" min="1" max="10" value="5" oninput="updateSimulation()">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono); font-weight: bold; color: var(--text-muted); padding: 0 2px;">
+                    <span>弱</span>
+                    <span>強</span>
+                </div>
+            </div>
+
+            <div id="status-box" class="status-box">
+                </div>
+        </div>
+
+        <div class="canvas-panel">
+            <canvas id="simCanvas"></canvas>
+            <div class="description">
+                <strong>光學原理提示：</strong>標準物理光路圖以「V字箭頭」標示光線行進方向。<br>
+                每一段折射（穿過鏡片、進入眼球內部）皆附有方向箭頭，精確表示光路的偏折。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function initCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const logicalWidth = 650;
+            const logicalHeight = 350;
+
+            canvas.width = logicalWidth * dpr;
+            canvas.height = logicalHeight * dpr;
+            canvas.style.width = `${logicalWidth}px`;
+            canvas.style.height = `${logicalHeight}px`;
+
+            ctx.scale(dpr, dpr);
+            ctx.textBaseline = 'middle';
+            ctx.font = '14px "Microsoft JhengHei", sans-serif';
+        }
+
+        let state = {
+            eye: 'normal',
+            target: 'far', // 'far' (平行), 'near' (發散)
+            lens: 'none',
+            power: 5
+        };
+
+        const CENTER_Y = 175;
+        const EYE_X = 400; 
+        const EYE_RADIUS_Y = 110;
+        const EYE_RADIUS_X_BASE = 110; 
+        const RETINA_X_BASE = EYE_X + EYE_RADIUS_X_BASE; 
+        
+        const CRYSTALLINE_X = 330; 
+        const LENS_X = 200;        
+        const SOURCE_FAR_X = 10;   
+        const SOURCE_NEAR_X = 80;  
+
+        function setEye(type) {
+            state.eye = type;
+            document.querySelectorAll('[id^="btn-eye-"]').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-eye-' + type).classList.add('active');
+            
+            if (type === 'myopia') setTarget('far');
+            else if (type === 'hyperopia') setTarget('near');
+            
+            setLens('none');
+        }
+
+        function setTarget(type) {
+            state.target = type;
+            document.querySelectorAll('[id^="btn-target-"]').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-target-' + type).classList.add('active');
+            updateSimulation();
+        }
+
+        function setLens(type) {
+            state.lens = type;
+            document.querySelectorAll('[id^="btn-lens-"]').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-lens-' + type).classList.add('active');
+            
+            const powerSlider = document.getElementById('lens-power');
+            powerSlider.disabled = (type === 'none' || type === 'flat');
+            
+            updateSimulation();
+        }
+
+        function updateSimulation() {
+            state.power = parseInt(document.getElementById('lens-power').value);
+            draw();
+            updateStatus();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, 650, 350);
+            
+            let eyeRadiusX = EYE_RADIUS_X_BASE;
+            let targetRetinaX = RETINA_X_BASE;
+            
+            if (state.eye === 'myopia') {
+                eyeRadiusX = EYE_RADIUS_X_BASE + 20; 
+                targetRetinaX = EYE_X + eyeRadiusX;
+            } else if (state.eye === 'hyperopia') {
+                eyeRadiusX = EYE_RADIUS_X_BASE - 15; 
+                targetRetinaX = EYE_X + eyeRadiusX;
+            }
+
+            let baseFocusX = RETINA_X_BASE; 
+            if (state.target === 'near') {
+                baseFocusX += 20; // 發散光使焦點後移
+            }
+
+            let lensEffect = 0; 
+            if (state.lens === 'concave') {
+                lensEffect = state.power * 4; 
+            } else if (state.lens === 'convex') {
+                lensEffect = -state.power * 4; 
+            }
+
+            let finalFocusX = baseFocusX + lensEffect;
+
+            drawEye(EYE_X, eyeRadiusX);
+            drawCorrectiveLens();
+            drawRays(finalFocusX, targetRetinaX);
+        }
+
+        function drawEye(centerX, radiusX) {
+            // 玻璃體
+            ctx.beginPath();
+            ctx.ellipse(centerX, CENTER_Y, radiusX, EYE_RADIUS_Y, 0, 0, Math.PI * 2);
+            let gradient = ctx.createRadialGradient(centerX - 20, CENTER_Y - 20, 10, centerX, CENTER_Y, radiusX);
+            gradient.addColorStop(0, "rgba(220, 235, 245, 0.8)");
+            gradient.addColorStop(1, "rgba(160, 195, 220, 0.9)");
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.strokeStyle = "#477da6";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 角膜
+            ctx.beginPath();
+            ctx.arc(centerX - radiusX + 25, CENTER_Y, 60, Math.PI * 0.7, Math.PI * 1.3);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.fill();
+            ctx.strokeStyle = "#477da6";
+            ctx.stroke();
+
+            // 晶狀體
+            ctx.beginPath();
+            ctx.ellipse(CRYSTALLINE_X, CENTER_Y, 15, 45, 0, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+            ctx.fill();
+            ctx.strokeStyle = "#6b9bbd";
+            ctx.stroke();
+        }
+
+        function drawCorrectiveLens() {
+            if (state.lens === 'none') return;
+
+            ctx.fillStyle = "rgba(200, 230, 255, 0.5)";
+            ctx.strokeStyle = "#3b82f6";
+            ctx.lineWidth = 2;
+            
+            const height = 80;
+            const yTop = CENTER_Y - height/2;
+            const yBot = CENTER_Y + height/2;
+            const curve = state.power * 1.5; 
+
+            ctx.beginPath();
+            if (state.lens === 'flat') {
+                ctx.rect(LENS_X - 5, yTop, 10, height);
+            } else if (state.lens === 'convex') {
+                ctx.moveTo(LENS_X, yTop);
+                ctx.quadraticCurveTo(LENS_X + 15 + curve, CENTER_Y, LENS_X, yBot);
+                ctx.quadraticCurveTo(LENS_X - 15 - curve, CENTER_Y, LENS_X, yTop);
+            } else if (state.lens === 'concave') {
+                ctx.moveTo(LENS_X - 10, yTop);
+                ctx.lineTo(LENS_X + 10, yTop);
+                ctx.quadraticCurveTo(LENS_X + 10 - curve, CENTER_Y, LENS_X + 10, yBot);
+                ctx.lineTo(LENS_X - 10, yBot);
+                ctx.quadraticCurveTo(LENS_X - 10 + curve, CENTER_Y, LENS_X - 10, yTop);
+            }
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawRays(focusX, retinaX) {
+            const rayOffsets = [-30, 0, 30]; 
+            const isNear = state.target === 'near';
+            const sourceX = isNear ? SOURCE_NEAR_X : SOURCE_FAR_X;
+            
+            // 標示與圖示防重疊
+            ctx.fillStyle = "#1e293b";
+            ctx.font = 'bold 14px "Microsoft JhengHei", sans-serif';
+            if (isNear) {
+                ctx.fillText("近處物體 (發散光)", sourceX - 35, CENTER_Y - 25);
+                ctx.beginPath();
+                ctx.arc(sourceX, CENTER_Y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = "#ef4444";
+                ctx.fill();
+            } else {
+                ctx.fillText("來自遠處物體", 15, 30);
+                ctx.fillText("的平行光", 15, 50);
+            }
+
+            rayOffsets.forEach(offset => {
+                let startY = isNear ? CENTER_Y : CENTER_Y + offset; 
+                let lensHitY = CENTER_Y + offset; 
+
+                ctx.strokeStyle = "#1e293b";
+                ctx.lineWidth = 1.5;
+
+                if (state.lens !== 'none') {
+                    // 第1段：光源 -> 矯正鏡片
+                    ctx.beginPath();
+                    ctx.moveTo(sourceX, startY);
+                    ctx.lineTo(LENS_X, lensHitY);
+                    ctx.stroke();
+                    drawPhysicsArrow(sourceX + (LENS_X - sourceX)/2, startY + (lensHitY - startY)/2, Math.atan2(lensHitY - startY, LENS_X - sourceX));
+                    
+                    // 第2段：矯正鏡片 -> 眼睛晶狀體 (折射後)
+                    let lensShift = 0;
+                    if(state.lens === 'concave') lensShift = offset * 0.15 * (state.power/5);
+                    if(state.lens === 'convex') lensShift = -offset * 0.25 * (state.power/5); 
+                    
+                    let crystalHitY = lensHitY + lensShift;
+                    ctx.beginPath();
+                    ctx.moveTo(LENS_X, lensHitY);
+                    ctx.lineTo(CRYSTALLINE_X, crystalHitY);
+                    ctx.stroke();
+                    drawPhysicsArrow(LENS_X + (CRYSTALLINE_X - LENS_X)/2, lensHitY + (crystalHitY - lensHitY)/2, Math.atan2(crystalHitY - lensHitY, CRYSTALLINE_X - LENS_X));
+                    
+                    // 第3段：進入眼球內部
+                    ctx.beginPath();
+                    ctx.moveTo(CRYSTALLINE_X, crystalHitY);
+                    drawRaySegment(CRYSTALLINE_X, crystalHitY, focusX, retinaX);
+                } else {
+                    // 第1段：光源直接到晶狀體
+                    ctx.beginPath();
+                    ctx.moveTo(sourceX, startY);
+                    ctx.lineTo(CRYSTALLINE_X, lensHitY);
+                    ctx.stroke();
+                    drawPhysicsArrow(sourceX + (CRYSTALLINE_X - sourceX)/2, startY + (lensHitY - startY)/2, Math.atan2(lensHitY - startY, CRYSTALLINE_X - sourceX));
+
+                    // 第2段：進入眼球內部
+                    ctx.beginPath();
+                    ctx.moveTo(CRYSTALLINE_X, lensHitY);
+                    drawRaySegment(CRYSTALLINE_X, lensHitY, focusX, retinaX);
+                }
+            });
+            
+            // 繪製焦點圖示
+            ctx.beginPath();
+            ctx.arc(focusX, CENTER_Y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#ef4444";
+            ctx.fill();
+        }
+
+        // 眼睛內部的光線會聚段 (加上折射後的獨立箭頭)
+        function drawRaySegment(startX, startY, focusX, retinaX) {
+            ctx.strokeStyle = "#1e293b";
+            ctx.lineWidth = 1.5;
+
+            if (Math.abs(startY - CENTER_Y) < 1) {
+                // 中央直射光路
+                let endX = Math.min(focusX, retinaX);
+                ctx.lineTo(endX, CENTER_Y);
+                ctx.stroke();
+                
+                // 畫眼內實線段箭頭
+                drawPhysicsArrow(startX + (endX - startX) * 0.5, CENTER_Y, 0);
+
+                // 若焦點在視網膜後方，繪製虛線段 (不加箭頭，代表虛擬光路)
+                if (focusX > retinaX) {
+                    ctx.beginPath();
+                    ctx.setLineDash([4, 4]);
+                    ctx.moveTo(retinaX, CENTER_Y);
+                    ctx.lineTo(focusX, CENTER_Y);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+                return;
+            }
+
+            let slope = (CENTER_Y - startY) / (focusX - startX);
+            
+            if (focusX <= retinaX) {
+                // 【狀況A】焦點落在視網膜前方或剛好在視網膜上
+                
+                // 畫「晶狀體 -> 焦點」段
+                ctx.lineTo(focusX, CENTER_Y); 
+                
+                // 畫「焦點 -> 視網膜」段 (如果有的話)
+                let retinaY = CENTER_Y + slope * (retinaX - focusX);
+                ctx.lineTo(retinaX, retinaY);
+                ctx.stroke();
+
+                // 箭頭1：晶狀體到焦點
+                let angle1 = Math.atan2(CENTER_Y - startY, focusX - startX);
+                drawPhysicsArrow(startX + (focusX - startX)*0.5, startY + (CENTER_Y - startY)*0.5, angle1);
+
+                // 箭頭2：焦點到視網膜 (發散段，只要空間夠長就畫)
+                if (retinaX - focusX > 8) {
+                    let angle2 = Math.atan2(retinaY - CENTER_Y, retinaX - focusX);
+                    drawPhysicsArrow(focusX + (retinaX - focusX)*0.5, CENTER_Y + (retinaY - CENTER_Y)*0.5, angle2);
+                }
+
+            } else {
+                // 【狀況B】焦點落在視網膜後方 (眼內只有一段實線)
+                let intersectY = startY + slope * (retinaX - startX);
+                ctx.lineTo(retinaX, intersectY); 
+                ctx.stroke(); 
+                
+                // 眼內實線段箭頭
+                let angle = Math.atan2(intersectY - startY, retinaX - startX);
+                drawPhysicsArrow(startX + (retinaX - startX)*0.5, startY + (intersectY - startY)*0.5, angle);
+
+                // 視網膜後的虛擬光路 (不加箭頭)
+                ctx.beginPath();
+                ctx.setLineDash([4, 4]);
+                ctx.moveTo(retinaX, intersectY);
+                ctx.lineTo(focusX, CENTER_Y);
+                ctx.stroke();
+                ctx.setLineDash([]); 
+            }
+        }
+
+        // 物理學標準射線箭頭
+        function drawPhysicsArrow(x, y, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            // 標準 V 字型光路箭頭
+            ctx.moveTo(-6, -5);
+            ctx.lineTo(0, 0);
+            ctx.lineTo(-6, 5);
+            ctx.strokeStyle = "#1e293b"; 
+            ctx.lineWidth = 2;
+            ctx.lineJoin = "round"; 
+            ctx.stroke();
+            ctx.restore();
+            // 在每次畫完箭頭後重啟 path，避免影響後續的 lineTo
+            ctx.beginPath(); 
+        }
+
+        function updateStatus() {
+            const statusBox = document.getElementById('status-box');
+            let baseFocus = RETINA_X_BASE;
+            if (state.target === 'near') baseFocus += 20;
+
+            let retina = RETINA_X_BASE;
+            if(state.eye === 'myopia') retina = EYE_X + EYE_RADIUS_X_BASE + 20;
+            if(state.eye === 'hyperopia') retina = EYE_X + EYE_RADIUS_X_BASE - 15;
+
+            let lensEffect = 0;
+            if (state.lens === 'concave') lensEffect = state.power * 4;
+            if (state.lens === 'convex') lensEffect = -state.power * 4;
+
+            let finalFocusX = baseFocus + lensEffect;
+            let diff = finalFocusX - retina;
+
+            let statusHTML = `<div style="margin-bottom: 8px;"><strong>光學成像分析：</strong></div>`;
+            statusBox.style.borderLeftColor = "";
+
+            if (Math.abs(diff) <= 2) {
+                statusHTML += `<span style="color: var(--success); font-weight: bold;">✔ 焦點精準落在視網膜上！影像清晰。</span>`;
+                statusBox.style.borderLeftColor = "var(--success)";
+            } else if (diff < -2) {
+                statusHTML += `<span style="color: var(--danger); font-weight: bold;">✘ 焦點落在視網膜<strong>前方</strong>。影像模糊。</span>`;
+                statusBox.style.borderLeftColor = "var(--danger)";
+            } else if (diff > 2) {
+                statusHTML += `<span style="color: var(--warning); font-weight: bold;">✘ 焦點落在視網膜<strong>後方</strong>。影像模糊。</span>`;
+                statusBox.style.borderLeftColor = "var(--warning)";
+            }
+
+            statusHTML += `<div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted); border-top: 1px dashed var(--border); padding-top: 8px;">`;
+            
+            if (state.eye === 'myopia') {
+                if (state.target === 'far' && state.lens === 'none') {
+                    statusHTML += `<strong>近視眼看遠處：</strong>眼球過長，平行光過早會聚。需用<strong>凹透鏡</strong>發散光線。`;
+                } else if (state.target === 'near' && state.lens === 'none') {
+                    statusHTML += `<strong>近視眼看近處：</strong>發散光使焦點自然向後移，剛好落在較長的視網膜上。這就是為什麼近視患者不戴眼鏡也能看清近物！`;
+                } else {
+                    statusHTML += `近視患者眼軸較長，使用凹透鏡可將焦點後移至視網膜。`;
+                }
+            } else if (state.eye === 'hyperopia') {
+                if (state.target === 'near' && state.lens === 'none') {
+                    statusHTML += `<strong>遠視眼看近處：</strong>眼球過短，且近物發散光使焦點更往後移，導致嚴重模糊。需用<strong>凸透鏡</strong>提早會聚光線。`;
+                } else {
+                    statusHTML += `遠視患者眼軸較短，使用凸透鏡可將焦點前移至視網膜。`;
+                }
+            } else {
+                if (state.target === 'near') {
+                    statusHTML += `正常眼球（未調節狀態）看近處發散光時焦點會略微靠後。<br><em>註：真實人眼會透過睫狀肌收縮自動對焦，此模擬展示純幾何光學基礎路徑。</em>`;
+                } else {
+                    statusHTML += `正常眼球的角膜與晶狀體能將遠處平行光完美聚焦於視網膜上。`;
+                }
+            }
+            statusHTML += `</div>`;
+
+            statusBox.innerHTML = statusHTML;
+        }
+
+        initCanvas();
+        updateSimulation();
+
+    </script>
+</body>
+</html>

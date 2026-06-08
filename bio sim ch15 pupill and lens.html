@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>眼球調節模擬器 — HinHin Biology</title>
+    <style>
+        :root {
+            /* 1. Precision Lab Color Palette & Sharp Contrast */
+            --bg-color: #f4f6f9;         /* Global Light ice-blue/gray background */
+            --card-bg: #ffffff;          /* Pure White main panels */
+            --primary-color: #1976d2;     /* Primary Cyan for general active states */
+            --text-main: #1a2332;         /* Primary text: Deep Navy */
+            --text-muted: #8a9ab0;        /* Dim/Muted labels: Gray */
+            
+            /* Semantic Accents precisely mapped from instructions */
+            --accent-red: #c62828;        /* Danger/Reset Rose for hot/contracted states */
+            --accent-blue: #1976d2;       /* Primary Cyan */
+            --muscle-contracted: #c62828; /* Deep red for active muscle tension */
+            --muscle-relaxed: #e2cdba;    /* Muted neutral tone for relaxed state */
+            --ligament-tight: #4a5a70;   /* Slate Blue for structural tension */
+            --ligament-loose: #94a3b8;    /* Muted gray-blue for relaxed ligament */
+            
+            --border-color: #d4dbe6;      /* Thin 1px panel divider border */
+            
+            /* 2. Typography Rules */
+            --font-ui: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "微軟正黑體", sans-serif;
+            --font-mono: 'IBM Plex Mono', Monaco, Consolas, monospace;
+        }
+
+        body {
+            font-family: var(--font-ui);
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* 3. Layout Frames & Dense Instrument Structure */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+            margin-top: 16px;
+        }
+
+        h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+            margin: 0 0 4px 0;
+            text-transform: uppercase;
+        }
+
+        p.subtitle {
+            font-size: 12px;
+            color: #4a5a70; /* Slate Blue secondary text */
+            margin: 0 0 16px 0;
+        }
+
+        /* Base Panel Matrix */
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 4px; /* Micro-radius */
+            padding: 20px;
+            box-shadow: none; /* Eliminated heavy box-shadows */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .visualization-card {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            background-color: #fafbfc;
+        }
+
+        .view-container {
+            text-align: center;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 4px; /* Micro-radius container */
+        }
+
+        .view-title {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        /* 4. Telemetry Metrics Display Grid */
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .stat-block {
+            border: 1px solid var(--border-color);
+            background-color: #f8fafc;
+            padding: 10px 14px;
+            border-radius: 4px; /* Micro-radius */
+        }
+
+        /* Tiny uppercase dim labels on top */
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        /* Large bold monospace numeric or status value underneath */
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* 5. Execution Controls Box */
+        .control-group {
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            padding: 14px 16px;
+            border-radius: 4px;
+            margin-bottom: 14px;
+        }
+
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        /* Section Headings */
+        .control-group label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #4a5a70;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Monospace display indicators for sliders */
+        .slider-value-display {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 13px;
+            color: var(--primary-color);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        /* Ultra-thin Minimalist Range Slider Module */
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            margin: 6px 0;
+        }
+
+        input[type="range"]:focus {
+            outline: none;
+        }
+
+        /* Track Architecture */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-moz-range-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        /* Minimal Circular Thumbs */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px; /* Centers thumb perfectly over 3px track */
+            background-color: var(--primary-color);
+            height: 13px;
+            width: 13px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            background-color: var(--primary-color);
+            height: 9px;
+            width: 9px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+
+        input[type="range"]:hover::-moz-range-thumb {
+            transform: scale(1.2);
+        }
+
+        /* 6. Technical Explanatory Context Box */
+        .explanation {
+            border-top: 1px dashed var(--border-color);
+            padding-top: 14px;
+            margin-top: auto;
+            font-size: 12.5px;
+            line-height: 1.6;
+            color: #4a5a70;
+        }
+
+        .explanation strong {
+            color: var(--text-main);
+        }
+
+        svg {
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>眼球調節與瞳孔反射整合模擬器</h1>
+    <p class="subtitle">模擬人眼在不同「環境光線強度」與「物體距離」下的精密生理生理調節機制</p>
+
+    <div class="dashboard">
+        <div class="card visualization-card">
+            <div class="view-container">
+                <div class="view-title">瞳孔與虹膜正面觀</div>
+                <svg id="pupil-svg" width="200" height="200" viewBox="0 0 200 200">
+                    <circle cx="100" cy="100" r="95" fill="#fcfdfd" stroke="#d4dbe6" stroke-width="1.5" />
+                    <circle id="iris" cx="100" cy="100" r="65" fill="#527293" />
+                    <g id="iris-lines"></g>
+                    <circle id="pupil" cx="100" cy="100" r="25" fill="#1a2332" />
+                </svg>
+            </div>
+
+            <div class="view-container">
+                <div class="view-title">晶狀體與睫狀體側觀</div>
+                <svg id="lens-svg" width="200" height="200" viewBox="0 0 200 200">
+                    <defs>
+                        <marker id="ray-arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 2,2 L 8,5 L 2,8 Z" fill="#e65100" />
+                        </marker>
+                    </defs>
+                    
+                    <rect width="200" height="200" fill="#fafbfc" />
+                    <path id="ciliary-top" d="M 40,10 Q 100,23 160,10 Z" fill="#e2cdba" stroke="#4a5a70" stroke-width="1" />
+                    <path id="ciliary-bottom" d="M 40,190 Q 100,177 160,190 Z" fill="#e2cdba" stroke="#4a5a70" stroke-width="1" />
+                    
+                    <g id="ligaments">
+                        <path class="lig-path" /> <path class="lig-path" /> <path class="lig-path" />
+                        <path class="lig-path" /> <path class="lig-path" /> <path class="lig-path" />
+                    </g>
+
+                    <ellipse id="lens" cx="100" cy="100" rx="25" ry="45" fill="rgba(212, 227, 242, 0.85)" stroke="#1976d2" stroke-width="1.5" />
+                    
+                    <path id="light-ray-1-in" fill="none" stroke="#e65100" stroke-width="1.5" marker-mid="url(#ray-arrow)" />
+                    <path id="light-ray-1-out" fill="none" stroke="#e65100" stroke-width="1.5" marker-mid="url(#ray-arrow)" />
+                    <path id="light-ray-2-in" fill="none" stroke="#e65100" stroke-width="1.5" marker-mid="url(#ray-arrow)" />
+                    <path id="light-ray-2-out" fill="none" stroke="#e65100" stroke-width="1.5" marker-mid="url(#ray-arrow)" />
+                </svg>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="telemetry-grid">
+                <div class="stat-block">
+                    <div class="stat-label">目標物體距離</div>
+                    <div id="distance-value" class="stat-value">中等距離</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">睫狀肌狀態</div>
+                    <div id="ciliary-status" class="stat-value">適中</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">懸韌帶張力</div>
+                    <div id="ligament-status" class="stat-value">適中</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">晶狀體厚度</div>
+                    <div id="lens-status" class="stat-value">微凸</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">折光能力強度</div>
+                    <div id="refraction-status" class="stat-value">適中</div>
+                </div>
+                <div class="stat-block">
+                    <div class="stat-label">瞳孔通光直徑</div>
+                    <div id="pupil-status" class="stat-value">正常孔徑</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <label for="light-slider">環境光線強度 (Light Intensity)</label>
+                    <span id="light-display" class="slider-value-display">50%</span>
+                </div>
+                <input type="range" id="light-slider" min="0" max="100" value="50">
+            </div>
+
+            <div class="control-group">
+                <div class="control-header">
+                    <label for="distance-slider">觀察目標距離 (Object Distance)</label>
+                    <span id="distance-display" class="slider-value-display">50 m</span>
+                </div>
+                <input type="range" id="distance-slider" min="5" max="105" value="55">
+            </div>
+
+            <div class="explanation">
+                <strong>系統生理機制分析：</strong><br>
+                1. <strong>瞳孔反射：</strong>當光照增強時，環狀的<strong>瞳孔括約肌</strong>收縮，使瞳孔縮小限制進光量；光照減弱時，輻射狀的<strong>瞳孔開大肌</strong>收縮，使瞳孔擴大增加進光。<br>
+                2. <strong>看近調節：</strong>看近物時，<strong>睫狀肌收縮</strong>向內靠攏，使得<strong>懸韌帶鬆弛</strong>，晶狀體依彈性<strong>自動變厚變凸</strong>，提高折光能力以將影像聚焦於視網膜上。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化虹膜輻射狀線條
+        const irisLinesG = document.getElementById('iris-lines');
+        for (let i = 0; i < 36; i++) {
+            const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            const angle = (i * 10) * Math.PI / 180;
+            line.setAttribute('x1', 100 + Math.cos(angle) * 25);
+            line.setAttribute('y1', 100 + Math.sin(angle) * 25);
+            line.setAttribute('x2', 100 + Math.cos(angle) * 63);
+            line.setAttribute('y2', 100 + Math.sin(angle) * 63);
+            line.setAttribute('stroke', '#3a536b');
+            line.setAttribute('stroke-width', '1');
+            irisLinesG.appendChild(line);
+        }
+
+        const lightSlider = document.getElementById('light-slider');
+        const distanceSlider = document.getElementById('distance-slider');
+        
+        const lightDisplay = document.getElementById('light-display');
+        const distanceDisplay = document.getElementById('distance-display');
+
+        const pupil = document.getElementById('pupil');
+        const irisLines = irisLinesG.children;
+
+        const lens = document.getElementById('lens');
+        const ciliaryTop = document.getElementById('ciliary-top');
+        const ciliaryBottom = document.getElementById('ciliary-bottom');
+        const bLines = document.getElementById('ligaments').children;
+        
+        // 獲取四段實線光線路徑
+        const ray1In = document.getElementById('light-ray-1-in');
+        const ray1Out = document.getElementById('light-ray-1-out');
+        const ray2In = document.getElementById('light-ray-2-in');
+        const ray2Out = document.getElementById('light-ray-2-out');
+
+        function updateSimulation() {
+            const light = parseInt(lightSlider.value);
+            const distance = parseInt(distanceSlider.value);
+
+            lightDisplay.innerText = light + '%';
+            distanceDisplay.innerText = distance > 100 ? '無窮遠' : distance + ' m';
+
+            // 1. 瞳孔大小連動邏輯
+            const pupilRadius = 45 - (light * 0.33);
+            pupil.setAttribute('r', pupilRadius);
+            
+            for (let i = 0; i < irisLines.length; i++) {
+                const angle = (i * 10) * Math.PI / 180;
+                irisLines[i].setAttribute('x1', 100 + Math.cos(angle) * pupilRadius);
+                irisLines[i].setAttribute('y1', 100 + Math.sin(angle) * pupilRadius);
+            }
+
+            if (light < 30) {
+                document.getElementById('pupil-status').innerText = '擴大 (黑暗環境)';
+            } else if (light > 70) {
+                document.getElementById('pupil-status').innerText = '縮小 (強光環境)';
+            } else {
+                document.getElementById('pupil-status').innerText = '正常孔徑';
+            }
+
+            // 2. 晶狀體與睫狀體連動邏輯
+            const isNear = distance < 40;
+            const isFar = distance > 70;
+
+            let rx, ciliaryOffset, ligColor, ligThick;
+
+            // 根據動態調整計算精準的生物學光線折射軌跡
+            if (isNear) {
+                rx = 32; 
+                ciliaryOffset = 18; 
+                ligColor = 'var(--ligament-loose)';
+                ligThick = '1.2';
+                ciliaryTop.setAttribute('fill', 'var(--muscle-contracted)');
+                ciliaryBottom.setAttribute('fill', 'var(--muscle-contracted)');
+                
+                // 看近：發散光線經厚晶狀體強力折射聚焦於黃斑部 (190, 100)
+                // 3節點結構，利用中間節點激發 marker-mid 箭頭
+                ray1In.setAttribute('d', 'M 10,100 L 55,79 L 100,58');
+                ray1Out.setAttribute('d', 'M 100,58 L 145,79 L 190,100');
+                ray2In.setAttribute('d', 'M 10,100 L 55,121 L 100,142');
+                ray2Out.setAttribute('d', 'M 100,142 L 145,121 L 190,100');
+                
+                document.getElementById('refraction-status').innerText = '增強 (看近對焦)';
+            } else if (isFar) {
+                rx = 18;
+                ciliaryOffset = 8; 
+                ligColor = 'var(--ligament-tight)';
+                ligThick = '1.5';
+                ciliaryTop.setAttribute('fill', 'var(--muscle-relaxed)');
+                ciliaryBottom.setAttribute('fill', 'var(--muscle-relaxed)');
+                
+                // 看遠：平行入射光線經薄晶狀體微弱折射聚焦於黃斑部 (190, 100)
+                ray1In.setAttribute('d', 'M 10,66 L 55,66 L 100,66');
+                ray1Out.setAttribute('d', 'M 100,66 L 145,83 L 190,100');
+                ray2In.setAttribute('d', 'M 10,134 L 55,134 L 100,134');
+                ray2Out.setAttribute('d', 'M 100,134 L 145,117 L 190,100');
+                
+                document.getElementById('refraction-status').innerText = '減弱 (放鬆狀態)';
+            } else {
+                rx = 25;
+                ciliaryOffset = 13;
+                ligColor = '#718096';
+                ligThick = '1.2';
+                ciliaryTop.setAttribute('fill', '#e2cdba');
+                ciliaryBottom.setAttribute('fill', '#e2cdba');
+                
+                // 中等調節狀態
+                ray1In.setAttribute('d', 'M 10,80 L 55,71 L 100,62');
+                ray1Out.setAttribute('d', 'M 100,62 L 145,81 L 190,100');
+                ray2In.setAttribute('d', 'M 10,120 L 55,129 L 100,138');
+                ray2Out.setAttribute('d', 'M 100,138 L 145,119 L 190,100');
+                
+                document.getElementById('refraction-status').innerText = '適中';
+            }
+
+            lens.setAttribute('rx', rx);
+
+            // 更新動態睫狀肌弧度
+            ciliaryTop.setAttribute('d', `M 40,10 Q 100,${10 + ciliaryOffset} 160,10 Z`);
+            ciliaryBottom.setAttribute('d', `M 40,190 Q 100,${190 - ciliaryOffset} 160,190 Z`);
+
+            const ry = 45; // 晶狀體固定 Y 軸半徑
+
+            // 生物幾何精密計算：確保懸韌帶在任何形變下皆完美錨定於睫狀肌表面與晶體邊緣
+            for (let i = 0; i < 3; i++) {
+                const startX = 85 + i * 15; // 睫狀肌錨定點 X 座標 (85, 100, 115)
+                const endX = 90 + i * 10;   // 晶狀體邊緣交點 X 座標 (90, 100, 110)
+
+                // 1. 計算二次貝茲曲線上的睫狀肌精準邊緣 Y 軸位置
+                const t = (startX - 40) / 120;
+                const yMuscleTop = 10 + 2 * t * (1 - t) * ciliaryOffset;
+                const yMuscleBot = 190 - 2 * t * (1 - t) * ciliaryOffset;
+
+                // 2. 利用橢圓方程式精密計算晶狀體外層表面的動態交點 Y 軸位置
+                const yLensTop = 100 - ry * Math.sqrt(1 - Math.pow((endX - 100) / rx, 2));
+                const yLensBot = 100 + ry * Math.sqrt(1 - Math.pow((endX - 100) / rx, 2));
+
+                // 韌帶中點坐標（用於控制鬆弛彎曲程度）
+                const midX = (startX + endX) / 2;
+                const midYTop = (yMuscleTop + yLensTop) / 2;
+                const midYBot = (yMuscleBot + yLensBot) / 2;
+
+                if (isNear) {
+                    // 看近時：懸韌帶放鬆。使用 Q 曲線使其產生向外或向內的物理物理彎曲，且端點絕對貼合不分離（Never Detached）
+                    const bendOffset = (i === 0) ? -6 : (i === 2 ? 6 : -3);
+                    bLines[i].setAttribute('d', `M ${startX},${yMuscleTop} Q ${midX + bendOffset},${midYTop + 2} ${endX},${yLensTop}`);
+                    bLines[i+3].setAttribute('d', `M ${startX},${yMuscleBot} Q ${midX + bendOffset},${midYBot - 2} ${endX},${yLensBot}`);
+                } else {
+                    // 看遠時：懸韌帶緊繃。拉扯呈完美直線（L）
+                    bLines[i].setAttribute('d', `M ${startX},${yMuscleTop} L ${endX},${yLensTop}`);
+                    bLines[i+3].setAttribute('d', `M ${startX},${yMuscleBot} L ${endX},${yLensBot}`);
+                }
+
+                // 渲染懸韌帶實線樣式
+                bLines[i].setAttribute('stroke', ligColor);
+                bLines[i].setAttribute('stroke-width', ligThick);
+                bLines[i].setAttribute('fill', 'none');
+                
+                bLines[i+3].setAttribute('stroke', ligColor);
+                bLines[i+3].setAttribute('stroke-width', ligThick);
+                bLines[i+3].setAttribute('fill', 'none');
+            }
+
+            document.getElementById('distance-value').innerText = distance < 40 ? '近距離 (< 6公尺)' : (distance > 70 ? '遠距離 (> 6公尺)' : '中等距離');
+            document.getElementById('ciliary-status').innerText = distance < 40 ? '收縮 (向內靠攏)' : (distance > 70 ? '舒張 (向外退開)' : '適中');
+            document.getElementById('ligament-status').innerText = distance < 40 ? '鬆弛 (張力低)' : (distance > 70 ? '緊繃 (張力高)' : '適中');
+            document.getElementById('lens-status').innerText = distance < 40 ? '變厚/變凸' : (distance > 70 ? '變扁/變平' : '微凸');
+        }
+
+        lightSlider.addEventListener('input', updateSimulation);
+        distanceSlider.addEventListener('input', updateSimulation);
+
+        updateSimulation();
+    </script>
+</body>
+</html>
