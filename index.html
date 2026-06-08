@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HinHin生物學模擬器</title>
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -17,7 +21,10 @@
   <style>
     body {
       background-color: #f3f4f6; /* 清新優雅的淺灰色背景 */
-      font-family: 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif;
+      /* 💡 這裡修改了字體優先級：優先使用高質量的現代黑體 */
+      font-family: "Noto Sans TC", "Microsoft JhengHei", "微軟正黑體", "Apple LiGothic", "蘋果儷中黑", sans-serif;
+      -webkit-font-smoothing: antialiased; /* 讓 Mac/iOS 上的字體看起來更平滑 */
+      -moz-osx-font-smoothing: grayscale;
     }
     
     /* 高級玻璃擬態與柔和陰影 */
@@ -56,10 +63,10 @@
         </div>
       </div>
       
-      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600">
+      <h1 class="text-3xl md:text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 via-teal-600 to-blue-600">
         HinHin 生物學模擬器
       </h1>
-      <p class="text-gray-500 text-sm mt-2 font-medium">點擊下方選單進入模擬</p>
+      <p class="text-gray-500 text-sm mt-2 font-medium">點擊下方選單進入互動式模擬</p>
     </div>
 
     <div class="flex flex-col gap-4">
@@ -68,7 +75,7 @@
         <button onclick="toggleChapter(this)" class="glass-panel w-full rounded-2xl p-5 flex items-center justify-between font-bold text-lg text-slate-700 hover:text-emerald-600 transition-colors duration-200 group">
           <div class="flex items-center gap-3">
             <span class="w-2 h-6 bg-emerald-500 rounded-full"></span>
-            <span>CH3 跨膜活動</span>
+            <span>CH3 細胞的結構與跨膜活動</span>
           </div>
           <div class="arrow-icon text-gray-400 group-hover:text-emerald-500 transition-transform duration-300 transform">
             <i class="fa-solid fa-chevron-down text-sm"></i>
@@ -344,12 +351,10 @@
       const arrow = button.querySelector('.arrow-icon');
       
       if (content.classList.contains('max-h-0')) {
-        // 展開：將 max-h 設為足夠大的高度（例如 1000px）容納卡片
         content.classList.remove('max-h-0', 'opacity-0');
         content.classList.add('max-h-[1000px]', 'opacity-100');
         arrow.classList.remove('rotate-[-90deg]');
       } else {
-        // 收合
         content.classList.remove('max-h-[1000px]', 'opacity-100');
         content.classList.add('max-h-0', 'opacity-0');
         arrow.classList.add('rotate-[-90deg]');
