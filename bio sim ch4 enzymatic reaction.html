@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D 幾何特異性酶催化模擬器</title>
+    <title>酶催化反應模擬器</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,7 +46,7 @@
             border-radius: 4px;
         }
 
-        /* Scientific Instrument Range Slider Customization */
+        /* 儀表板滑塊美化 */
         input[type="range"] {
             -webkit-appearance: none;
             appearance: none;
@@ -54,7 +54,6 @@
             cursor: pointer;
         }
 
-        input[type="range"]::-webkit-canvas-runnable-track,
         input[type="range"]::-webkit-slider-runnable-track {
             background: #e2e8f0;
             height: 3px;
@@ -76,25 +75,6 @@
         input[type="range"]:hover::-webkit-slider-thumb {
             transform: scale(1.2);
         }
-
-        input[type="range"]::-moz-range-track {
-            background: #e2e8f0;
-            height: 3px;
-            border-radius: 2px;
-        }
-
-        input[type="range"]::-moz-range-thumb {
-            background-color: var(--accent-primary);
-            height: 13px;
-            width: 13px;
-            border-radius: 50%;
-            border: 1px solid #ffffff;
-            transition: transform 0.1s ease;
-        }
-
-        input[type="range"]:hover::-moz-range-thumb {
-            transform: scale(1.2);
-        }
     </style>
 </head>
 <body class="min-h-screen antialiased">
@@ -103,14 +83,14 @@
         <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-lg font-bold text-gray-900 flex items-center gap-2 tracking-tight">
-                    🧬 酶催化幾何特異性虛擬實驗室
+                    🧬 酶催化反應模擬器 - HinHin Biology
                 </h1>
-                <p class="text-xs text-gray-500 mt-0.5">動態幾何模型 · 鎖鑰咬合與反應狀態觀測</p>
+                <p class="text-xs text-gray-500 mt-0.5">動態模型 · 合成代謝與分解代謝</p>
             </div>
             <div class="flex flex-wrap gap-3">
                 <select id="reaction-mode" onchange="resetSimulation()" class="bg-white border border-gray-300 text-gray-800 rounded-sm px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-blue-600">
-                    <option value="decomposition">✂️ 分解反應模式 (Decomposition)</option>
-                    <option value="synthesis">🧲 合成反應模式 (Synthesis)</option>
+                    <option value="decomposition">✂️ 分解代謝 </option>     
+                    <option value="synthesis">🧩 合成代謝 </option>
                 </select>
                 <button onclick="resetSimulation()" class="bg-red-700 hover:bg-red-800 text-white font-medium py-1.5 px-4 rounded-sm transition text-xs tracking-wide">
                     🔄 重置實驗
@@ -122,20 +102,19 @@
     <main class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
         
         <div class="lg:col-span-2 flex flex-col gap-4">
-            
             <div class="relative bg-white p-4 rounded-sm border border-gray-300">
                 
-                <div id="dynamic-legend" class="bg-gray-50 text-[11px] font-medium text-gray-600 p-2.5 rounded-sm border border-gray-200 flex flex-wrap gap-5 mb-3 justify-center items-center">
-                    </div>
+                <div id="dynamic-legend" class="bg-gray-50 text-[10px] md:text-[11px] font-semibold text-gray-600 p-1.5 rounded-sm border border-gray-200 flex flex-wrap gap-3.5 mb-3 justify-center items-center">
+                </div>
                 
                 <div class="w-full flex justify-center">
-                    <canvas id="simCanvas" width="750" height="460" class="w-full max-w-full h-auto"></canvas>
+                    <canvas id="simCanvas" width="1500" height="920" style="width: 750px; height: 460px;" class="w-full max-w-full h-auto"></canvas>
                 </div>
             </div>
 
             <div class="grid grid-cols-3 gap-4">
                 <div class="bg-white p-3 rounded-sm border border-gray-300">
-                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">游離受質總數</p>
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">受質濃度</p>
                     <p id="stat-substrate" class="text-2xl mono-metric text-purple-700 mt-1">0</p>
                 </div>
                 <div class="bg-white p-3 rounded-sm border border-gray-300">
@@ -143,23 +122,23 @@
                     <p id="stat-product" class="text-2xl mono-metric text-green-700 mt-1">0</p>
                 </div>
                 <div class="bg-white p-3 rounded-sm border border-gray-300">
-                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">實驗累計耗時</p>
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">實驗耗時</p>
                     <p id="stat-timer" class="text-2xl mono-metric text-blue-700 mt-1">0.0 <span class="text-xs font-normal text-gray-400">s</span></p>
                 </div>
             </div>
         </div>
 
-        <div class="bg-white p-5 rounded-sm border border-gray-300 flex flex-col gap-5">
+        <div class="bg-white p-5 rounded-sm border border-gray-300 flex flex-col gap-4">
             <div>
                 <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900">🎛️ 變數控制台</h3>
-                <p class="text-xs text-gray-500 mt-0.5">即時調整物理與環境參數</p>
+                <p class="text-xs text-gray-500 mt-0.5">調整影響反應速率的因素</p>
             </div>
 
             <hr class="border-gray-200">
 
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-xs">
-                    <label class="text-gray-700 font-medium">1. 酶的數量 (六角形 ⬢)</label>
+                    <label class="text-gray-700 font-medium">1. 酶的數量</label>
                     <span id="val-enzyme" class="mono-text text-blue-700 font-bold">12</span>
                 </div>
                 <input type="range" id="slide-enzyme" min="4" max="25" value="12" class="w-full py-1">
@@ -167,7 +146,7 @@
 
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-xs">
-                    <label id="lbl-substrate" class="text-gray-700 font-medium">2. 受質初始數量</label>
+                    <label id="lbl-substrate" class="text-gray-700 font-medium">2. 受質初始濃度</label>
                     <span id="val-substrate" class="mono-text text-purple-700 font-bold">35</span>
                 </div>
                 <input type="range" id="slide-substrate" min="10" max="80" value="35" class="w-full py-1">
@@ -175,7 +154,7 @@
 
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-xs">
-                    <label class="text-gray-700 font-medium">3. 環境溫度 (碰撞速率)</label>
+                    <label class="text-gray-700 font-medium">3. 環境溫度 </label>
                     <span id="val-temp" class="mono-text text-orange-700 font-bold">37 °C</span>
                 </div>
                 <input type="range" id="slide-temp" min="5" max="75" value="37" class="w-full py-1">
@@ -188,22 +167,42 @@
 
             <div class="flex flex-col gap-1.5">
                 <div class="flex justify-between text-xs">
-                    <label class="text-gray-700 font-medium">4. 溶液酸鹼度 (催化效率)</label>
+                    <label class="text-gray-700 font-medium">4. 溶液pH</label>
                     <span id="val-ph" class="mono-text text-green-700 font-bold">7.0</span>
                 </div>
                 <input type="range" id="slide-ph" min="2" max="12" step="0.5" value="7.0" class="w-full py-1">
             </div>
 
-            <div id="enzyme-status-box" class="mt-2 p-3 bg-gray-50 border border-gray-200 rounded-sm text-xs flex items-center gap-2.5">
+            <div id="enzyme-status-box" class="mt-1 p-2.5 bg-gray-50 border border-gray-200 rounded-sm text-xs flex items-center gap-2.5">
                 <span id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0"></span>
                 <span id="status-text" class="text-gray-600 font-medium">酶結構：活性正常。</span>
             </div>
+
+            <div class="border-t border-gray-200 pt-3 flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1">📊 代謝能量與活化能圖解</h4>
+                        <p id="energy-chart-title" class="text-[10px] text-gray-500 mt-0.5">當前：分解反應曲線 (放能)</p>
+                    </div>
+                    <div class="flex bg-gray-100 p-0.5 rounded border border-gray-200">
+                        <button id="btn-energy-play" class="hover:bg-white text-gray-700 font-semibold px-1.5 py-0.5 rounded text-[10px] transition-all flex items-center">▶</button>
+                        <button id="btn-energy-pause" class="hover:bg-white text-gray-700 font-semibold px-1.5 py-0.5 rounded text-[10px] transition-all flex items-center">❚❚</button>
+                        <button id="btn-energy-replay" class="hover:bg-white text-gray-700 font-semibold px-1.5 py-0.5 rounded text-[10px] transition-all flex items-center">🔄</button>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-50 p-1.5 rounded-sm border border-gray-200 flex justify-center">
+                    <canvas id="energyCanvas" width="620" height="350" style="width: 310px; height: 175px;" class="w-full h-auto bg-white border border-gray-200 rounded-sm"></canvas>
+                </div>
+            </div>
+
         </div>
     </main>
 
     <script>
         const canvas = document.getElementById('simCanvas');
         const ctx = canvas.getContext('2d');
+        // 初始化主模擬畫面的雙倍高清縮放比例
+        ctx.scale(2, 2);
 
         let enzymes = [];
         let substrates = []; 
@@ -214,12 +213,14 @@
         let activeReaction = 'decomposition';
         let globalDenatured = false;
 
-        // 幾何尺寸常數
+        // 幾何尺寸常數 (基於邏輯分辨率 750x460)
         const R_ENZYME = 20;
         const R_SUB_BIG = 10;
         const R_SUB_SMALL = 6;
 
-        // --- 核心幾何繪圖輔助器 ---
+        let energyProgress = 0;
+        let energyPlaying = true;
+
         function drawHexagonPath(c, x, y, r) {
             c.beginPath();
             for (let i = 0; i < 6; i++) {
@@ -235,7 +236,7 @@
                 this.y = y;
                 this.vx = vx;
                 this.vy = vy;
-                this.status = 'free'; // 'free', 'has_A', 'has_B', 'complex'
+                this.status = 'free'; 
                 this.timer = 0;
                 this.boundTarget = null;
                 this.boundA = null;
@@ -266,16 +267,15 @@
 
             bounceWalls() {
                 if (this.x - R_ENZYME < 0) { this.x = R_ENZYME; this.vx *= -1; }
-                if (this.x + R_ENZYME > canvas.width) { this.x = canvas.width - R_ENZYME; this.vx *= -1; }
+                if (this.x + R_ENZYME > 750) { this.x = 750 - R_ENZYME; this.vx *= -1; }
                 if (this.y - R_ENZYME < 0) { this.y = R_ENZYME; this.vy *= -1; }
-                if (this.y + R_ENZYME > canvas.height) { this.y = canvas.height - R_ENZYME; this.vy *= -1; }
+                if (this.y + R_ENZYME > 460) { this.y = 460 - R_ENZYME; this.vy *= -1; }
             }
 
             catalyze() {
                 if (activeReaction === 'decomposition') {
                     if (this.boundTarget) {
                         substrates = substrates.filter(s => s !== this.boundTarget);
-                        // 切開：分化成一個紅色三角形與一個橘色圓形產物
                         products.push(new Product(this.x, this.y, Math.random()*2-1, Math.random()*2-1, 'A'));
                         products.push(new Product(this.x, this.y, Math.random()*2-1, Math.random()*2-1, 'B'));
                         productsCount++;
@@ -283,7 +283,6 @@
                 } else {
                     if (this.boundA && this.boundB) {
                         substrates = substrates.filter(s => s !== this.boundA && s !== this.boundB);
-                        // 合成：集結成一個大型粉紅菱形大產物
                         products.push(new Product(this.x, this.y, Math.random()*2-1, Math.random()*2-1, 'AB'));
                         productsCount++;
                     }
@@ -296,36 +295,31 @@
             }
 
             draw() {
-                // 1. 繪製酶本體六角形
                 drawHexagonPath(ctx, this.x, this.y, R_ENZYME);
-                
                 if (globalDenatured) {
-                    ctx.fillStyle = '#64748b'; // 灰色失活
+                    ctx.fillStyle = '#64748b'; 
                 } else if (this.status === 'complex') {
-                    ctx.fillStyle = '#0d9488'; // 結合活化狀態亮青色
+                    ctx.fillStyle = '#0d9488'; 
                 } else if (this.status === 'has_A' || this.status === 'has_B') {
-                    ctx.fillStyle = '#4f46e5'; // 部分捕獲狀態靛藍色
+                    ctx.fillStyle = '#4f46e5'; 
                 } else {
-                    ctx.fillStyle = '#2563eb'; // 游離態標準藍色
+                    ctx.fillStyle = '#2563eb'; 
                 }
                 ctx.fill();
                 ctx.strokeStyle = '#0f172a';
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
 
-                // 2. 核心視覺亮點：當處於複合物 (ES) 狀態時，將受質形狀精密鎖定在六角形中心！
                 if (!globalDenatured && this.status === 'complex') {
                     ctx.save();
                     ctx.globalAlpha = 0.85;
                     if (activeReaction === 'decomposition') {
-                        // 分解中：大紫色橢圓卡在中間
-                        ctx.fillStyle = '#a855f7';
+                        ctx.fillStyle = '#c084fc';
                         ctx.beginPath();
                         ctx.ellipse(this.x, this.y, 11, 6, 0, 0, Math.PI * 2);
                         ctx.fill();
                     } else {
-                        // 合成中：綠三角與黃方塊緊密咬合在中間
-                        ctx.fillStyle = '#22c55e';
+                        ctx.fillStyle = '#4ade80';
                         ctx.beginPath();
                         ctx.moveTo(this.x - 5, this.y - 5);
                         ctx.lineTo(this.x, this.y + 4);
@@ -333,13 +327,12 @@
                         ctx.closePath();
                         ctx.fill();
 
-                        ctx.fillStyle = '#eab308';
+                        ctx.fillStyle = '#facc15';
                         ctx.fillRect(this.x + 2, this.y - 4, 7, 7);
                     }
                     ctx.restore();
                 } else if (!globalDenatured && this.status === 'has_A') {
-                    // 已單獨捕獲 A 三角
-                    ctx.fillStyle = '#22c55e';
+                    ctx.fillStyle = '#4ade80';
                     ctx.beginPath();
                     ctx.moveTo(this.x, this.y - 5);
                     ctx.lineTo(this.x + 5, this.y + 5);
@@ -347,8 +340,7 @@
                     ctx.closePath();
                     ctx.fill();
                 } else if (!globalDenatured && this.status === 'has_B') {
-                    // 已單獨捕獲 B 方塊
-                    ctx.fillStyle = '#eab308';
+                    ctx.fillStyle = '#facc15';
                     ctx.fillRect(this.x - 4, this.y - 4, 8, 8);
                 }
             }
@@ -360,7 +352,7 @@
                 this.y = y;
                 this.vx = vx;
                 this.vy = vy;
-                this.type = type; // 'S', 'A', 'B'
+                this.type = type; 
                 this.isBound = false;
             }
 
@@ -371,23 +363,21 @@
                     
                     let r = (this.type === 'S') ? R_SUB_BIG : R_SUB_SMALL;
                     if (this.x - r < 0) { this.x = r; this.vx *= -1; }
-                    if (this.x + r > canvas.width) { this.x = canvas.width - r; this.vx *= -1; }
+                    if (this.x + r > 750) { this.x = 750 - r; this.vx *= -1; }
                     if (this.y - r < 0) { this.y = r; this.vy *= -1; }
-                    if (this.y + r > canvas.height) { this.y = canvas.height - r; this.vy *= -1; }
+                    if (this.y + r > 460) { this.y = 460 - r; this.vy *= -1; }
                 }
             }
 
             draw() {
-                if (this.isBound) return; // 結合後隱藏，交由 Enzyme 類別內部繪製
+                if (this.isBound) return; 
 
                 ctx.beginPath();
                 if (this.type === 'S') {
-                    // 分解受質：大紫色藥丸膠囊形
                     ctx.fillStyle = '#c084fc';
                     ctx.ellipse(this.x, this.y, 14, 7, 0, 0, Math.PI * 2);
                     ctx.fill();
                 } else if (this.type === 'A') {
-                    // 合成受質 A：明亮綠色正三角形
                     ctx.fillStyle = '#4ade80';
                     ctx.moveTo(this.x, this.y - R_SUB_SMALL - 3);
                     ctx.lineTo(this.x + R_SUB_SMALL + 3, this.y + R_SUB_SMALL + 1);
@@ -395,7 +385,6 @@
                     ctx.closePath();
                     ctx.fill();
                 } else if (this.type === 'B') {
-                    // 合成受質 B：黃色正方形
                     ctx.fillStyle = '#facc15';
                     ctx.fillRect(this.x - R_SUB_SMALL, this.y - R_SUB_SMALL, R_SUB_SMALL * 2, R_SUB_SMALL * 2);
                 }
@@ -408,7 +397,7 @@
                 this.y = y;
                 this.vx = vx || (Math.random() - 0.5) * 2;
                 this.vy = vy || (Math.random() - 0.5) * 2;
-                this.type = type; // 'A', 'B', 'AB'
+                this.type = type; 
             }
 
             update(speedFactor) {
@@ -417,40 +406,31 @@
 
                 let r = (this.type === 'AB') ? R_SUB_BIG : R_SUB_SMALL;
                 if (this.x - r < 0) { this.x = r; this.vx *= -1; }
-                if (this.x + r > canvas.width) { this.x = canvas.width - r; this.vx *= -1; }
+                if (this.x + r > 750) { this.x = 750 - r; this.vx *= -1; }
                 if (this.y - r < 0) { this.y = r; this.vy *= -1; }
-                if (this.y + r > canvas.height) { this.y = canvas.height - r; this.vy *= -1; }
+                if (this.y + r > 460) { this.y = 460 - r; this.vy *= -1; }
             }
 
             draw() {
                 ctx.beginPath();
                 if (this.type === 'A') {
-                    // 分解產物 A：紅色小三角形
-                    ctx.fillStyle = '#f87171';
-                    ctx.moveTo(this.x, this.y - R_SUB_SMALL - 1);
-                    ctx.lineTo(this.x + R_SUB_SMALL + 1, this.y + R_SUB_SMALL);
-                    ctx.lineTo(this.x - R_SUB_SMALL - 1, this.y + R_SUB_SMALL);
+                    ctx.fillStyle = '#4ade80';
+                    ctx.moveTo(this.x, this.y - R_SUB_SMALL - 3);
+                    ctx.lineTo(this.x + R_SUB_SMALL + 3, this.y + R_SUB_SMALL + 1);
+                    ctx.lineTo(this.x - R_SUB_SMALL - 3, this.y + R_SUB_SMALL + 1);
                     ctx.closePath();
                     ctx.fill();
                 } else if (this.type === 'B') {
-                    // 分解產物 B：橘色小圓形
-                    ctx.fillStyle = '#fb923c';
-                    ctx.arc(this.x, this.y, R_SUB_SMALL, 0, Math.PI * 2);
-                    ctx.fill();
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillRect(this.x - R_SUB_SMALL, this.y - R_SUB_SMALL, R_SUB_SMALL * 2, R_SUB_SMALL * 2);
                 } else if (this.type === 'AB') {
-                    // 合成大產物：粉紅色菱形
-                    ctx.fillStyle = '#f472b6';
-                    ctx.moveTo(this.x, this.y - R_SUB_BIG - 2);
-                    ctx.lineTo(this.x + R_SUB_BIG + 2, this.y);
-                    ctx.lineTo(this.x, this.y + R_SUB_BIG + 2);
-                    ctx.lineTo(this.x - R_SUB_BIG - 2, this.y);
-                    ctx.closePath();
+                    ctx.fillStyle = '#c084fc';
+                    ctx.ellipse(this.x, this.y, 14, 7, 0, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }
         }
 
-        // --- 重置與動態建構圖例 ---
         function resetSimulation() {
             enzymes = []; substrates = []; products = [];
             productsCount = 0;
@@ -460,47 +440,85 @@
             const countEnzyme = parseInt(document.getElementById('slide-enzyme').value);
             const countSubstrate = parseInt(document.getElementById('slide-substrate').value);
 
-            // 1. 動態更新專屬幾何圖例（徹底解決舊版無法對應與無法正常顯示的問題）
             const legendDiv = document.getElementById('dynamic-legend');
+            const chartTitle = document.getElementById('energy-chart-title');
+
             if (activeReaction === 'decomposition') {
-                document.getElementById('lbl-substrate').innerText = "2. 大分子受質數量 (橢圓 💊)";
+                document.getElementById('lbl-substrate').innerText = "2. 受質濃度 ";
+                if (chartTitle) chartTitle.innerText = "當前：分解反應曲線 (放能反應)";
+                // 精確還原 SVG 圖示形狀 (包含粗黑邊框與平頂平底的六角形)
                 legendDiv.innerHTML = `
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 18,6 18,14 10,18 2,14 2,6"/></svg> 游離酶 (藍六角形)</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-5 h-3 text-purple-400" viewBox="0 0 20 10" fill="currentColor"><ellipse cx="10" cy="5" rx="8" ry="4"/></svg> 受質 (紫色大橢圓)</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-teal-600" viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 18,6 18,14 10,18 2,14 2,6"/><ellipse cx="10" cy="10" rx="5" ry="2.5" fill="#a855f7"/></svg> ES複合物 (鎖定催化中)</span>
-                    <span class="flex items-center gap-1.5">
-                        <svg class="w-3.5 h-3.5 text-red-400 inline mr-0.5" viewBox="0 0 10 10" fill="currentColor"><polygon points="5,1 10,9 0,9"/></svg>
-                        <svg class="w-3 h-3 text-orange-400 inline" viewBox="0 0 10 10" fill="currentColor"><circle cx="5" cy="5" r="4"/></svg> 
-                        分解產物 (紅三角+橘圓)
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17"/>
+                        </svg> 酶 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-2.5 text-purple-400" viewBox="0 0 20 10" fill="currentColor">
+                            <ellipse cx="10" cy="5" rx="8" ry="4"/>
+                        </svg> 受質 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17" fill="#0d9488" stroke="#0f172a" stroke-width="1.5"/>
+                            <ellipse cx="10" cy="10" rx="4.5" ry="2.5" fill="#c084fc"/>
+                        </svg> 酶受質複合物 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3 h-3 text-green-400 inline mr-0.5" viewBox="0 0 10 10" fill="currentColor"><polygon points="5,1 10,9 0,9"/></svg>
+                        <svg class="w-2.5 h-2.5 text-yellow-400 inline" viewBox="0 0 10 10" fill="currentColor"><rect width="8" height="8" x="1" y="1"/></svg> 
+                        生成物 
                     </span>
                 `;
             } else {
-                document.getElementById('lbl-substrate').innerText = "2. 受質組數 (A三角▲ + B方塊■)";
+                document.getElementById('lbl-substrate').innerText = "2. 受質";
+                if (chartTitle) chartTitle.innerText = "當前：合成反應曲線 (吸能反應)";
+                // 精確還原 SVG 圖示形狀 (包含粗黑邊框與平頂平底的六角形，以及內部正方形與三角形)
                 legendDiv.innerHTML = `
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-blue-600" viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 18,6 18,14 10,18 2,14 2,6"/></svg> 游離酶 (藍六角形)</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-green-400" viewBox="0 0 10 10" fill="currentColor"><polygon points="5,1 10,9 0,9"/></svg> 受質 A (綠三角)</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-3 h-3 text-yellow-400" viewBox="0 0 10 10" fill="currentColor"><rect width="8" height="8" x="1" y="1"/></svg> 受質 B (黃方塊)</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor"><polygon points="10,2 18,6 18,14 10,18 2,14 2,6"/><circle cx="10" cy="10" r="3.5" fill="#6366f1"/></svg> ES複合物 (雙分子捕捉中)</span>
-                    <span class="flex items-center gap-1.5"><svg class="w-4 h-4 text-pink-400" viewBox="0 0 10 10" fill="currentColor"><polygon points="5,0 10,5 5,10 0,5"/></svg> 合成產物 (粉紅菱形)</span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17"/>
+                        </svg> 游離酶 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-2.5 h-2.5 text-green-400" viewBox="0 0 10 10" fill="currentColor">
+                            <polygon points="5,1 10,9 0,9"/>
+                        </svg> 受質 A 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-2.5 h-2.5 text-yellow-400" viewBox="0 0 10 10" fill="currentColor">
+                            <rect width="8" height="8" x="1" y="1"/>
+                        </svg> 受質 B 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17" fill="#0d9488" stroke="#0f172a" stroke-width="1.5"/>
+                            <polygon points="7,6 10,12 4,12" fill="#4ade80"/>
+                            <rect x="11" y="7" width="4.5" height="4.5" fill="#facc15"/>
+                        </svg> 酶受質複合物 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-2.5 text-purple-400" viewBox="0 0 20 10" fill="currentColor">
+                            <ellipse cx="10" cy="5" rx="8" ry="4"/>
+                        </svg> 生成物
+                    </span>
                 `;
             }
 
-            // 2. 生成酶
             for (let i = 0; i < countEnzyme; i++) {
                 enzymes.push(new Enzyme(
-                    Math.random() * (canvas.width - 50) + 25,
-                    Math.random() * (canvas.height - 50) + 25,
+                    Math.random() * (750 - 50) + 25,
+                    Math.random() * (460 - 50) + 25,
                     (Math.random() - 0.5) * 2.5,
                     (Math.random() - 0.5) * 2.5
                 ));
             }
 
-            // 3. 生成受質
             if (activeReaction === 'decomposition') {
                 for (let i = 0; i < countSubstrate; i++) {
                     substrates.push(new Substrate(
-                        Math.random() * (canvas.width - 30) + 15,
-                        Math.random() * (canvas.height - 30) + 15,
+                        Math.random() * (750 - 30) + 15,
+                        Math.random() * (460 - 30) + 15,
                         (Math.random() - 0.5) * 3.5,
                         (Math.random() - 0.5) * 3.5,
                         'S'
@@ -509,15 +527,15 @@
             } else {
                 for (let i = 0; i < countSubstrate; i++) {
                     substrates.push(new Substrate(
-                        Math.random() * (canvas.width - 30) + 15,
-                        Math.random() * (canvas.height - 30) + 15,
+                        Math.random() * (750 - 30) + 15,
+                        Math.random() * (460 - 30) + 15,
                         (Math.random() - 0.5) * 3.5,
                         (Math.random() - 0.5) * 3.5,
                         'A'
                     ));
                     substrates.push(new Substrate(
-                        Math.random() * (canvas.width - 30) + 15,
-                        Math.random() * (canvas.height - 30) + 15,
+                        Math.random() * (750 - 30) + 15,
+                        Math.random() * (460 - 30) + 15,
                         (Math.random() - 0.5) * 3.5,
                         (Math.random() - 0.5) * 3.5,
                         'B'
@@ -528,7 +546,6 @@
             updateUIValues();
         }
 
-        // --- 平面精密特異性幾何碰撞檢測 ---
         function handleCollisions() {
             for (let e of enzymes) {
                 if (e.status === 'complex') continue; 
@@ -572,21 +589,292 @@
             }
         }
 
-        // --- 主循環動畫引擎 ---
+        function getEnergyY(x, mode) {
+            if (mode === 'decomposition') {
+                if (x < 0.2) return 0.55; 
+                else if (x < 0.45) {
+                    let t = (x - 0.2) / 0.25;
+                    return 0.55 + 0.38 * Math.sin(t * Math.PI / 2); 
+                } else if (x < 0.75) {
+                    let t = (x - 0.45) / 0.30;
+                    let factor = (1 - Math.cos(t * Math.PI)) / 2;
+                    return 0.93 - (0.93 - 0.20) * factor; 
+                } else {
+                    return 0.20; 
+                }
+            } else {
+                if (x < 0.2) return 0.35; 
+                else if (x < 0.45) {
+                    let t = (x - 0.2) / 0.25;
+                    return 0.35 + 0.55 * Math.sin(t * Math.PI / 2); 
+                } else if (x < 0.75) {
+                    let t = (x - 0.45) / 0.30;
+                    let factor = (1 - Math.cos(t * Math.PI)) / 2;
+                    return 0.90 - (0.90 - 0.65) * factor; 
+                } else {
+                    return 0.65; 
+                }
+            }
+        }
+
+        function drawArrowHead(eCtx, x, y, angle) {
+            eCtx.save();
+            eCtx.translate(x, y);
+            eCtx.rotate(angle);
+            eCtx.fillStyle = '#475569';
+            eCtx.beginPath();
+            eCtx.moveTo(0, 0);
+            eCtx.lineTo(-5, -3);
+            eCtx.lineTo(-5, 3);
+            eCtx.closePath();
+            eCtx.fill();
+            eCtx.restore();
+        }
+
+        function drawEnergyArrow(eCtx, fromX, fromY, toX, toY, width, color) {
+            eCtx.strokeStyle = color;
+            eCtx.lineWidth = width;
+            eCtx.beginPath();
+            eCtx.moveTo(fromX, fromY);
+            eCtx.lineTo(toX, toY);
+            eCtx.stroke();
+
+            let angle = Math.atan2(toY - fromY, toX - fromX);
+            eCtx.save();
+            eCtx.translate(toX, toY);
+            eCtx.rotate(angle);
+            eCtx.fillStyle = color;
+            eCtx.beginPath();
+            eCtx.moveTo(0, 0);
+            eCtx.lineTo(-6, -3.5);
+            eCtx.lineTo(-6, 3.5);
+            eCtx.closePath();
+            eCtx.fill();
+            eCtx.restore();
+        }
+
+        function updateAndDrawEnergyChart() {
+            const eCanvas = document.getElementById('energyCanvas');
+            if (!eCanvas) return;
+            const eCtx = eCanvas.getContext('2d');
+            const mode = document.getElementById('reaction-mode').value;
+
+            if (energyPlaying) {
+                energyProgress += 0.004;
+                if (energyProgress > 1.0) energyProgress = 0.0;
+            }
+
+            eCtx.clearRect(0, 0, eCanvas.width, eCanvas.height);
+
+            eCtx.save();
+            eCtx.scale(2, 2);
+
+            const padL = 45;
+            const padR = 25;
+            const padT = 25;
+            const padB = 32;
+            const graphW = 310 - padL - padR;
+            const graphH = 175 - padT - padB;
+
+            eCtx.strokeStyle = '#475569';
+            eCtx.lineWidth = 1.2;
+            eCtx.beginPath();
+            eCtx.moveTo(padL, 175 - padB);
+            eCtx.lineTo(padL, padT - 10);
+            eCtx.moveTo(padL, 175 - padB);
+            eCtx.lineTo(310 - padR + 10, 175 - padB);
+            eCtx.stroke();
+
+            drawArrowHead(eCtx, padL, padT - 12, -Math.PI / 2);
+            drawArrowHead(eCtx, 310 - padR + 12, 175 - padB, 0);
+
+            eCtx.fillStyle = '#1a2332';
+            eCtx.font = 'bold 9px system-ui, -apple-system, sans-serif';
+            eCtx.textAlign = 'center';
+            eCtx.fillText("能量水平", padL, padT - 15);
+            eCtx.textAlign = 'right';
+            eCtx.fillText("反應進度", padL + graphW + 15, 175 - padB + 16);
+            eCtx.textAlign = 'left';
+
+            eCtx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                let px = i / 100;
+                let py = getEnergyY(px, mode);
+                let cx = padL + px * graphW;
+                let cy = 175 - padB - py * graphH;
+                if (i === 0) eCtx.moveTo(cx, cy);
+                else eCtx.lineTo(cx, cy);
+            }
+            eCtx.strokeStyle = '#1976d2';
+            eCtx.lineWidth = 2;
+            eCtx.stroke();
+
+            let yReact = 175 - padB - getEnergyY(0.1, mode) * graphH;
+            let yProd = 175 - padB - getEnergyY(0.9, mode) * graphH;
+            let yPeak = 175 - padB - getEnergyY(0.45, mode) * graphH;
+
+            eCtx.setLineDash([3, 3]);
+            eCtx.strokeStyle = '#cbd5e1';
+            eCtx.lineWidth = 1;
+            eCtx.beginPath();
+            eCtx.moveTo(padL + 0.05 * graphW, yReact);
+            eCtx.lineTo(padL + 0.95 * graphW, yReact);
+            eCtx.stroke();
+            eCtx.setLineDash([]);
+
+            eCtx.font = 'bold 10px system-ui, sans-serif';
+            eCtx.textBaseline = 'middle';
+            
+            let rx = padL + 0.15 * graphW; 
+            eCtx.fillStyle = '#475569';
+            eCtx.textAlign = 'center';
+            eCtx.fillText("反應物", rx, yReact + 16);
+
+            let pxPos = padL + 0.8 * graphW; 
+            eCtx.fillStyle = '#475569';
+            eCtx.textAlign = 'center';
+            eCtx.fillText("生成物", pxPos, yProd + 16);
+
+            if (mode === 'decomposition') {
+                eCtx.fillStyle = '#c084fc';
+                eCtx.beginPath();
+                eCtx.ellipse(rx, yReact - 10, 10, 5, 0, 0, Math.PI * 2);
+                eCtx.fill();
+
+                eCtx.fillStyle = '#4ade80';
+                eCtx.beginPath();
+                eCtx.moveTo(pxPos - 10, yProd - 6);
+                eCtx.lineTo(pxPos - 4, yProd - 14);
+                eCtx.lineTo(pxPos + 2, yProd - 6);
+                eCtx.closePath();
+                eCtx.fill();
+
+                eCtx.fillStyle = '#facc15';
+                eCtx.fillRect(pxPos + 5, yProd - 13, 7, 7);
+
+                let arrowX = padL + 0.9 * graphW;
+                drawEnergyArrow(eCtx, arrowX, yReact, arrowX, yProd, 1.5, '#dc2626');
+                eCtx.fillStyle = '#dc2626';
+                eCtx.font = 'bold 8px system-ui';
+                eCtx.textAlign = 'left';
+                eCtx.fillText("釋出能量", arrowX + 5, (yReact + yProd) / 2 - 5);
+                eCtx.fillText("(ΔH < 0)", arrowX + 5, (yReact + yProd) / 2 + 7);
+            } 
+            else {
+                eCtx.fillStyle = '#4ade80';
+                eCtx.beginPath();
+                eCtx.moveTo(rx - 10, yReact - 6);
+                eCtx.lineTo(rx - 4, yReact - 14);
+                eCtx.lineTo(rx + 2, yReact - 6);
+                eCtx.closePath();
+                eCtx.fill();
+
+                eCtx.fillStyle = '#facc15';
+                eCtx.fillRect(rx + 5, yReact - 13, 7, 7);
+
+                eCtx.fillStyle = '#c084fc';
+                eCtx.beginPath();
+                eCtx.ellipse(pxPos, yProd - 10, 10, 5, 0, 0, Math.PI * 2);
+                eCtx.fill();
+
+                let arrowX = padL + 0.9 * graphW;
+                drawEnergyArrow(eCtx, arrowX, yReact, arrowX, yProd, 1.5, '#059669');
+                eCtx.fillStyle = '#059669';
+                eCtx.font = 'bold 8px system-ui';
+                eCtx.textAlign = 'left';
+                eCtx.fillText("吸收能量", arrowX + 5, (yReact + yProd) / 2 - 5);
+                eCtx.fillText("(ΔH > 0)", arrowX + 5, (yReact + yProd) / 2 + 7);
+            }
+
+            let eaX = padL + 0.45 * graphW;
+            drawEnergyArrow(eCtx, eaX, yReact, eaX, yPeak, 1.2, '#d97706');
+            eCtx.fillStyle = '#d97706';
+            eCtx.font = '600 8.5px system-ui, sans-serif';
+            eCtx.textAlign = 'right';
+            eCtx.fillText("活化能", eaX - 5, (yReact + yPeak) / 2);
+
+            let complexX = eaX;
+            let complexY = yPeak - 14;
+
+            // ① 繪製酶（藍綠色平頂六角形，配合粗邊框）
+            eCtx.save();
+            eCtx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                let angle = (Math.PI / 3) * i;
+                eCtx.lineTo(complexX + 9 * Math.cos(angle), complexY + 9 * Math.sin(angle));
+            }
+            eCtx.closePath();
+            eCtx.fillStyle = '#0d9488'; // 活性催化狀態顏色
+            eCtx.fill();
+            eCtx.strokeStyle = '#0f172a';
+            eCtx.lineWidth = 1.5; // 提升邊框厚度，完美還原圖片質感
+            eCtx.stroke();
+            eCtx.restore();
+
+            // ② 在酶內部繪製咬合的受質
+            if (mode === 'decomposition') {
+                eCtx.fillStyle = '#c084fc';
+                eCtx.beginPath();
+                eCtx.ellipse(complexX, complexY, 4.5, 2.5, 0, 0, Math.PI * 2);
+                eCtx.fill();
+            } else {
+                eCtx.fillStyle = '#4ade80';
+                eCtx.beginPath();
+                eCtx.moveTo(complexX - 3, complexY - 2);
+                eCtx.lineTo(complexX, complexY + 3);
+                eCtx.lineTo(complexX - 6, complexY + 3);
+                eCtx.closePath();
+                eCtx.fill();
+
+                eCtx.fillStyle = '#facc15';
+                eCtx.fillRect(complexX + 1, complexY - 2, 4, 4);
+            }
+            
+            eCtx.fillStyle = '#0f766e';
+            eCtx.font = 'bold 8.5px system-ui, sans-serif';
+            eCtx.textAlign = 'left';
+            eCtx.fillText("酶受質複合物", eaX + 12, yPeak - 14);
+
+            eCtx.textBaseline = 'alphabetic';
+            eCtx.textAlign = 'left';
+
+            let tx = energyProgress;
+            let ty = getEnergyY(tx, mode);
+            let tcx = padL + tx * graphW;
+            let tcy = 175 - padB - ty * graphH;
+
+            eCtx.fillStyle = '#e11d48';
+            eCtx.beginPath();
+            eCtx.arc(tcx, tcy, 4.5, 0, Math.PI * 2);
+            eCtx.fill();
+
+            eCtx.strokeStyle = 'rgba(225, 29, 72, 0.4)';
+            eCtx.lineWidth = 1.5;
+            eCtx.beginPath();
+            eCtx.arc(tcx, tcy, 6.5 + Math.sin(Date.now() / 100) * 1.5, 0, Math.PI * 2);
+            eCtx.stroke();
+
+            eCtx.restore();
+        }
+
+        function setupEnergyControls() {
+            document.getElementById('btn-energy-play').addEventListener('click', () => { energyPlaying = true; });
+            document.getElementById('btn-energy-pause').addEventListener('click', () => { energyPlaying = false; });
+            document.getElementById('btn-energy-replay').addEventListener('click', () => { energyProgress = 0; energyPlaying = true; });
+        }
+
         function animate() {
             requestAnimationFrame(animate);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, 750, 460);
 
             const temp = parseFloat(document.getElementById('slide-temp').value);
             const ph = parseFloat(document.getElementById('slide-ph').value);
 
-            // 結構狀態即時解算
             globalDenatured = (temp > 55 || ph < 4.0 || ph > 10.0);
             let phErr = Math.abs(ph - 7.0);
-            let lockTime = Math.round(35 + (phErr * 30)); // pH 偏離會使催化鎖定反應時間變長
+            let lockTime = Math.round(35 + (phErr * 30)); 
             let speedFactor = (temp / 37) * 1.3;
 
-            // 更新控制台狀態文字
             const indicator = document.getElementById('status-indicator');
             const statusTxt = document.getElementById('status-text');
             if (globalDenatured) {
@@ -605,21 +893,20 @@
                 handleCollisions();
             }
 
-            // 更新與繪製所有分子組件
             enzymes.forEach(e => { e.update(speedFactor, lockTime); e.draw(); });
             substrates.forEach(s => { s.update(speedFactor); s.draw(); });
             products.forEach(p => { p.update(speedFactor); p.draw(); });
 
-            // 累計計時統計
             if (substrates.filter(s => !s.isBound).length > 0) {
                 let currentSec = (Date.now() - startTime) / 1000;
                 document.getElementById('stat-timer').innerHTML = `${currentSec.toFixed(1)} <span class="text-xs font-normal text-gray-400">s</span>`;
             }
             document.getElementById('stat-substrate').innerText = substrates.filter(s => !s.isBound).length;
             document.getElementById('stat-product').innerText = productsCount;
+
+            updateAndDrawEnergyChart();
         }
 
-        // --- 滑塊同步控制機制 ---
         function syncParams() {
             const ids = ['enzyme', 'substrate', 'temp', 'ph'];
             ids.forEach(id => {
@@ -641,6 +928,7 @@
 
         window.onload = () => {
             syncParams();
+            setupEnergyControls();
             resetSimulation();
             animate();
         };
