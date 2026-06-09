@@ -280,6 +280,7 @@ input[type=range]::-moz-range-thumb {
     <button class="tab-btn" data-module="facilitated">協助擴散</button>
     <button class="tab-btn" data-module="osmosis">滲透作用</button>
     <button class="tab-btn" data-module="active">主動運輸</button>
+    <button class="tab-btn" data-module="combined">綜合模式</button>
   </nav>
   <div class="header-right">
     <button class="vector-toggle" id="vectorToggle">⟶ 速度向量 關</button>
@@ -512,6 +513,16 @@ input[type=range]::-moz-range-thumb {
         </div>
       </div>
       <div class="sidebar-section">
+        <div class="section-label">環境</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溫度 T</span>
+            <span class="control-value" id="os-val-temp">310 K</span>
+          </div>
+          <input type="range" id="os-temp" min="200" max="500" value="310" step="5">
+        </div>
+      </div>
+      <div class="sidebar-section">
         <div class="section-label">即時水分狀態</div>
         <div class="net-dir-row" id="os-net-row">
           <span class="net-dir-label">淨流向</span>
@@ -585,6 +596,16 @@ input[type=range]::-moz-range-thumb {
         </div>
       </div>
       <div class="sidebar-section">
+        <div class="section-label">環境</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溫度 T</span>
+            <span class="control-value" id="at-val-temp">310 K</span>
+          </div>
+          <input type="range" id="at-temp" min="200" max="500" value="310" step="5">
+        </div>
+      </div>
+      <div class="sidebar-section">
         <div class="section-label">運輸資訊</div>
         <div style="font-size:10px;color:var(--text-secondary);line-height:1.65">
           載體蛋白捕獲離子 → ATP水解 → 構型改變 → 離子逆梯度釋放。ADP漂離。被動洩漏維持動態穩態。
@@ -596,6 +617,87 @@ input[type=range]::-moz-range-thumb {
         <div class="net-dir-row" style="margin-top:4px">
           <span class="net-dir-label">漂浮ADP</span>
           <span class="net-dir-val" id="at-adp-count" style="color:var(--accent-amber)">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ MODULE 5: COMBINED ═══ -->
+    <div class="module-panel" id="panel-combined">
+      <div class="sidebar-section">
+        <div class="section-label">協助擴散受質</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#00897b; box-shadow:0 1px 3px rgba(0,137,123,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-teal)">受質（葡萄糖）</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">數量（A側）</span>
+            <span class="control-value" id="cb-val-fd-count">40</span>
+          </div>
+          <input type="range" id="cb-fd-count" min="5" max="100" value="40" step="5">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">主動運輸離子</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#7b1fa2; box-shadow:0 1px 3px rgba(123,31,162,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-ion)">Na⁺ 離子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">數量（A側）</span>
+            <span class="control-value" id="cb-val-at-count">30</span>
+          </div>
+          <input type="range" id="cb-at-count" min="5" max="80" value="30" step="5">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">ATP 可用量</span>
+            <span class="control-value" id="cb-val-atp">20</span>
+          </div>
+          <input type="range" id="cb-atp" min="5" max="60" value="20" step="5">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">滲透作用</div>
+        <div class="particle-type-header">
+          <div class="type-dot" style="background:#29b6f6; box-shadow:0 1px 3px rgba(2,119,189,0.4)"></div>
+          <span class="type-label" style="color:var(--accent-water)">H₂O 水分子</span>
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">水分子數量</span>
+            <span class="control-value" id="cb-val-water">60</span>
+          </div>
+          <input type="range" id="cb-water" min="20" max="120" value="60" step="10">
+        </div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溶質數量（B側）</span>
+            <span class="control-value" id="cb-val-solute">15</span>
+          </div>
+          <input type="range" id="cb-solute" min="0" max="50" value="15" step="5">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">環境</div>
+        <div class="control-row">
+          <div class="control-header">
+            <span class="control-name">溫度 T</span>
+            <span class="control-value" id="cb-val-temp">310 K</span>
+          </div>
+          <input type="range" id="cb-temp" min="200" max="500" value="310" step="5">
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="section-label">即時統計</div>
+        <div class="net-dir-row">
+          <span class="net-dir-label">ATP已水解</span>
+          <span class="net-dir-val" id="cb-atp-used" style="color:var(--accent-green)">0</span>
+        </div>
+        <div class="net-dir-row" style="margin-top:4px">
+          <span class="net-dir-label">水淨流向</span>
+          <span class="net-dir-val" id="cb-net-dir" style="color:var(--accent-water)">—</span>
         </div>
       </div>
     </div>
@@ -710,6 +812,7 @@ function resizeCanvases() {
   chartCvs.style.width  = cwrap.clientWidth  + 'px';
   chartCvs.style.height = cwrap.clientHeight + 'px';
   chartCtx.scale(d, d);
+  _bgCanvas = null; // 尺寸改變時清除背景快取
 }
 
 let currentModule = 'simple';
@@ -722,8 +825,10 @@ let lastTempSD    = 310, lastTempFD = 310;
 
 const sdState = { membrane: 'semi', alphaCount:40, alphaSize:5, betaCount:20, betaSize:10, pore:14, temp:310 };
 const fdState = { proteinType:'channel', count:50, size:5, proteins:5, temp:310 };
-const osState = { cellType:'animal', waterCount:80, waterSize:4, soluteCount:20, soluteCountA:0, soluteSize:9, soluteSizeA:9, poreSize:8, aqpCount:6 };
-const atState = { ionCount:40, ionSize:5, atpCount:20, cyanideOn:false };
+const osState = { cellType:'animal', waterCount:80, waterSize:4, soluteCount:20, soluteCountA:0, soluteSize:9, soluteSizeA:9, poreSize:8, aqpCount:6, temp:310 };
+const atState = { ionCount:40, ionSize:5, atpCount:20, cyanideOn:false, temp:310 };
+const cbState = { fdCount:40, atCount:30, atpCount:20, waterCount:60, soluteCount:15, temp:310 };
+let cbAtpUsedTotal = 0;
 let particles         = [];
 let transportProteins = [];
 let adpParticles      = [];
@@ -814,6 +919,16 @@ const C_ION    = ['#6a1b9a','#7b1fa2','#4a148c','#8e24aa'];
 const C_ATP    = ['#1b5e20','#2e7d32','#388e3c','#43a047'];
 const C_ADP    = ['#e65100','#f57c00','#ef6c00','#ff8f00'];
 
+// ── 預解析所有顏色為 {r,g,b}，避免每幀重複 parseInt ──────────────────────
+const _hexCache = new Map();
+function parseHex(hex) {
+  if (_hexCache.has(hex)) return _hexCache.get(hex);
+  const v = { r:parseInt(hex.slice(1,3),16), g:parseInt(hex.slice(3,5),16), b:parseInt(hex.slice(5,7),16) };
+  _hexCache.set(hex, v); return v;
+}
+// 預熱所有調色盤
+[...C_ALPHA,...C_BETA,...C_SUBSTR,...C_WATER,...C_SOLUTE,...C_ION,...C_ATP,...C_ADP].forEach(parseHex);
+
 let _pid = 0;
 class Particle {
   constructor(x, y, r, temp, ptype='alpha', side=null) {
@@ -824,6 +939,9 @@ class Particle {
     const pal  = { alpha:C_ALPHA, beta:C_BETA, substrate:C_SUBSTR,
                    water:C_WATER, solute:C_SOLUTE, ion:C_ION, atp:C_ATP, adp:C_ADP }[ptype] || C_ALPHA;
     this.color = pal[this.id % pal.length];
+    // 預存解析後的 rgb，drawParticle 中免去重複 parseInt
+    const _c = parseHex(this.color);
+    this.cr = _c.r; this.cg = _c.g; this.cb = _c.b;
     const v    = mbVelocity(temp, r);
     this.vx=v.vx; this.vy=v.vy;
     this.side  = side || (x < MX() ? 'A' : 'B');
@@ -858,8 +976,9 @@ function tryPlace(xMin, xMax, yMin, yMax, r, existing) {
 }
 
 function hexRgba(hex, a) {
-  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-  return `rgba(${r},${g},${b},${a})`;
+  const c = parseHex(hex);
+  // 將 alpha 四捨五入到 2 位小數，大幅減少字串長度與 GC 壓力
+  return `rgba(${c.r},${c.g},${c.b},${a.toFixed ? +a.toFixed(2) : a})`;
 }
 
 function spawnModule() {
@@ -952,6 +1071,54 @@ function spawnModule() {
     }
     transportProteins = buildPumpSites(4, h);
   }
+
+  if (currentModule==='combined') {
+    cbAtpUsedTotal = 0;
+    const T = cbState.temp;
+    // FD: substrate particles on A side
+    const fdR = 5;
+    for (let i=0;i<cbState.fdCount;i++) {
+      const p=tryPlace(aL+fdR,aR-fdR,yN+fdR,yX-fdR,fdR,particles);
+      particles.push(new Particle(p.x,p.y,fdR,T,'substrate','A'));
+    }
+    // AT: ion particles on A side (smaller, different visual)
+    const ionR = 4;
+    for (let i=0;i<cbState.atCount;i++) {
+      const p=tryPlace(aL+ionR,aR-ionR,yN+ionR,yX-ionR,ionR,particles);
+      particles.push(new Particle(p.x,p.y,ionR,T,'ion','A'));
+    }
+    // OS: water molecules both sides, solute on B side
+    const wR = 3;
+    const wA = Math.round(cbState.waterCount*0.5), wB = cbState.waterCount-wA;
+    for (let i=0;i<wA;i++) {
+      const p=tryPlace(aL+wR,aR-wR,yN+wR,yX-wR,wR,particles);
+      particles.push(new Particle(p.x,p.y,wR,T,'water','A'));
+    }
+    for (let i=0;i<wB;i++) {
+      const p=tryPlace(bL+wR,bR-wR,yN+wR,yX-wR,wR,particles);
+      particles.push(new Particle(p.x,p.y,wR,T,'water','B'));
+    }
+    const sR = 8;
+    for (let i=0;i<cbState.soluteCount;i++) {
+      const p=tryPlace(bL+sR,bR-sR,yN+sR,yX-sR,sR,particles);
+      const sp=new Particle(p.x,p.y,sR,T,'solute','B');
+      sp.hydrationR = sR*2.2; particles.push(sp);
+    }
+    // ATP for pumps (B side)
+    const atpR=4;
+    for (let i=0;i<cbState.atpCount;i++) {
+      const p=tryPlace(bL+atpR,bR-atpR,yN+atpR,yX-atpR,atpR,atpParticles.concat(particles));
+      atpParticles.push(new Particle(p.x,p.y,atpR,T,'atp','B'));
+    }
+    // Membrane: top third = FD channel proteins, middle third = pumps, bottom = aquaporins
+    // We encode all in transportProteins; pumps will be identified by .role
+    const fdSites = buildProteinSites(3, h*0.38, 'channel').map(s=>({...s, role:'fd', y0:s.y0, y1:s.y1}));
+    const pumpSites = buildPumpSites(3, h).filter((_,i)=>i<3).map((s,i)=>{
+      const cy = h*0.42 + (h*0.35/(3))*(i+0.5);
+      return {...s, cy, y0:cy-13, y1:cy+13, role:'pump'};
+    });
+    transportProteins = [...fdSites, ...pumpSites];
+  }
 }
 
 function physicsStep(dt) {
@@ -959,66 +1126,82 @@ function physicsStep(dt) {
   const SUB=3, dts=dt/SUB;
   const isSD=currentModule==='simple', isFD=currentModule==='facilitated';
   const isOS=currentModule==='osmosis', isAT=currentModule==='active';
+  const isCB=currentModule==='combined';
   const noMem=isSD && sdState.membrane==='none';
 
-  const poreW = isSD ? sdState.pore : (isOS ? osState.poreSize : 0);
+  const poreW = isSD ? sdState.pore : (isOS ? osState.poreSize : (isCB ? 7 : 0));
   const pores = (isSD && !noMem) ? buildSimplePores(poreW, h) :
-                (isOS ? buildAquaporinPores(poreW, h, osState.aqpCount) : []);
+                (isOS ? buildAquaporinPores(poreW, h, osState.aqpCount) :
+                (isCB ? buildAquaporinPores(poreW, h, 4) : []));
 
   // ── PRE-COMPUTE OSMOLALITY for directional osmotic bias ────────────────
-  // osmolality = solute / (solute + free-water) — higher value = lower water potential
   let osmoA_pre=0, osmoB_pre=0;
-  if (isOS) {
+  if (isOS || isCB) {
     let sA=0,sB=0,fwA=0,fwB=0;
     for (const p of particles) {
-      if (p.ptype==='solute')                      { p.x<mx ? sA++ : sB++; }
-      else if (p.ptype==='water') { p.x<mx ? fwA++ : fwB++; }
+      if (p.ptype==='solute')       { p.x<mx ? sA++ : sB++; }
+      else if (p.ptype==='water')   { p.x<mx ? fwA++ : fwB++; }
     }
     const tA=sA+fwA, tB=sB+fwB;
     osmoA_pre = tA>0 ? sA/tA : 0;
     osmoB_pre = tB>0 ? sB/tB : 0;
   }
 
-  if (isOS) {
-    // ── Soft hydration attraction ─────────────────────────────────────────
-    // Water molecules are attracted toward nearby solutes via a gentle
-    // distance-dependent force (like electrostatic dipole attraction).
-    // They slow down inside the hydration shell but keep moving freely —
-    // no sticking, just clustering. This avoids the misconception that
-    // water physically adheres to solute particles.
+  if (isOS || isCB) {
+    // ── Soft hydration attraction（格子加速，避免 O(water×solute) 全配對）──
     const solutes = particles.filter(p=>p.ptype==='solute');
     const waters  = particles.filter(p=>p.ptype==='water');
-    for (const wm of waters) {
+    if (solutes.length > 0 && waters.length > 0) {
+      // 建立溶質空間格子
+      const maxShell = solutes.reduce((m,s)=>Math.max(m,s.hydrationR),0) * 1.4;
+      const cellSz = Math.max(maxShell, 1);
+      const gWs = Math.ceil(w/cellSz)+1;
+      const sGrid = new Map();
       for (const s of solutes) {
-        const dx = s.x - wm.x, dy = s.y - wm.y;
-        const dist = Math.hypot(dx, dy) || 0.01;
-        const shell = s.hydrationR;
-        if (dist < shell * 1.4) {
-          // Attraction force: stronger closer in, fades to zero at edge
-          const strength = 0.012 * Math.max(0, 1 - dist / (shell * 1.4));
-          wm.vx += (dx / dist) * strength;
-          wm.vy += (dy / dist) * strength;
-          // Dampen speed inside the shell (viscous drag) so water lingers
-          if (dist < shell) {
-            const drag = 0.88;
-            wm.vx *= drag; wm.vy *= drag;
+        const cx=Math.floor(s.x/cellSz), cy=Math.floor(s.y/cellSz);
+        const k=cy*gWs+cx; if(!sGrid.has(k)) sGrid.set(k,[]);
+        sGrid.get(k).push(s);
+      }
+      for (const wm of waters) {
+        const wcx=Math.floor(wm.x/cellSz), wcy=Math.floor(wm.y/cellSz);
+        const range=1;
+        for (let dy=-range;dy<=range;dy++) for (let dx=-range;dx<=range;dx++) {
+          const nbrs=sGrid.get((wcy+dy)*gWs+(wcx+dx));
+          if (!nbrs) continue;
+          for (const s of nbrs) {
+            const ddx=s.x-wm.x, ddy=s.y-wm.y;
+            const dist=Math.hypot(ddx,ddy)||0.01;
+            const shell=s.hydrationR;
+            if (dist < shell*1.4) {
+              const strength=0.012*Math.max(0,1-dist/(shell*1.4));
+              wm.vx+=(ddx/dist)*strength; wm.vy+=(ddy/dist)*strength;
+              if (dist<shell) { wm.vx*=0.88; wm.vy*=0.88; }
+            }
           }
         }
       }
     }
   }
 
-  if (isAT && !atState.cyanideOn && frameCount % 60 === 0) {
+  if ((isAT && !atState.cyanideOn || isCB) && frameCount % 60 === 0) {
     const atpR=4;
-    while (atpParticles.length < atState.atpCount) {
+    const limit = isCB ? cbState.atpCount : atState.atpCount;
+    while (atpParticles.length < limit) {
       const p=tryPlace(mx+HALF_MEM+atpR, w-atpR, 4+atpR, h-atpR, atpR, atpParticles);
       atpParticles.push(new Particle(p.x,p.y,atpR,310,'atp','B'));
     }
   }
 
+  // ── 預建 allMoving 陣列，避免每個子步驟重複 spread ──────────────────────
+  const nP=particles.length, nAtp=atpParticles.length, nAdp=adpParticles.length;
+  const allMoving = new Array(nP+nAtp+nAdp);
+  for(let i=0;i<nP;i++)   allMoving[i]=particles[i];
+  for(let i=0;i<nAtp;i++) allMoving[nP+i]=atpParticles[i];
+  for(let i=0;i<nAdp;i++) allMoving[nP+nAtp+i]=adpParticles[i];
+
   for (let sub=0;sub<SUB;sub++) {
-    const allMoving = [...particles, ...atpParticles, ...adpParticles];
-    for (const p of allMoving) {
+    for (let pi=0;pi<allMoving.length;pi++) {
+      const p=allMoving[pi];
       if (p.bound) continue;
 
       p.x+=p.vx*dts; p.y+=p.vy*dts;
@@ -1063,8 +1246,6 @@ function physicsStep(dt) {
             else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
           }
         } else if (isOS) {
-          // ── OSMOSIS FIX: use <= so water (r=4) can fit pore (w=8)
-          // Also loosen y-check by p.r to handle particle-centre vs pore-edge alignment
           let canCross=false;
           if (p.ptype==='water') {
             for (const pore of pores) {
@@ -1073,17 +1254,12 @@ function physicsStep(dt) {
                 canCross=true; break;
               }
             }
-          }          // ── OSMOTIC BIAS ────────────────────────────────────────────────────
-          // Water crosses toward the side with HIGHER osmolality (lower water potential).
-          // biasAtoB > 0 → B more concentrated → water should flow A→B;
-          // block reverse crossings proportionally to the gradient.
+          }
           if (canCross) {
             const biasAtoB = osmoB_pre - osmoA_pre;
             if (prevSide==='B' && biasAtoB > 0.01) {
-              // Going B→A against osmotic gradient — block with graded probability
               if (Math.random() < Math.min(0.82, biasAtoB * 3.5)) canCross=false;
             } else if (prevSide==='A' && biasAtoB < -0.01) {
-              // Going A→B against osmotic gradient (A more concentrated)
               if (Math.random() < Math.min(0.82, -biasAtoB * 3.5)) canCross=false;
             }
           }
@@ -1118,6 +1294,67 @@ function physicsStep(dt) {
               else                    { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
             }
           }
+        } else if (isCB) {
+          // Combined: substrate uses FD channels, ions use pumps, water uses aquaporins
+          if (p.ptype==='substrate') {
+            let handled=false;
+            for (const site of transportProteins) {
+              if (site.role==='fd' && p.y+p.r>site.y0 && p.y-p.r<site.y1) {
+                handled = p.r*2 < (site.y1-site.y0)*0.9;
+                break;
+              }
+            }
+            if (!handled) {
+              if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+              else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+            }
+          } else if (p.ptype==='ion') {
+            let handled=false;
+            for (const pump of transportProteins) {
+              if (pump.role==='pump' && p.y+p.r>pump.y0 && p.y-p.r<pump.y1) {
+                if (pump.state==='open' && !p.bound && prevSide==='A') {
+                  pump.state='bound'; pump.boundIon=p;
+                  p.bound=true; p.vx=0; p.vy=0; p.x=mx; p.y=pump.cy; handled=true;
+                } else if (pump.state!=='open') {
+                  if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+                  else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+                  handled=true;
+                }
+                break;
+              }
+            }
+            if (!handled) {
+              const leakSide = prevSide==='B' && Math.random()<0.001;
+              if (!leakSide) {
+                if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+                else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+              }
+            }
+          } else if (p.ptype==='water') {
+            let canCross=false;
+            for (const pore of pores) {
+              const poreCy=(pore.y0+pore.y1)*0.5;
+              if (Math.abs(p.y-poreCy) < (pore.y1-pore.y0)*0.5 + p.r && p.r*2<=poreW) {
+                canCross=true; break;
+              }
+            }
+            if (canCross) {
+              const biasAtoB = osmoB_pre - osmoA_pre;
+              if (prevSide==='B' && biasAtoB > 0.01) {
+                if (Math.random() < Math.min(0.82, biasAtoB * 3.5)) canCross=false;
+              } else if (prevSide==='A' && biasAtoB < -0.01) {
+                if (Math.random() < Math.min(0.82, -biasAtoB * 3.5)) canCross=false;
+              }
+            }
+            if (!canCross) {
+              if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+              else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+            }
+          } else {
+            // solute: blocked entirely
+            if (prevSide==='A') { p.x=memL-p.r-0.5; p.vx=-Math.abs(p.vx); }
+            else               { p.x=memR+p.r+0.5; p.vx= Math.abs(p.vx); }
+          }
         } else {
           let inPore=false;
           for (const pore of pores) {
@@ -1132,7 +1369,7 @@ function physicsStep(dt) {
         const ns=p.x<mx?'A':'B';
         if (ns!==prevSide) {
           crossingCount++; crossWindow.push({frame:frameCount, dir:ns==='B'?1:-1}); p.side=ns;
-          if (isOS && p.ptype==='water') {
+          if ((isOS || isCB) && p.ptype==='water') {
             if (ns==='B') volumeB+=0.004;
             else          volumeB=Math.max(1.0, volumeB-0.004);
           }
@@ -1140,15 +1377,17 @@ function physicsStep(dt) {
       } else p.recolor();
     }
 
-    if (sub===0 && isFD) {
+    if (sub===0 && (isFD || isCB)) {
+      const T = isCB ? cbState.temp : fdState.temp;
       for (const site of transportProteins) {
+        if (site.role && site.role!=='fd') continue; // in combined mode only process fd sites here
         if (site.state==='busy') {
           site.bindTimer--;
           if (site.bindTimer<=0) {
             const bp=site.boundParticle;
             if (bp) {
               bp.bound=false; bp.x=mx+HALF_MEM+bp.r+2; bp.y=site.cy;
-              const v=mbVelocity(fdState.temp,bp.r); bp.vx=Math.abs(v.vx); bp.vy=v.vy; bp.side='B';
+              const v=mbVelocity(T,bp.r); bp.vx=Math.abs(v.vx); bp.vy=v.vy; bp.side='B';
               crossingCount++; crossWindow.push({frame:frameCount,dir:1});
             }
             site.state='open'; site.boundParticle=null;
@@ -1157,10 +1396,11 @@ function physicsStep(dt) {
       }
     }
 
-    if (sub===0 && isAT) {
+    if (sub===0 && (isAT || isCB)) {
+      const mx2=MX();
       for (const pump of transportProteins) {
+        if (isCB && pump.role!=='pump') continue;
         if (pump.state==='bound') {
-          const mx2=MX();
           for (let ai=atpParticles.length-1;ai>=0;ai--) {
             const atp=atpParticles[ai];
             if (Math.hypot(atp.x-mx2, atp.y-pump.cy) < (HALF_MEM+20)) {
@@ -1168,7 +1408,7 @@ function physicsStep(dt) {
               const adp=new Particle(mx2+HALF_MEM+8, pump.cy+Math.random()*6-3, 4, 310,'adp','B');
               adp.life=180; adp.vx=(Math.random()-0.5)*1.5; adp.vy=(Math.random()-0.5)*1.5;
               adpParticles.push(adp);
-              atpUsedTotal++;
+              if (isCB) cbAtpUsedTotal++; else atpUsedTotal++;
               pump.state='ready'; pump.bindTimer=20; pump.flashing=10;
               break;
             }
@@ -1181,8 +1421,8 @@ function physicsStep(dt) {
             const ion=pump.boundIon;
             if (ion) {
               ion.bound=false;
-              ion.x=mx+HALF_MEM+ion.r+2; ion.y=pump.cy;
-              const v=mbVelocity(310,ion.r); ion.vx=Math.abs(v.vx); ion.vy=v.vy; ion.side='B';
+              ion.x=mx2+HALF_MEM+ion.r+2; ion.y=pump.cy;
+              const v=mbVelocity(isCB?cbState.temp:310,ion.r); ion.vx=Math.abs(v.vx); ion.vy=v.vy; ion.side='B';
               crossingCount++; crossWindow.push({frame:frameCount,dir:1});
             }
             pump.state='open'; pump.boundIon=null;
@@ -1196,8 +1436,14 @@ function physicsStep(dt) {
       triggerLysis();
     }
 
-    const physParticles = [...particles.filter(p=>!p.bound),
-                           ...atpParticles, ...adpParticles];
+    // ── 碰撞偵測：使用預建陣列避免每子步驟重新 filter/spread ────────────────
+    let physCount = 0;
+    for (let i=0;i<allMoving.length;i++) {
+      const p=allMoving[i];
+      if (!p.bound && p.ptype!=='adp') allMoving[physCount++]=p;
+    }
+    const physParticles = allMoving.slice(0, physCount);
+
     const cellSize=Math.max(18, (physParticles[0]?.r||5)*3);
     const gW=Math.ceil(w/cellSize);
     const grid=new Map();
@@ -1210,31 +1456,31 @@ function physicsStep(dt) {
     const seen=new Set();
     for (const a of physParticles) {
       const cx=Math.floor(a.x/cellSize), cy=Math.floor(a.y/cellSize);
-      const nbrs=[];
       for (let dy=-1;dy<=1;dy++) for (let dx=-1;dx<=1;dx++) {
-        const c=grid.get((cy+dy)*gW+(cx+dx)); if(c) nbrs.push(...c);
-      }
-      for (const b of nbrs) {
-        if (b===a) continue;
-        const key=a.id<b.id?a.id*1e7+b.id:b.id*1e7+a.id;
-        if (seen.has(key)) continue; seen.add(key);
-        const ddx=b.x-a.x, ddy=b.y-a.y, d2=ddx*ddx+ddy*ddy, md=a.r+b.r;
-        if (d2>=md*md) continue;
-        const d=Math.sqrt(d2)||1e-4, nx=ddx/d, ny=ddy/d, ov=md-d, mt=a.mass+b.mass;
-        a.x-=nx*ov*(b.mass/mt); a.y-=ny*ov*(b.mass/mt);
-        b.x+=nx*ov*(a.mass/mt); b.y+=ny*ov*(a.mass/mt);
-        const dv=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
-        if (dv<=0) continue;
-        const imp=2*dv/mt;
-        a.vx-=imp*b.mass*nx; a.vy-=imp*b.mass*ny;
-        b.vx+=imp*a.mass*nx; b.vy+=imp*a.mass*ny;
+        const nbrs=grid.get((cy+dy)*gW+(cx+dx)); if (!nbrs) continue;
+        for (const b of nbrs) {
+          if (b===a) continue;
+          const key=a.id<b.id?a.id*1e7+b.id:b.id*1e7+a.id;
+          if (seen.has(key)) continue; seen.add(key);
+          const ddx=b.x-a.x, ddy=b.y-a.y, d2=ddx*ddx+ddy*ddy, md=a.r+b.r;
+          if (d2>=md*md) continue;
+          const d=Math.sqrt(d2)||1e-4, nx=ddx/d, ny=ddy/d, ov=md-d, mt=a.mass+b.mass;
+          a.x-=nx*ov*(b.mass/mt); a.y-=ny*ov*(b.mass/mt);
+          b.x+=nx*ov*(a.mass/mt); b.y+=ny*ov*(a.mass/mt);
+          const dv=(a.vx-b.vx)*nx+(a.vy-b.vy)*ny;
+          if (dv<=0) continue;
+          const imp=2*dv/mt;
+          a.vx-=imp*b.mass*nx; a.vy-=imp*b.mass*ny;
+          b.vx+=imp*a.mass*nx; b.vy+=imp*a.mass*ny;
+        }
       }
     }
   }
 
-  const T=isSD?sdState.temp:isFD?fdState.temp:310;
+  const T=isSD?sdState.temp:isFD?fdState.temp:isOS?osState.temp:isAT?atState.temp:isCB?cbState.temp:310;
   const vMax=Math.sqrt(K_SCALE*T)*7;
-  for (const p of [...particles,...atpParticles,...adpParticles]) {
+  for (let i=0;i<allMoving.length;i++) {
+    const p=allMoving[i];
     if (p.bound) continue;
     const spd=Math.hypot(p.vx,p.vy);
     if (spd>vMax) { const f=vMax/spd; p.vx*=f; p.vy*=f; }
@@ -1261,13 +1507,27 @@ function triggerLysis() {
   drawFrame(); drawChart();
 }
 
+// ── 靜態背景快取（格子線只在 resize 時重繪一次）──────────────────────────
+let _bgCanvas = null, _bgW = 0, _bgH = 0;
 function drawBackground() {
   const w=W(), h=H(), mx=MX();
-  ctx.fillStyle='rgba(25,118,210,0.025)'; ctx.fillRect(0,0,mx-HALF_MEM,h);
-  ctx.fillStyle='rgba(0,137,123,0.025)'; ctx.fillRect(mx+HALF_MEM,0,w-mx-HALF_MEM,h);
-  ctx.strokeStyle='rgba(0,0,0,0.03)'; ctx.lineWidth=1;
-  for (let x=0;x<w;x+=40){ ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke(); }
-  for (let y=0;y<h;y+=40){ ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke(); }
+  // 若尺寸有變才重建快取
+  if (!_bgCanvas || _bgW!==w || _bgH!==h) {
+    _bgCanvas = document.createElement('canvas');
+    _bgCanvas.width  = Math.ceil(w * dpr());
+    _bgCanvas.height = Math.ceil(h * dpr());
+    const bc = _bgCanvas.getContext('2d');
+    bc.scale(dpr(), dpr());
+    bc.fillStyle='rgba(25,118,210,0.025)'; bc.fillRect(0,0,mx-HALF_MEM,h);
+    bc.fillStyle='rgba(0,137,123,0.025)';  bc.fillRect(mx+HALF_MEM,0,w-mx-HALF_MEM,h);
+    bc.strokeStyle='rgba(0,0,0,0.03)'; bc.lineWidth=1;
+    bc.beginPath();
+    for (let x=0;x<w;x+=40){ bc.moveTo(x,0); bc.lineTo(x,h); }
+    for (let y=0;y<h;y+=40){ bc.moveTo(0,y); bc.lineTo(w,y); }
+    bc.stroke();
+    _bgW=w; _bgH=h;
+  }
+  ctx.drawImage(_bgCanvas, 0, 0, w, h);
 }
 
 function drawOsmosisMembrane(pores) {
@@ -1350,6 +1610,70 @@ function drawActiveMembrane(pumps) {
   }
 }
 
+function drawCombinedMembrane(proteins, aquaporins) {
+  const w=W(), h=H(), mx=MX();
+  // Draw base membrane with gaps for all proteins
+  const allGaps = [...proteins.map(p=>({y0:p.y0,y1:p.y1})), ...aquaporins];
+  const sorted = [...allGaps].sort((a,b)=>a.y0-b.y0);
+  ctx.fillStyle='#c0c8d8';
+  let y=0;
+  for (const gap of sorted) { ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,Math.max(0,gap.y0-y)); y=gap.y1; }
+  ctx.fillRect(mx-HALF_MEM,y,MEM_THICK,h-y);
+  // gradient glow
+  const g=ctx.createLinearGradient(mx-14,0,mx+14,0);
+  g.addColorStop(0,'rgba(50,80,140,0)'); g.addColorStop(0.5,'rgba(60,90,155,0.18)'); g.addColorStop(1,'rgba(50,80,140,0)');
+  ctx.fillStyle=g; ctx.fillRect(mx-14,0,28,h);
+
+  // FD channel proteins (teal)
+  for (const site of proteins.filter(s=>s.role==='fd')) {
+    const ph=site.y1-site.y0, cx=mx, cy=site.cy, rw=HALF_MEM+4, rh=ph*0.4;
+    const color='#00897b';
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx,cy-rh*0.5,rw,rh*0.6,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,0.12); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,0.55); ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx,cy+rh*0.5,rw,rh*0.6,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,0.12); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,0.55); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle=hexRgba(color,0.75); ctx.font="600 7px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+    ctx.fillText('通道',cx,site.y0-2);
+  }
+
+  // AT pump proteins (violet/green)
+  for (const pump of proteins.filter(s=>s.role==='pump')) {
+    const isbound=pump.state==='bound'||pump.state==='ready';
+    const flashing=pump.flashing>0;
+    const color=flashing?'#2e7d32':isbound?'#7b1fa2':'#5e35b1';
+    const cx=mx, cy=pump.cy, rw=HALF_MEM+5, ph=pump.y1-pump.y0;
+    ctx.save();
+    ctx.beginPath(); ctx.ellipse(cx,cy-ph*0.2,rw,ph*0.32,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,isbound?0.2:0.1); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,flashing?1.0:isbound?0.8:0.5); ctx.lineWidth=1.5; ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(cx,cy+ph*0.2,rw,ph*0.32,0,0,Math.PI*2);
+    ctx.fillStyle=hexRgba(color,isbound?0.2:0.1); ctx.fill();
+    ctx.strokeStyle=hexRgba(color,flashing?1.0:isbound?0.8:0.5); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle=hexRgba(color,0.85); ctx.font="600 7px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+    ctx.fillText(pump.state==='open'?'泵':'ATP→', cx, pump.y0-2);
+  }
+
+  // Aquaporins (blue)
+  for (const pore of aquaporins) {
+    const ph=pore.y1-pore.y0;
+    const pg=ctx.createLinearGradient(mx-14,0,mx+14,0);
+    pg.addColorStop(0,'rgba(2,119,189,0)'); pg.addColorStop(0.5,'rgba(2,119,189,0.15)'); pg.addColorStop(1,'rgba(2,119,189,0)');
+    ctx.fillStyle=pg; ctx.fillRect(mx-14,pore.y0,28,ph);
+    ctx.strokeStyle='rgba(2,119,189,0.4)'; ctx.lineWidth=0.8;
+    ctx.beginPath();
+    ctx.moveTo(mx-HALF_MEM,pore.y0);ctx.lineTo(mx+HALF_MEM,pore.y0);
+    ctx.moveTo(mx-HALF_MEM,pore.y1);ctx.lineTo(mx+HALF_MEM,pore.y1);
+    ctx.stroke();
+    ctx.fillStyle='rgba(2,119,189,0.6)'; ctx.font="600 7px 'IBM Plex Mono',monospace"; ctx.textAlign='center';
+    ctx.fillText('AQP',mx,pore.y0-2);
+  }
+}
+
 function drawSimpleMembrane(pores) {
   const w=W(), h=H(), mx=MX();
   ctx.fillStyle='#b8ccd8';
@@ -1410,17 +1734,18 @@ function drawParticle(p) {
     if (alpha<=0) return;
   }
 
+  const {cr,cg,cb} = p;
+
   if (p.bound) {
-    const pulse=0.6+0.4*Math.sin(frameCount*0.18);
-    const gl=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.5);
-    gl.addColorStop(0,hexRgba(p.color,0.3*pulse)); gl.addColorStop(1,hexRgba(p.color,0));
+    const pulse=0.5+0.3*Math.sin(frameCount*0.18);
+    const gl=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*1.8);
+    gl.addColorStop(0,`rgba(${cr},${cg},${cb},${(0.22*pulse).toFixed(2)})`);
+    gl.addColorStop(1,`rgba(${cr},${cg},${cb},0)`);
     ctx.fillStyle=gl;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2.5,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r*1.8,0,Math.PI*2); ctx.fill();
   }
 
   if (p.ptype==='solute' && p.hydrationR) {
-    // Draw attraction zone as a soft filled gradient — visually shows the
-    // region where water is drawn in, without implying rigid attachment
     const zg = ctx.createRadialGradient(p.x,p.y, p.r, p.x,p.y, p.hydrationR);
     zg.addColorStop(0, 'rgba(255,171,64,0.10)');
     zg.addColorStop(1, 'rgba(255,171,64,0.00)');
@@ -1431,16 +1756,16 @@ function drawParticle(p) {
     ctx.setLineDash([]);
   }
 
-  const glow=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.4);
-  glow.addColorStop(0,hexRgba(p.color,0.12*alpha)); glow.addColorStop(1,hexRgba(p.color,0));
-  ctx.fillStyle=glow;
-  ctx.beginPath(); ctx.arc(p.x,p.y,p.r*2.4,0,Math.PI*2); ctx.fill();
-
-  const grad=ctx.createRadialGradient(p.x-p.r*0.3,p.y-p.r*0.3,p.r*0.05,p.x,p.y,p.r);
-  grad.addColorStop(0,hexRgba(p.color,0.95*alpha)); grad.addColorStop(1,hexRgba(p.color,0.6*alpha));
+  // ── 合併光暈+球體為單一 radialGradient（精簡光暈範圍）──
+  const grad=ctx.createRadialGradient(p.x-p.r*0.3,p.y-p.r*0.3,p.r*0.05,p.x,p.y,p.r*1.6);
+  grad.addColorStop(0,   `rgba(${cr},${cg},${cb},${(0.95*alpha).toFixed(2)})`);
+  grad.addColorStop(p.r/(p.r*1.6), `rgba(${cr},${cg},${cb},${(0.70*alpha).toFixed(2)})`);
+  grad.addColorStop(1,   `rgba(${cr},${cg},${cb},0)`);
   ctx.fillStyle=grad;
-  ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
-  ctx.strokeStyle=hexRgba(p.color,0.65*alpha); ctx.lineWidth=0.7; ctx.stroke();
+  ctx.beginPath(); ctx.arc(p.x,p.y,p.r*1.6,0,Math.PI*2); ctx.fill();
+  // 邊框
+  ctx.strokeStyle=`rgba(${cr},${cg},${cb},${(0.70*alpha).toFixed(2)})`; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.stroke();
 
   if (showVectors && !p.bound && p.ptype!=='adp') {
     const spd=Math.hypot(p.vx,p.vy);
@@ -1448,7 +1773,7 @@ function drawParticle(p) {
       const len=Math.min(spd*8, 24);
       const ex=p.x+p.vx/spd*len, ey=p.y+p.vy/spd*len;
       ctx.save();
-      ctx.strokeStyle=hexRgba(p.color, 0.4);
+      ctx.strokeStyle=`rgba(${cr},${cg},${cb},0.4)`;
       ctx.lineWidth=1;
       ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(ex,ey);
       const angle=Math.atan2(ey-p.y, ex-p.x);
@@ -1470,6 +1795,7 @@ function drawFrame() {
   drawBackground();
   const isSD=currentModule==='simple', isFD=currentModule==='facilitated';
   const isOS=currentModule==='osmosis', isAT=currentModule==='active';
+  const isCB=currentModule==='combined';
   const noMem=isSD && sdState.membrane==='none';
 
   if (noMem) {
@@ -1533,6 +1859,8 @@ function drawFrame() {
     }
   } else if (isAT) {
     drawActiveMembrane(transportProteins);
+  } else if (isCB) {
+    drawCombinedMembrane(transportProteins, buildAquaporinPores(7, H(), 4));
   }
 
   for (const p of lysisDebris) {
@@ -1588,6 +1916,9 @@ for(const p of particles){
   } else if (currentModule==='active') {
     const ionB=particles.filter(p=>p.ptype==='ion'&&p.x>mx).length;
     graphData.xs.push(ionB); graphData.ys.push(atpUsedTotal);
+  } else if (currentModule==='combined') {
+    const ionB=particles.filter(p=>p.ptype==='ion'&&p.x>mx).length;
+    graphData.xs.push(graphData.xs.length); graphData.ys.push(ionB);
   }
   if (graphData.xs.length>RING) { graphData.xs.shift(); graphData.ys.shift(); }
 }
@@ -1642,6 +1973,12 @@ function drawChart() {
     xMin=0; xMax=Math.max(10,atState.ionCount);
     yMin=0; yMax=Math.max(10,atpUsedTotal||10);
     showTheory=false;
+  } else if (currentModule==='combined') {
+    xLabel='時間'; yLabel='B側Na⁺數量';
+    lineColor='#7b1fa2';
+    xMin=0; xMax=Math.max(50,graphData.xs.length);
+    yMin=0; yMax=Math.max(10,cbState.atCount);
+    showTheory=false;
   } else {
     chartCtx.fillStyle='rgba(0,0,0,0.3)'; chartCtx.font="11px 'IBM Plex Mono',monospace";
     chartCtx.textAlign='center'; chartCtx.fillText('圖表不適用',cw/2,ch/2); return;
@@ -1674,7 +2011,8 @@ function drawChart() {
     simple:'粒子數量變化',
     facilitated:fdState.proteinType==='carrier'?'米氏動力學':'通道蛋白：線性運輸',
     osmosis:'滲透水通量（B側）',
-    active:'主動運輸：ATP → 功'
+    active:'主動運輸：ATP → 功',
+    combined:'主動運輸積累（B側Na⁺）'
   };
   chartCtx.fillStyle=lineColor; chartCtx.globalAlpha=0.7;
   chartCtx.font="8px 'IBM Plex Mono',monospace"; chartCtx.textAlign='right';
@@ -1736,12 +2074,46 @@ if(currentModule === 'simple'){
     return;
   }
   if (graphData.xs.length<2) return;
+
+  // ── 繪製 xs/ys 折線（協助擴散、滲透、主動運輸）────────────────────────
+  const xs=graphData.xs, ys=graphData.ys;
+
+  if (showTheory && currentModule==='facilitated') {
+    // 理論曲線（通道蛋白：線性；載體蛋白：米氏 Michaelis-Menten）
+    const Vmax=RATE_WINDOW*0.9, Km=40;
+    chartCtx.beginPath();
+    for (let i=0;i<=pw;i++) {
+      const xv=xMin+i*(xMax-xMin)/pw;
+      const yv=fdState.proteinType==='carrier'?(Vmax*xv/(Km+xv)):(xv/xMax*RATE_WINDOW*0.8);
+      const px2=tX(xv), py2=tY(yv);
+      if (i===0) chartCtx.moveTo(px2,py2); else chartCtx.lineTo(px2,py2);
+    }
+    chartCtx.strokeStyle=theoryColor.replace('0.15','0.5');
+    chartCtx.lineWidth=1.5; chartCtx.setLineDash([4,4]); chartCtx.stroke();
+    chartCtx.setLineDash([]);
+  }
+
+  // 主折線
+  chartCtx.beginPath();
+  for (let i=0;i<xs.length;i++) {
+    const px2=tX(xs[i]), py2=tY(ys[i]);
+    if (i===0) chartCtx.moveTo(px2,py2); else chartCtx.lineTo(px2,py2);
+  }
+  chartCtx.strokeStyle=lineColor; chartCtx.lineWidth=2; chartCtx.stroke();
+
+  // 最新資料點高亮
+  if (xs.length>0) {
+    const lx=tX(xs[xs.length-1]), ly=tY(ys[ys.length-1]);
+    chartCtx.beginPath(); chartCtx.arc(lx,ly,3.5,0,Math.PI*2);
+    chartCtx.fillStyle=lineColor; chartCtx.fill();
+  }
 }
 
 function updateStats() {
   const mx=MX();
   const isSD=currentModule==='simple', isFD=currentModule==='facilitated';
   const isOS=currentModule==='osmosis', isAT=currentModule==='active';
+  const isCB=currentModule==='combined';
   let cA=0, cB=0, ke=0, keCount=0, extra=0;
 
   if (isOS) {
@@ -1769,12 +2141,38 @@ function updateStats() {
         ke+=0.5*p.mass*(p.vx**2+p.vy**2); keCount++;
       }
     }
-    extra = atpParticles.length; // remaining ATP
+    extra = atpParticles.length;
     document.getElementById('statAlabel').textContent='Na⁺(A側)';
     document.getElementById('statBlabel').textContent='Na⁺(B側)';
     document.getElementById('statKElabel').textContent='動能(Na⁺)';
     document.getElementById('stat4label').textContent='ATP剩餘';
     document.getElementById('statRateLabel').textContent='運輸速率 /s';
+
+  } else if (currentModule==='combined') {
+    // Show water on A side, ions on B side as key metrics
+    for (const p of particles) {
+      if (p.ptype==='water') { p.x<mx ? cA++ : cB++; }
+      if (!p.bound) { ke+=0.5*p.mass*(p.vx**2+p.vy**2); keCount++; }
+    }
+    extra = atpParticles.length;
+    document.getElementById('statAlabel').textContent='H₂O(A側)';
+    document.getElementById('statBlabel').textContent='H₂O(B側)';
+    document.getElementById('statKElabel').textContent='平均動能';
+    document.getElementById('stat4label').textContent='ATP剩餘';
+    document.getElementById('statRateLabel').textContent='運輸速率 /s';
+    // update combined sidebar stats
+    document.getElementById('cb-atp-used').textContent=cbAtpUsedTotal;
+    const ionB=particles.filter(p=>p.ptype==='ion'&&p.x>mx).length;
+    const wA2=particles.filter(p=>p.ptype==='water'&&p.x<mx).length;
+    const wB2=particles.filter(p=>p.ptype==='water'&&p.x>mx).length;
+    const sA2=particles.filter(p=>p.ptype==='solute'&&p.x<mx).length;
+    const sB2=particles.filter(p=>p.ptype==='solute'&&p.x>mx).length;
+    const tA2=wA2+sA2, tB2=wB2+sB2;
+    const osmoA2=tA2>0?sA2/tA2:0, osmoB2=tB2>0?sB2/tB2:0;
+    const ndEl=document.getElementById('cb-net-dir');
+    if (osmoB2>osmoA2+0.02) { ndEl.textContent='→ A→B'; ndEl.style.color='#0277bd'; }
+    else if (osmoA2>osmoB2+0.02) { ndEl.textContent='← B→A'; ndEl.style.color='#01579b'; }
+    else { ndEl.textContent='≈ 平衡'; ndEl.style.color='var(--accent-teal)'; }
 
   } else if (isFD) {
     // ── Count substrate molecules ──────────────────────────────────────
@@ -1898,6 +2296,8 @@ const MODULE_META = {
 osmosis:     { label:'滲透作用',               bg:'rgba(2,119,189,0.08)',   tc:'#01579b',             bc:'rgba(2,119,189,0.3)',   left:'A 側',right:'B 側',                 desc:'水分子透過水通道蛋白依滲透壓移動。溶質形成水化殼；結合水無法穿越。植物膨壓與動物溶解對比。' },
   active:      { label:'主動運輸',      bg:'rgba(123,31,162,0.08)',   tc:'#4a148c',   bc:'rgba(123,31,162,0.3)',   left:'細胞外（低[Na⁺]）',right:'細胞質（高[Na⁺]）',
                  desc:'Na⁺/K⁺-ATP酶載體蛋白結合離子，等待ATP水解後翻轉構型，將離子逆梯度釋放。被動洩漏維持動態穩態。' },
+  combined:    { label:'綜合模式',      bg:'rgba(25,118,210,0.08)',   tc:'#0d47a1',   bc:'rgba(25,118,210,0.3)',   left:'細胞外',right:'細胞質',
+                 desc:'協助擴散（通道蛋白）、主動運輸（Na⁺/K⁺-ATP酶）及滲透作用同時進行，模擬真實細胞膜的多元運輸機制。' },
 };
 
 function switchModule(mod) {
@@ -1909,10 +2309,11 @@ function switchModule(mod) {
   document.getElementById('moduleDesc').textContent=m.desc;
   document.getElementById('labelLeft').textContent=m.left||'細胞外';
   document.getElementById('labelRight').textContent=m.right||'細胞質';
-  ['simple','facilitated','osmosis','active'].forEach(k=>{
+  ['simple','facilitated','osmosis','active','combined'].forEach(k=>{
     document.getElementById('panel-'+k).classList.toggle('visible',k===mod);
   });
   spawnModule();
+  document.getElementById('chartControls').style.display = mod === 'simple' ? 'flex' : 'none';
   if (!running) startLoop();
 }
 
@@ -2001,6 +2402,17 @@ wireOS('os-sol-size-a','soluteSizeA','os-val-sol-size-a',' px',true);
 wireOS('os-pore','poreSize','os-val-pore',' px',false);
 wireOS('os-aqp-count','aqpCount','os-val-aqp-count','',false);
 
+// OS temperature slider
+(()=>{
+  let lastTempOS=310;
+  const el=document.getElementById('os-temp'),dsp=document.getElementById('os-val-temp');
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+' K'; osState.temp=v;
+    const r=Math.sqrt(v/lastTempOS); for(const p of particles){p.vx*=r;p.vy*=r;} lastTempOS=v;
+    if (!running) drawFrame();
+  });
+})();
+
 document.getElementById('os-rbc-btn').addEventListener('click',()=>{
   osState.cellType='animal';
   document.getElementById('os-rbc-btn').classList.add('active');
@@ -2024,6 +2436,38 @@ function wireAT(id,stateKey,display,suffix,respawn) {
 wireAT('at-ions','ionCount','at-val-ions','',true);
 wireAT('at-ion-size','ionSize','at-val-ion-size',' px',true);
 wireAT('at-atp','atpCount','at-val-atp','',false);
+
+// AT temperature slider
+(()=>{
+  let lastTempAT=310;
+  const el=document.getElementById('at-temp'),dsp=document.getElementById('at-val-temp');
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+' K'; atState.temp=v;
+    const r=Math.sqrt(v/lastTempAT); for(const p of particles){p.vx*=r;p.vy*=r;} lastTempAT=v;
+    if (!running) drawFrame();
+  });
+})();
+
+// Combined module wiring
+function wireCB(id,stateKey,display,suffix,respawn,rescaleTemp) {
+  const el=document.getElementById(id),dsp=document.getElementById(display);
+  el.addEventListener('input',()=>{
+    const v=+el.value; dsp.textContent=v+suffix; cbState[stateKey]=v;
+    if (rescaleTemp) {
+      const r=Math.sqrt(v/cbState._lastTemp||1);
+      cbState._lastTemp=v;
+      for(const p of particles){p.vx*=r;p.vy*=r;}
+    } else if (respawn) spawnModule();
+    if (!running) drawFrame();
+  });
+}
+cbState._lastTemp=310;
+wireCB('cb-fd-count','fdCount','cb-val-fd-count','',true,false);
+wireCB('cb-at-count','atCount','cb-val-at-count','',true,false);
+wireCB('cb-atp','atpCount','cb-val-atp','',true,false);
+wireCB('cb-water','waterCount','cb-val-water','',true,false);
+wireCB('cb-solute','soluteCount','cb-val-solute','',true,false);
+wireCB('cb-temp','temp','cb-val-temp',' K',false,true);
 
 document.getElementById('at-cn-off').addEventListener('click',()=>{
   atState.cyanideOn=false;
