@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>世界頂尖課堂專用：細胞分裂動態定量模擬器 (Mitosis & Meiosis Pro)</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+            --secondary: #475569;
+            --accent: #2563eb;
+            --success: #059669;
+            --warning: #d97706;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --panel: #ffffff;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            max-width: 1050px;
+            width: 100%;
+            background: var(--panel);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+        .header {
+            background-color: var(--primary);
+            color: white;
+            padding: 24px;
+            text-align: center;
+            border-bottom: 4px solid var(--accent);
+        }
+        .header h1 {
+            margin: 0 0 8px 0;
+            font-size: 26px;
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+            background: #f1f5f9;
+            flex-wrap: wrap;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        select, button {
+            padding: 10px 16px;
+            font-size: 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        select {
+            background: white;
+            border: 2px solid #cbd5e1;
+            color: var(--primary);
+        }
+        select:focus { border-color: var(--accent); }
+        button {
+            background: var(--secondary);
+            color: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        button:hover {
+            background: var(--primary);
+            transform: translateY(-1px);
+        }
+        button#playBtn { background: var(--accent); }
+        button#playBtn:hover { background: #1d4ed8; }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            gap: 20px;
+        }
+        .info-panel {
+            background: #f8fafc;
+            border-left: 6px solid var(--accent);
+            padding: 18px 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            border-left-width: 6px;
+        }
+        .info-panel h2 {
+            margin: 0 0 8px 0;
+            color: var(--primary);
+            font-size: 22px;
+            font-weight: 700;
+        }
+        .info-panel p {
+            margin: 0 0 16px 0;
+            line-height: 1.6;
+            font-size: 15px;
+            color: #475569;
+        }
+        
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 10px;
+        }
+        @media(max-width: 600px) { .dashboard { grid-template-columns: repeat(2, 1fr); } }
+        .data-card {
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 12px 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+            transition: all 0.3s;
+        }
+        .data-card .label {
+            font-size: 12px;
+            color: #64748b;
+            font-weight: 700;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .data-card .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .data-card.highlight {
+            border-color: rgba(37, 99, 235, 0.3);
+            background: #f0f7ff;
+        }
+        .data-card.highlight .value { color: var(--accent); }
+        .scope-badge {
+            font-size: 11px;
+            background: #e2e8f0;
+            color: #475569;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .visualization-block {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .canvas-container {
+            flex: 3;
+            min-width: 500px;
+            display: flex;
+            justify-content: center;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+        .chart-container {
+            flex: 2;
+            min-width: 320px;
+            display: flex;
+            justify-content: center;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.02);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            max-width: 100%;
+            height: auto;
+        }
+        .progress-bar {
+            height: 6px;
+            background: #e2e8f0;
+            width: 100%;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.05s linear;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            padding: 14px;
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #64748b;
+            flex-wrap: wrap;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; }
+        .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>細胞分裂科學模擬與定量分析儀表板</h1>
+        <p style="margin:0; opacity:0.9; font-size:14px; font-weight:500;">高級生物學演示：二倍體動物細胞 (2n=8) 的精確定量動態與細胞力學</p>
+    </div>
+    
+    <div class="controls">
+        <select id="modeSelect">
+            <option value="mitosis">有絲細胞分裂 (Mitosis)</option>
+            <option value="meiosis">減數細胞分裂 (Meiosis)</option>
+        </select>
+        <button id="prevBtn">⏮ 上一階段</button>
+        <button id="playBtn">▶ 播放</button>
+        <button id="pauseBtn">⏸ 暫停</button>
+        <button id="nextBtn">⏭ 下一階段</button>
+        <button id="autoPlayBtn">⏯ 自動播放</button>
+        <button id="resetBtn">🔄 重置</button>
+        <button id="indepAssortBtn" style="display:none; background:#059669;">🔀 獨立分配</button>
+    </div>
+
+    <div class="main-content">
+        <div class="info-panel">
+            <h2 id="stageName">載入中...</h2>
+            <p id="stageDesc">載入中...</p>
+            <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+            
+            <div class="dashboard">
+                <div class="data-card highlight">
+                    <div class="scope-badge" id="lblPloidyScope">每個細胞單元</div>
+                    <div class="label">染色體倍性 (Ploidy)</div>
+                    <div id="valPloidy" class="value">-</div>
+                </div>
+                <div class="data-card">
+                    <div class="scope-badge" id="lblChromScope">每個細胞單元</div>
+                    <div class="label">總染色體數 (Chromosomes)</div>
+                    <div id="valChrom" class="value">-</div>
+                </div>
+                <div class="data-card">
+                    <div class="scope-badge" id="lblChromatidScope">每個細胞單元</div>
+                    <div class="label">染色單體數 (Chromatids)</div>
+                    <div id="valChromatid" class="value">-</div>
+                </div>
+                <div class="data-card">
+                    <div class="scope-badge" id="lblDNAScope">每個細胞單元</div>
+                    <div class="label">DNA 相對含量 (DNA Content)</div>
+                    <div id="valDNA" class="value">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="visualization-block">
+            <div class="canvas-container">
+                <canvas id="simCanvas" width="900" height="600"></canvas>
+            </div>
+            <div class="chart-container">
+                <canvas id="chartCanvas" width="450" height="600"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background: #e63946;"></div> 父源染色體</div>
+        <div class="legend-item"><div class="legend-color" style="background: #457b9d;"></div> 母源染色體</div>
+        <div class="legend-item"><div class="legend-color" style="background: #f59e0b;"></div> 中心體</div>
+        <div class="legend-item"><div class="legend-color" style="border: 2px dashed #2563eb; height:0; width:16px;"></div> DNA 實時曲線</div>
+    </div>
+</div>
+
+<script>
+    const mitosisStages = [
+        { name: "間期 (Interphase)", desc: "細胞處於間期，包含 G1、S 和 G2。遺傳物質呈鬆散的染色質狀態。在此階段由於染色質纖維太細，利用光學顯微鏡無法看見染色體與染色單體。", scope: "單個細胞", ploidy: "2n", chrom: 8, chromatid: 0, dna: "2.0C" },
+        { name: "前期 (Prophase)", desc: "染色質纖維緊密盤繞在一起，使染色體縮短和增粗，成為顯微鏡下可見的結構。核膜消失。每條染色體由兩條完全相同的姊妹染色單體組成，在着絲點相連。", scope: "單個細胞", ploidy: "2n", chrom: 8, chromatid: 16, dna: "4.0C" },
+        { name: "中期 (Metaphase)", desc: "染色體排列在細胞中央 (赤道)。紡錘絲連接到着絲點兩側，呈現雙極附著。", scope: "單個細胞", ploidy: "2n", chrom: 8, chromatid: 16, dna: "4.0C" },
+        { name: "後期 (Anaphase)", desc: "着絲點分裂。姊妹染色單體分開成為獨立的子染色體，並在紡錘絲的牽引下移向兩極。染色體數瞬間翻倍，而「染色單體數變為 0」！", scope: "單個細胞內", ploidy: "4n (暫時)", chrom: 16, chromatid: 0, dna: "4.0C" },
+        { name: "末期 (Telophase)", desc: "染色體到達兩極，解螺旋變回鬆散的染色質。新的核膜重新形成。顯微鏡下無法再觀察到明顯的染色體。", scope: "單個細胞內", ploidy: "4n (暫時)", chrom: 16, chromatid: 0, dna: "4.0C" },
+        { name: "胞質分裂 (Cytokinesis)", desc: "細胞質發生橫向縊裂。細胞質分裂產生兩個子細胞。遺傳物質維持不可見的染色質狀態。", scope: "單個子細胞", ploidy: "2n", chrom: 8, chromatid: 0, dna: "2.0C" }
+    ];
+
+    const meiosisStages = [
+        { name: "第一次減數分裂 - 前期 I", desc: "染色質凝縮成為可見染色體。同源染色體配對 (聯會)。非姊妹染色單體之間發生互換，形成交叉 (Chiasmata)。核膜消失。", scope: "單個細胞", ploidy: "2n", chrom: 8, chromatid: 16, dna: "4.0C" },
+        { name: "第一次減數分裂 - 中期 I", desc: "同源染色體成對排列在細胞中央 (赤道)。紡錘絲單極附著於同源染色體的著絲點外側。同源染色體朝向兩極的排列是完全隨機的。", scope: "單個細胞", ploidy: "2n", chrom: 8, chromatid: 16, dna: "4.0C" },
+        { name: "第一次減數分裂 - 後期 I", desc: "同源染色體分離，移向細胞兩極。注意：着絲點未分裂，姊妹染色單體仍相連，染色單體數維持不變 (16)。", scope: "單個細胞內", ploidy: "2n", chrom: 8, chromatid: 16, dna: "4.0C" },
+        { name: "第一次減數分裂 - 末期 I", desc: "染色體到達兩極，核膜可能會短暫重新形成。注意：在此階段染色體通常「不會」完全解螺旋變回染色質，而是維持凝縮可見的狀態。", scope: "單個細胞內", ploidy: "2n", chrom: 8, chromatid: 16, dna: "4.0C" },
+        { name: "第一次胞質分裂 (Cytokinesis I)", desc: "細胞質分裂，產生兩個子細胞。由於只有一次分裂，染色體數目減半為單倍體 (n)。染色體仍保持凝縮可見狀態。", scope: "單個子細胞", ploidy: "n", chrom: 4, chromatid: 8, dna: "2.0C" },
+        { name: "第二次減數分裂 - 前期 II", desc: "核膜消失。此階段不進行 DNA 複製，染色體繼續維持凝縮狀態準備第二次分裂。", scope: "單個子細胞", ploidy: "n", chrom: 4, chromatid: 8, dna: "2.0C" },
+        { name: "第二次減數分裂 - 中期 II", desc: "染色體排列在細胞中央 (赤道)。", scope: "單個子細胞", ploidy: "n", chrom: 4, chromatid: 8, dna: "2.0C" },
+        { name: "第二次減數分裂 - 後期 II", desc: "着絲點分裂。姊妹染色單體分開成為獨立染色體，移向兩極。染色體數目短暫加倍，而染色單體數變為 0。無同源染色體，故仍為單倍體 (n)。", scope: "每個分裂胞體", ploidy: "n", chrom: 8, chromatid: 0, dna: "2.0C" },
+        { name: "第二次減數分裂 - 末期 II", desc: "染色體解螺旋，變回鬆散的染色質，核膜重新形成。染色體變回不可見狀態。", scope: "每個分裂胞體", ploidy: "n", chrom: 8, chromatid: 0, dna: "2.0C" },
+        { name: "第二次胞質分裂 (Cytokinesis II)", desc: "細胞質分裂，產生四個子細胞。遺傳物質維持不可見的染色質狀態。", scope: "單個配子", ploidy: "n", chrom: 4, chromatid: 0, dna: "1.0C" }
+    ];
+
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const chartCanvas = document.getElementById('chartCanvas');
+    const chartCtx = chartCanvas.getContext('2d');
+    
+    let currentMode = 'mitosis';
+    let currentStages = mitosisStages;
+    let stageIndex = 0;
+    let progress = 0;
+    let isPlaying = false;
+    let isAutoPlaying = false; 
+    let lastTime = 0;
+
+    const cRed = '#e63946', cBlue = '#457b9d';
+    const cx = 450, cy = 300; 
+
+    const mitoChroms = [
+        { size: 34, col: cRed,  initX: cx-30, initY: cy-40,  targetX: cx-60 },
+        { size: 34, col: cBlue, initX: cx+40, initY: cy+30,  targetX: cx-40 },
+        { size: 25, col: cRed,  initX: cx+20, initY: cy-50,  targetX: cx-20 },
+        { size: 25, col: cBlue, initX: cx-40, initY: cy+40,  targetX: cx+0 },
+        { size: 17, col: cRed,  initX: cx+50, initY: cy-20,  targetX: cx+20 },
+        { size: 17, col: cBlue, initX: cx-50, initY: cy-10,  targetX: cx+40 },
+        { size: 10, col: cRed,  initX: cx-10, initY: cy-60,  targetX: cx+60 },
+        { size: 10, col: cBlue, initX: cx+10, initY: cy+50,  targetX: cx+80 }
+    ];
+
+    // 精確優化四對同源染色體參數：前三對會精確靠攏並進行互換，最後一對最小的保持分離不互換
+    const meioChroms = [
+        { size: 34, col: cRed,  crossCol: cBlue, initX: cx-40, initY: cy-30, p1X: cx-20, p1Y: cy-50, side: 'left' },
+        { size: 34, col: cBlue, crossCol: cRed,  initX: cx-10, initY: cy-40, p1X: cx+20, p1Y: cy-50, side: 'right' },
+        { size: 26, col: cBlue, crossCol: cRed,  initX: cx+30, initY: cy-20, p1X: cx-15, p1Y: cy-15, side: 'left' },
+        { size: 26, col: cRed,  crossCol: cBlue, initX: cx+10, initY: cy-10, p1X: cx+15, p1Y: cy-15, side: 'right' },
+        { size: 18, col: cRed,  crossCol: cBlue, initX: cx-30, initY: cy+20, p1X: cx-10, p1Y: cy+15, side: 'left' },
+        { size: 18, col: cBlue, crossCol: cRed,  initX: cx+40, initY: cy+40, p1X: cx+10, p1Y: cy+15, side: 'right' },
+        { size: 10, col: cRed,  crossCol: cRed,  initX: cx+10, initY: cy+50, p1X: cx-20, p1Y: cy+45, side: 'left' }, // 不互換
+        { size: 10, col: cBlue, crossCol: cBlue, initX: cx-20, initY: cy+60, p1X: cx+20, p1Y: cy+45, side: 'right' } // 不互換
+    ];
+    let originalMeioCol = [];
+
+    const chromatinPoints = [];
+    for(let i=0; i<40; i++) {
+        let angle = (i * 7) * Math.PI / 20;
+        let r = 15 + (i % 5) * 12;
+        chromatinPoints.push({x: Math.cos(angle)*r, y: Math.sin(angle)*r});
+    }
+
+    function init() {
+        originalMeioCol = meioChroms.map(c => ({col: c.col, crossCol: c.crossCol}));
+
+        document.getElementById('modeSelect').addEventListener('change', (e) => {
+            currentMode = e.target.value;
+            currentStages = currentMode === 'mitosis' ? mitosisStages : meiosisStages;
+            reset();
+        });
+        
+        document.getElementById('playBtn').onclick = () => { isPlaying = true; isAutoPlaying = false; resetAutoBtn(); };
+        document.getElementById('pauseBtn').onclick = () => { isPlaying = false; isAutoPlaying = false; resetAutoBtn(); };
+        document.getElementById('prevBtn').onclick = () => { if (stageIndex > 0) { stageIndex--; progress = 0; isPlaying = false; isAutoPlaying = false; resetAutoBtn(); updateUI(); } };
+        document.getElementById('nextBtn').onclick = () => { if (stageIndex < currentStages.length - 1) { stageIndex++; progress = 0; isPlaying = false; isAutoPlaying = false; resetAutoBtn(); updateUI(); } };
+        document.getElementById('resetBtn').onclick = reset;
+        document.getElementById('indepAssortBtn').onclick = shuffleIndependentAssortment;
+        
+        document.getElementById('autoPlayBtn').onclick = () => {
+            isAutoPlaying = !isAutoPlaying;
+            if (isAutoPlaying) {
+                if (progress >= 1.0 && stageIndex === currentStages.length - 1) {
+                    stageIndex = 0; progress = 0;
+                }
+                isPlaying = true;
+                document.getElementById('autoPlayBtn').innerText = '⏹ 停止自動';
+                document.getElementById('autoPlayBtn').style.background = '#e63946'; 
+            } else {
+                isPlaying = false;
+                resetAutoBtn();
+            }
+            updateUI();
+        };
+
+        requestAnimationFrame(loop);
+        reset();
+    }
+
+    function resetAutoBtn() {
+        let btn = document.getElementById('autoPlayBtn');
+        if(btn) { btn.innerText = '⏯ 自動播放'; btn.style.background = ''; }
+    }
+
+    function reset() { 
+        stageIndex = 0; progress = 0; isPlaying = false; isAutoPlaying = false; 
+        
+        if (currentMode === 'meiosis') {
+            for(let i=0; i<meioChroms.length; i+=2) {
+                let swap = Math.random() > 0.5;
+                meioChroms[i].col = originalMeioCol[swap ? i+1 : i].col;
+                meioChroms[i].crossCol = originalMeioCol[swap ? i+1 : i].crossCol;
+                meioChroms[i+1].col = originalMeioCol[swap ? i : i+1].col;
+                meioChroms[i+1].crossCol = originalMeioCol[swap ? i : i+1].crossCol;
+            }
+        }
+
+        resetAutoBtn();
+        updateUI(); 
+    }
+    
+    function updateUI() {
+        const stage = currentStages[stageIndex];
+        document.getElementById('stageName').innerText = stage.name;
+        document.getElementById('stageDesc').innerText = stage.desc;
+        document.getElementById('progressFill').style.width = (progress * 100) + '%';
+        
+        let currentDnaText = stage.dna;
+        let currentChrom = stage.chrom;
+        let currentChromatid = stage.chromatid;
+        
+        let isChromatin = false;
+        if (currentMode === 'mitosis') {
+            isChromatin = stage.name.includes("間期") || stage.name.includes("末期") || stage.name.includes("胞質分裂");
+        } else {
+            isChromatin = stage.name.includes("間期") || stage.name.includes("末期 II") || stage.name.includes("胞質分裂 II");
+        }
+
+        if (stageIndex === 0) {
+            if (progress < 0.25) { 
+                currentDnaText = "2.0C";
+            } else if (progress < 0.75) { 
+                let sProgress = (progress - 0.25) / 0.5;
+                currentDnaText = (2 + sProgress * 2).toFixed(1) + 'C';
+            } else { 
+                currentDnaText = "4.0C";
+            }
+        } 
+        else if (stage.name.includes("胞質分裂") && progress < 1.0) {
+            if (currentMode === 'mitosis') {
+                currentDnaText = '4.0C';
+            } else {
+                if (stageIndex === 5) { 
+                    currentDnaText = '4.0C';
+                } else if (stageIndex === 10) { 
+                    currentDnaText = '2.0C';
+                }
+            }
+        }
+
+        if (isChromatin) {
+            let invisibleText = "0 <span style='font-size:14px; font-weight:normal; color:#64748b;'> (不可見)</span>";
+            currentChrom = invisibleText;
+            currentChromatid = invisibleText;
+        }
+
+        document.getElementById('valPloidy').innerText = stage.ploidy;
+        document.getElementById('valChrom').innerHTML = currentChrom;
+        document.getElementById('valChromatid').innerHTML = currentChromatid;
+        document.getElementById('valDNA').innerText = currentDnaText;
+
+        const labels = ['lblPloidyScope', 'lblChromScope', 'lblChromatidScope', 'lblDNAScope'];
+        labels.forEach(id => { document.getElementById(id).innerText = stage.scope; });
+
+        let indepBtn = document.getElementById('indepAssortBtn');
+        if (indepBtn) {
+            indepBtn.style.display = (currentMode === 'meiosis' && stageIndex === 2) ? 'inline-block' : 'none';
+        }
+    }
+
+    function loop(timestamp) {
+        if (!lastTime) lastTime = timestamp;
+        let dt = (timestamp - lastTime) / 1000;
+        lastTime = timestamp;
+
+        if (isPlaying) {
+            progress += dt * 0.25; 
+            if (progress >= 1.0) { 
+                progress = 1.0; 
+                if (isAutoPlaying && stageIndex < currentStages.length - 1) {
+                    stageIndex++;
+                    progress = 0; 
+                } else {
+                    isPlaying = false; 
+                    if (isAutoPlaying) {
+                        isAutoPlaying = false; 
+                        resetAutoBtn();
+                    }
+                }
+            }
+            updateUI();
+        }
+        renderSimulation(); 
+        renderDNAChart(); 
+        requestAnimationFrame(loop);
+    }
+
+    function lerp(a, b, t) { return a + (b - a) * t; }
+
+    function drawCentrosome(x, y) {
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath(); ctx.arc(x-5, y, 4, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x+5, y, 4, 0, Math.PI*2); ctx.fill();
+    }
+
+    function drawNucleus(x, y, r, alpha) {
+        if (alpha <= 0) return;
+        ctx.save(); ctx.globalAlpha = alpha;
+        ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+        ctx.fillStyle = 'rgba(241, 245, 249, 0.7)'; ctx.fill();
+        ctx.setLineDash([5, 5]); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawChromatinDiffuse(x, y, alpha, scale = 1) {
+        if (alpha <= 0) return;
+        ctx.save(); ctx.globalAlpha = alpha; ctx.lineWidth = 1.2;
+        ctx.strokeStyle = cRed; ctx.beginPath();
+        ctx.moveTo(x + chromatinPoints[0].x * scale, y + chromatinPoints[0].y * scale);
+        for(let i=1; i<20; i++) ctx.lineTo(x + chromatinPoints[i].x * scale, y + chromatinPoints[i].y * scale);
+        ctx.stroke();
+        ctx.strokeStyle = cBlue; ctx.beginPath();
+        ctx.moveTo(x + chromatinPoints[20].x * scale, y + chromatinPoints[20].y * scale);
+        for(let i=21; i<40; i++) ctx.lineTo(x + chromatinPoints[i].x * scale, y + chromatinPoints[i].y * scale);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function drawPeanut(x, y, r, p, vertical) {
+        ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 3;
+        if (p === 0) {
+            ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        } else {
+            ctx.beginPath();
+            let pinch = p * r * 0.85; 
+            let stretch = p * r * 0.15; 
+            if (vertical) { 
+                ctx.moveTo(x - r + pinch, y);
+                ctx.bezierCurveTo(x - r + pinch, y - r - stretch, x - r, y - r - stretch, x, y - r - stretch);
+                ctx.bezierCurveTo(x + r, y - r - stretch, x + r - pinch, y - r - stretch, x + r - pinch, y);
+                ctx.bezierCurveTo(x + r - pinch, y + r + stretch, x + r, y + r + stretch, x, y + r + stretch);
+                ctx.bezierCurveTo(x - r, y + r + stretch, x - r + pinch, y + r + stretch, x - r + pinch, y);
+            } else { 
+                ctx.moveTo(x, y - r + pinch);
+                ctx.bezierCurveTo(x + r + stretch, y - r + pinch, x + r + stretch, y - r, x + r + stretch, y);
+                ctx.bezierCurveTo(x + r + stretch, y + r, x + r + stretch, y + r - pinch, x, y + r - pinch);
+                ctx.bezierCurveTo(x - r - stretch, y + r - pinch, x - r - stretch, y + r, x - r - stretch, y);
+                ctx.bezierCurveTo(x - r - stretch, y - r, x - r - stretch, y - r + pinch, x, y - r + pinch);
+            }
+            ctx.closePath(); ctx.fill(); ctx.stroke();
+        }
+    }
+
+    function drawScientificChromatid(x, y, size, alpha, direction, color, crossColor) {
+        ctx.save(); ctx.lineWidth = Math.max(2, size / 4.5 * (0.6 + size / 50)); ctx.lineCap = "round";
+        let x1, y1, x2, y2;
+        if (direction === 'up') { 
+            x1 = x - size * Math.sin(alpha); y1 = y + size * Math.cos(alpha); x2 = x + size * Math.sin(alpha); y2 = y + size * Math.cos(alpha);
+        } else if (direction === 'down') { 
+            x1 = x - size * Math.sin(alpha); y1 = y - size * Math.cos(alpha); x2 = x + size * Math.sin(alpha); y2 = y - size * Math.cos(alpha);
+        } else if (direction === 'left') { 
+            x1 = x + size * Math.cos(alpha); y1 = y - size * Math.sin(alpha); x2 = x + size * Math.cos(alpha); y2 = y + size * Math.sin(alpha);
+        } else if (direction === 'right') { 
+            x1 = x - size * Math.cos(alpha); y1 = y - size * Math.sin(alpha); x2 = x - size * Math.cos(alpha); y2 = y + size * Math.sin(alpha);
+        }
+        ctx.strokeStyle = color; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x1, y1); ctx.stroke();
+        let x2Mid = x + (x2 - x) * 0.55, y2Mid = y + (y2 - y) * 0.55;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2Mid, y2Mid); ctx.stroke();
+        ctx.strokeStyle = crossColor; ctx.beginPath(); ctx.moveTo(x2Mid, y2Mid); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.fillStyle = '#1e293b'; ctx.beginPath(); ctx.arc(x, y, size/5, 0, Math.PI*2); ctx.fill();
+        ctx.restore();
+    }
+
+    function shuffleIndependentAssortment() {
+        const leftP1X = cx - 20;
+        const rightP1X = cx + 20;
+        for (let i = 0; i < meioChroms.length; i += 2) {
+            if (Math.random() > 0.5) {
+                let tmpSide = meioChroms[i].side;
+                meioChroms[i].side = meioChroms[i + 1].side;
+                meioChroms[i + 1].side = tmpSide;
+
+                let tmpP1X = meioChroms[i].p1X;
+                meioChroms[i].p1X = meioChroms[i + 1].p1X;
+                meioChroms[i + 1].p1X = tmpP1X;
+            }
+        }
+    }
+
+    function renderSimulation() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.scale(1.35, 1.35); 
+        ctx.translate(-canvas.width / 2, -canvas.height / 2);
+        
+        if (currentMode === 'mitosis') drawMitosis(stageIndex, progress);
+        else drawMeiosis(stageIndex, progress);
+        
+        ctx.restore();
+    }
+
+    function drawMitosis(stage, p) {
+        const r = 140; 
+        let poleTopY = cy - 90, poleBotY = cy + 90;
+
+        if (stage < 4) drawPeanut(cx, cy, r, 0, true); 
+        else if (stage === 4) drawPeanut(cx, cy, r, p * 0.4, true); 
+        else if (stage === 5) { 
+            if (p < 1) drawPeanut(cx, cy, r, 0.4 + p * 0.55, true); 
+            else { 
+                ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.arc(cx, cy - 90, 80, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx, cy + 90, 80, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            }
+        }
+
+        if (stage === 0) { drawNucleus(cx, cy, 90, 1); drawChromatinDiffuse(cx, cy, 1); }
+        else if (stage === 1) { drawNucleus(cx, cy, 90, 1 - p); drawChromatinDiffuse(cx, cy, 1 - p); }
+        else if (stage === 4) { drawNucleus(cx, cy - 90, 60, p); drawNucleus(cx, cy + 90, 60, p); drawChromatinDiffuse(cx, cy - 90, p, 0.65); drawChromatinDiffuse(cx, cy + 90, p, 0.65); }
+        else if (stage === 5) { 
+            drawNucleus(cx, cy - 90, 60, 1); drawNucleus(cx, cy + 90, 60, 1);
+            drawChromatinDiffuse(cx, cy - 90, 1, 0.65); drawChromatinDiffuse(cx, cy + 90, 1, 0.65); 
+        }
+
+        if (stage >= 1 && stage <= 3) {
+            let tPoleY = stage === 1 ? lerp(cy - 60, poleTopY, p) : poleTopY;
+            let bPoleY = stage === 1 ? lerp(cy + 60, poleBotY, p) : poleBotY;
+            drawCentrosome(cx, tPoleY); drawCentrosome(cx, bPoleY);
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)'; ctx.lineWidth = 1.5;
+            if (stage === 2) { 
+                mitoChroms.forEach(ch => { ctx.beginPath(); ctx.moveTo(cx, tPoleY); ctx.lineTo(ch.targetX, cy - 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx, bPoleY); ctx.lineTo(ch.targetX, cy + 2); ctx.stroke(); });
+            } else if (stage === 3) { 
+                mitoChroms.forEach(ch => { let ty = cy - p * 90, by = cy + p * 90; ctx.beginPath(); ctx.moveTo(cx, tPoleY); ctx.lineTo(ch.targetX, ty); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cx, bPoleY); ctx.lineTo(ch.targetX, by); ctx.stroke(); });
+            }
+        }
+
+        if (stage > 0 && stage <= 4) {
+            mitoChroms.forEach(ch => {
+                let x, y;
+                if (stage === 1) { 
+                    x = ch.initX; y = ch.initY; ctx.globalAlpha = p;
+                    drawScientificChromatid(x, y - 2, ch.size, Math.PI/3, 'down', ch.col, ch.col); drawScientificChromatid(x, y + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col); ctx.globalAlpha = 1;
+                } else if (stage === 2) { 
+                    x = lerp(ch.initX, ch.targetX, p); y = lerp(ch.initY, cy, p);
+                    drawScientificChromatid(x, y - 2, ch.size, Math.PI/3, 'down', ch.col, ch.col); drawScientificChromatid(x, y + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col);
+                } else if (stage === 3) { 
+                    let bendAngle = lerp(Math.PI/3, Math.PI/5, p); 
+                    drawScientificChromatid(ch.targetX, cy - p * 90, ch.size, bendAngle, 'up', ch.col, ch.col); drawScientificChromatid(ch.targetX, cy + p * 90, ch.size, bendAngle, 'down', ch.col, ch.col);
+                } else if (stage === 4) { 
+                    ctx.globalAlpha = 1 - p;
+                    drawScientificChromatid(ch.targetX, cy - 90, ch.size, Math.PI/3, 'up', ch.col, ch.col); drawScientificChromatid(ch.targetX, cy + 90, ch.size, Math.PI/3, 'down', ch.col, ch.col); ctx.globalAlpha = 1;
+                }
+            });
+        }
+    }
+
+    function drawMeiosis(stage, p) {
+        const r = 150;
+        let poleLeftX = cx - 110, poleRightX = cx + 110;
+
+        if (stage <= 3) drawPeanut(cx, cy, r, 0, false);
+        else if (stage === 4) drawPeanut(cx, cy, r, p * 0.4, false); 
+        else if (stage === 5) { 
+            if (p < 1) drawPeanut(cx, cy, r, 0.4 + p * 0.55, false);
+            else { ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx - 110, cy, 90, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + 110, cy, 90, 0, Math.PI*2); ctx.fill(); ctx.stroke(); }
+        } else if (stage >= 6 && stage <= 8) {
+            ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx - 110, cy, 90, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + 110, cy, 90, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        } else if (stage === 9) { 
+            drawPeanut(cx - 110, cy, 90, p * 0.4, true); drawPeanut(cx + 110, cy, 90, p * 0.4, true);
+        } else if (stage === 10) { 
+            if (p < 1) { drawPeanut(cx - 110, cy, 90, 0.4 + p * 0.55, true); drawPeanut(cx + 110, cy, 90, 0.4 + p * 0.55, true); }
+            else {
+                ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2.5;
+                ctx.beginPath(); ctx.arc(cx - 110, cy - 60, 55, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(cx - 110, cy + 60, 55, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+                ctx.beginPath(); ctx.arc(cx + 110, cy - 60, 55, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.arc(cx + 110, cy + 60, 55, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            }
+        }
+
+        if (stage === 0) { drawNucleus(cx, cy, 100, 1); drawChromatinDiffuse(cx, cy, 1); }
+        else if (stage === 1) { drawNucleus(cx, cy, 100, 1 - p); drawChromatinDiffuse(cx, cy, 1 - p); }
+        else if (stage === 4) { drawNucleus(cx - 110, cy, 60, p); drawNucleus(cx + 110, cy, 60, p); }
+        else if (stage === 5) { drawNucleus(cx - 110, cy, 60, 1); drawNucleus(cx + 110, cy, 60, 1); }
+        else if (stage === 6) { drawNucleus(cx - 110, cy, 60, 1 - p); drawNucleus(cx + 110, cy, 60, 1 - p); }
+        else if (stage === 9) { drawNucleus(cx - 110, cy - 60, 35, p); drawNucleus(cx - 110, cy + 60, 35, p); drawNucleus(cx + 110, cy - 60, 35, p); drawNucleus(cx + 110, cy + 60, 35, p); drawChromatinDiffuse(cx-110, cy-60, p, 0.45); drawChromatinDiffuse(cx-110, cy+60, p, 0.45); drawChromatinDiffuse(cx+110, cy-60, p, 0.45); drawChromatinDiffuse(cx+110, cy+60, p, 0.45); }
+        else if (stage === 10) { 
+            drawNucleus(cx - 110, cy - 60, 35, 1); drawNucleus(cx - 110, cy + 60, 35, 1); drawNucleus(cx + 110, cy - 60, 35, 1); drawNucleus(cx + 110, cy + 60, 35, 1); 
+            drawChromatinDiffuse(cx-110, cy-60, 1, 0.45); drawChromatinDiffuse(cx-110, cy+60, 1, 0.45); drawChromatinDiffuse(cx+110, cy-60, 1, 0.45); drawChromatinDiffuse(cx+110, cy+60, 1, 0.45); 
+        }
+
+        ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)'; ctx.lineWidth = 1.5;
+        if (stage >= 1 && stage <= 3) { 
+            let lPoleX = stage === 1 ? lerp(cx - 60, poleLeftX, p) : poleLeftX; let rPoleX = stage === 1 ? lerp(cx + 60, poleRightX, p) : poleRightX; drawCentrosome(lPoleX, cy); drawCentrosome(rPoleX, cy);
+            if (stage === 2) meioChroms.forEach(ch => { if (ch.side === 'left') { ctx.beginPath(); ctx.moveTo(lPoleX, cy); ctx.lineTo(ch.p1X, ch.p1Y); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(rPoleX, cy); ctx.lineTo(ch.p1X, ch.p1Y); ctx.stroke(); } });
+            else if (stage === 3) meioChroms.forEach(ch => { let curX = lerp(ch.p1X, ch.side === 'left' ? cx - 110 : cx + 110, p); if (ch.side === 'left') { ctx.beginPath(); ctx.moveTo(lPoleX, cy); ctx.lineTo(curX, ch.p1Y); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(rPoleX, cy); ctx.lineTo(curX, ch.p1Y); ctx.stroke(); } });
+        } else if (stage >= 6 && stage <= 8) { 
+            let m2TopY = cy - 60, m2BotY = cy + 60; drawCentrosome(cx - 110, m2TopY); drawCentrosome(cx - 110, m2BotY); drawCentrosome(cx + 110, m2TopY); drawCentrosome(cx + 110, m2BotY);
+            meioChroms.forEach((ch, i) => { let cellX = ch.side === 'left' ? cx - 110 : cx + 110; let m2X = cellX - 30 + Math.floor(i / 2) * 20; 
+                if (stage === 7) { ctx.beginPath(); ctx.moveTo(cellX, m2TopY); ctx.lineTo(m2X, cy - 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cellX, m2BotY); ctx.lineTo(m2X, cy + 2); ctx.stroke(); } 
+                else if (stage === 8) { let ty = cy - p * 60, by = cy + p * 60; ctx.beginPath(); ctx.moveTo(cellX, m2TopY); ctx.lineTo(m2X, ty); ctx.stroke(); ctx.beginPath(); ctx.moveTo(cellX, m2BotY); ctx.lineTo(m2X, by); ctx.stroke(); }
+            });
+        }
+
+        if (stage > 0 && stage <= 9) {
+            meioChroms.forEach((ch, i) => {
+                let cellX = ch.side === 'left' ? cx - 110 : cx + 110; let m2X = cellX - 30 + Math.floor(i / 2) * 20; 
+                
+                // 生物時序優化：先在 0.5 ~ 0.75 進度形成交叉光暈，互換顏色片段則延後在進度 0.65 後才發生
+                let cross = (stage > 1 || (stage === 1 && p >= 0.65)) ? ch.crossCol : ch.col; 
+                
+                if (stage === 1) { 
+                    let x = lerp(ch.initX, ch.p1X, p), y = lerp(ch.initY, ch.p1Y, p); ctx.globalAlpha = p; 
+                    drawScientificChromatid(x, y - 2, ch.size, Math.PI/3, 'down', ch.col, cross); 
+                    drawScientificChromatid(x, y + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col); 
+                    ctx.globalAlpha = 1;
+                    
+                    // 學術修正：僅針對能夠發生互換 (col !== crossCol) 的染色體對，在交會中心精確渲染動態交叉 (Chiasma)
+                    if (ch.side === 'left' && ch.col !== ch.crossCol && p >= 0.5 && p <= 0.75) { 
+                        ctx.save(); 
+                        let peer = (i % 2 === 0) ? meioChroms[i+1] : meioChroms[i-1];
+                        let peerX = lerp(peer.initX, peer.p1X, p);
+                        let midX = (x + peerX) / 2; // 精確計算兩者在移動時的幾何交點位置
+                        let midY = (y - 2) + Math.abs(midX - x) / Math.sqrt(3); 
+                        let pulse = Math.sin((p - 0.5) / 0.25 * Math.PI); 
+                        let grad = ctx.createRadialGradient(midX, midY, 0, midX, midY, ch.size * 0.8 * pulse); 
+                        grad.addColorStop(0, '#ffffff'); 
+                        grad.addColorStop(0.3, '#f59e0b'); 
+                        grad.addColorStop(1, 'rgba(245, 158, 11, 0)'); 
+                        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(midX, midY, ch.size * 0.8 * pulse, 0, Math.PI * 2); ctx.fill(); ctx.restore(); 
+                    }
+                } else if (stage === 2) { 
+                    drawScientificChromatid(ch.p1X, ch.p1Y - 2, ch.size, Math.PI/3, 'down', ch.col, cross); drawScientificChromatid(ch.p1X, ch.p1Y + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col);
+                } else if (stage === 3) { 
+                    let curX = lerp(ch.p1X, ch.side === 'left' ? cx - 110 : cx + 110, p), bend = lerp(Math.PI/3, Math.PI/5, p); drawScientificChromatid(curX, ch.p1Y - 2, ch.size, bend, ch.side, ch.col, cross); drawScientificChromatid(curX, ch.p1Y + 2, ch.size, bend, ch.side, ch.col, ch.col);
+                } else if (stage === 4) { 
+                    let curX = lerp(cellX, m2X, p);
+                    drawScientificChromatid(curX, ch.p1Y - 2, ch.size, Math.PI/3, 'down', ch.col, cross);
+                    drawScientificChromatid(curX, ch.p1Y + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col);
+                } else if (stage === 5 || stage === 6) { 
+                    drawScientificChromatid(m2X, ch.p1Y - 2, ch.size, Math.PI/3, 'down', ch.col, cross);
+                    drawScientificChromatid(m2X, ch.p1Y + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col);
+                } else if (stage === 7) { 
+                    let curY = lerp(ch.p1Y, cy, p); drawScientificChromatid(m2X, curY - 2, ch.size, Math.PI/3, 'down', ch.col, cross); drawScientificChromatid(m2X, curY + 2, ch.size, Math.PI/3, 'up', ch.col, ch.col);
+                } else if (stage === 8) { 
+                    let bend = lerp(Math.PI/3, Math.PI/4, p); drawScientificChromatid(m2X, cy - p * 60, ch.size, bend, 'up', ch.col, cross); drawScientificChromatid(m2X, cy + p * 60, ch.size, bend, 'down', ch.col, ch.col);
+                } else if (stage === 9) { 
+                    ctx.globalAlpha = 1 - p; drawScientificChromatid(m2X, cy - 60, ch.size, Math.PI/3, 'up', ch.col, cross); drawScientificChromatid(m2X, cy + 60, ch.size, Math.PI/3, 'down', ch.col, ch.col); ctx.globalAlpha = 1;
+                }
+            });
+        }
+    }
+
+    function renderDNAChart() {
+        chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+        const padL = 50, padR = 30, padT = 60, padB = 60, w = chartCanvas.width - padL - padR, h = chartCanvas.height - padT - padB;
+        
+        chartCtx.strokeStyle = '#e2e8f0'; chartCtx.lineWidth = 1;
+        for(let i = 0; i <= 4; i++) {
+            let yPos = padT + h - (i * h / 4);
+            chartCtx.beginPath(); chartCtx.moveTo(padL, yPos); chartCtx.lineTo(padL + w, yPos); chartCtx.stroke();
+            chartCtx.fillStyle = '#64748b'; chartCtx.font = 'bold 12px sans-serif'; chartCtx.textAlign = 'right'; chartCtx.textBaseline = 'middle';
+            if(i > 0) chartCtx.fillText(i + 'C', padL - 10, yPos);
+        }
+        
+        chartCtx.strokeStyle = '#475569'; chartCtx.lineWidth = 2;
+        chartCtx.beginPath(); chartCtx.moveTo(padL, padT); chartCtx.lineTo(padL, padT + h); chartCtx.lineTo(padL + w, padT + h); chartCtx.stroke();
+        chartCtx.fillStyle = '#0f172a'; chartCtx.font = 'bold 14px sans-serif'; chartCtx.textAlign = 'center'; chartCtx.fillText('實時 DNA 相對含量變化圖 (DNA vs Time)', padL + w/2, padT - 25);
+        
+        let timePoints = [];
+        
+        if (currentMode === 'mitosis') {
+            timePoints = [
+                { stage: 0, p: 0, dna: 2 }, { stage: 0, p: 0.25, dna: 2 }, { stage: 0, p: 0.75, dna: 4 }, { stage: 0, p: 1, dna: 4 }, 
+                { stage: 1, p: 1, dna: 4 }, { stage: 2, p: 1, dna: 4 }, 
+                { stage: 3, p: 1, dna: 4 }, { stage: 4, p: 1, dna: 4 }, 
+                { stage: 5, p: 0.98, dna: 4 }, { stage: 5, p: 1, dna: 2 } 
+            ];
+        } else {
+            timePoints = [
+                { stage: 0, p: 0, dna: 2 }, { stage: 0, p: 0.25, dna: 2 }, { stage: 0, p: 0.75, dna: 4 }, { stage: 0, p: 1, dna: 4 }, 
+                { stage: 1, p: 1, dna: 4 }, { stage: 2, p: 1, dna: 4 }, 
+                { stage: 3, p: 1, dna: 4 }, { stage: 4, p: 1, dna: 4 }, 
+                { stage: 5, p: 0.98, dna: 4 }, { stage: 5, p: 1, dna: 2 }, 
+                { stage: 6, p: 1, dna: 2 }, { stage: 7, p: 1, dna: 2 }, 
+                { stage: 8, p: 1, dna: 2 }, { stage: 9, p: 1, dna: 2 }, 
+                { stage: 10, p: 0.98, dna: 2 }, { stage: 10, p: 1, dna: 1 } 
+            ];
+        }
+        
+        function getXY(idx, count, dnaVal) { return { x: padL + (idx / (count - 1)) * w, y: padT + h - ((dnaVal / 4) * h) }; }
+        
+        chartCtx.strokeStyle = '#cbd5e1'; chartCtx.lineWidth = 3; chartCtx.setLineDash([2, 2]); chartCtx.beginPath();
+        let pt0 = getXY(0, timePoints.length, timePoints[0].dna); chartCtx.moveTo(pt0.x, pt0.y);
+        for(let i = 1; i < timePoints.length; i++) { let pt = getXY(i, timePoints.length, timePoints[i].dna); chartCtx.lineTo(pt.x, pt.y); }
+        chartCtx.stroke(); chartCtx.setLineDash([]); 
+        
+        let currentProgressIndex = 0;
+        for (let i = 0; i < timePoints.length - 1; i++) {
+            let currentPt = timePoints[i], nextPt = timePoints[i+1];
+            if (currentPt.stage === nextPt.stage) {
+                if (stageIndex === currentPt.stage && progress >= currentPt.p && progress <= nextPt.p) { 
+                    currentProgressIndex = i + (progress - currentPt.p) / (nextPt.p - currentPt.p); 
+                    break; 
+                }
+            } else {
+                if ((stageIndex === currentPt.stage && progress >= currentPt.p) || (stageIndex > currentPt.stage && stageIndex < nextPt.stage) || (stageIndex === nextPt.stage && progress <= nextPt.p)) {
+                    let tFactor = (stageIndex === currentPt.stage) ? (progress - currentPt.p) * 0.5 : ((stageIndex === nextPt.stage) ? 0.5 + (progress / nextPt.p) * 0.5 : 0.5);
+                    currentProgressIndex = i + tFactor; break;
+                }
+            }
+            currentProgressIndex = i + 1; 
+        }
+        
+        chartCtx.strokeStyle = '#2563eb'; chartCtx.lineWidth = 4; chartCtx.beginPath(); chartCtx.moveTo(pt0.x, pt0.y);
+        let currentX = pt0.x, currentY = pt0.y;
+        for(let i = 1; i < timePoints.length; i++) {
+            let pt = getXY(i, timePoints.length, timePoints[i].dna);
+            if (currentProgressIndex >= i) { chartCtx.lineTo(pt.x, pt.y); currentX = pt.x; currentY = pt.y; } 
+            else {
+                let segmentProgress = currentProgressIndex - (i - 1);
+                if (segmentProgress > 0 && segmentProgress < 1) {
+                    let prevPt = getXY(i - 1, timePoints.length, timePoints[i - 1].dna);
+                    currentX = lerp(prevPt.x, pt.x, segmentProgress); currentY = lerp(prevPt.y, pt.y, segmentProgress); chartCtx.lineTo(currentX, currentY);
+                } break;
+            }
+        }
+        chartCtx.stroke();
+        
+        chartCtx.fillStyle = '#2563eb'; chartCtx.beginPath(); chartCtx.arc(currentX, currentY, 6, 0, Math.PI * 2); chartCtx.fill(); chartCtx.strokeStyle = '#ffffff'; chartCtx.lineWidth = 2; chartCtx.stroke();
+        
+        let currentDnaText = currentStages[stageIndex].dna;
+        if (stageIndex === 0) {
+            if (progress < 0.25) currentDnaText = "2.0C";
+            else if (progress < 0.75) currentDnaText = (2 + ((progress - 0.25) / 0.5) * 2).toFixed(1) + 'C';
+            else currentDnaText = "4.0C";
+        } else if (currentStages[stageIndex].name.includes("胞質分裂") && progress < 1.0) {
+            currentDnaText = (currentMode === 'mitosis' || stageIndex === 5) ? '4.0C' : '2.0C';
+        }
+        
+        chartCtx.fillStyle = '#2563eb'; chartCtx.font = 'bold 12px sans-serif'; chartCtx.textAlign = 'left'; chartCtx.fillText(' 當前: ' + currentDnaText, currentX + 8, currentY - 5);
+        chartCtx.fillStyle = '#94a3b8'; chartCtx.font = '10px sans-serif'; chartCtx.textAlign = 'center';
+        timePoints.forEach((pt, i) => {
+            let label = "";
+            if (currentMode === 'mitosis') { if(i===0) label="G1"; if(i===2) label="G2"; if(i===4) label="前"; if(i===5) label="中"; if(i===6) label="後"; if(i===7) label="末"; if(i===9) label="分開"; } 
+            else { if(i===0) label="G1"; if(i===2) label="G2"; if(i===4) label="前I"; if(i===5) label="中I"; if(i===6) label="後I"; if(i===7) label="末I"; if(i===9) label="分I"; if(i===10) label="前II"; if(i===11) label="中II"; if(i===12) label="後II"; if(i===13) label="末II"; if(i===15) label="分II"; }
+            if(label) chartCtx.fillText(label, getXY(i, timePoints.length, pt.dna).x, padT + h + 18);
+        });
+    }
+
+    window.onload = init;
+</script>
+</body>
+</html>

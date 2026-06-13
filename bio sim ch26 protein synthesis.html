@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蛋白質合成模擬器 -HinHin Biology</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #4ade80;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--panel-bg);
+            padding: 12px 25px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            z-index: 10;
+        }
+
+        header h1 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .canvas-container {
+            flex: 1;
+            position: relative;
+            background-color: #0b0f19;
+            overflow: hidden;
+        }
+
+        #simulation-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: default;
+            display: block;
+        }
+
+        .control-panel {
+            width: 380px;
+            background-color: var(--panel-bg);
+            border-left: 1px solid #334155;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            overflow-y: auto;
+            box-shadow: -4px 0 10px rgb(0 0 0 / 0.2);
+            z-index: 10;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            border-left: 3px solid var(--accent-blue);
+            padding-left: 8px;
+        }
+
+        .info-card {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+        }
+
+        .status-text {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--accent-blue);
+            margin-bottom: 8px;
+        }
+
+        .explanation-box {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+            min-height: 70px;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: #334155;
+            color: var(--text-main);
+            border: none;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background-color: #475569;
+        }
+
+        button.primary {
+            background-color: var(--accent-blue);
+            color: #0f172a;
+            font-weight: 600;
+        }
+
+        button.primary:hover {
+            background-color: #7dd3fc;
+        }
+
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* === 最終優化：自動換行且保持對齊 === */
+        .sequence-viewer {
+            background-color: #020617;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border: 1px solid #1e293b;
+        }
+
+        .sequence-line {
+            margin: 10px 0;
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start; /* 讓多行內容從頂部對齊 */
+        }
+
+        .seq-label {
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            width: 125px;            /* 固定標籤寬度，是所有序列對齊的基準 */
+            flex-shrink: 0;
+            white-space: nowrap;
+            padding-top: 1px;
+        }
+
+        .seq-content {
+            font-family: 'Courier New', Courier, monospace; /* 嚴格等寬字型 */
+            font-size: 0.75rem;
+            font-weight: bold;
+            white-space: pre-wrap;   /* 允許換行，但保留空白格 */
+            word-break: break-word;  /* 當一行放不下時自動換行 */
+            line-height: 1.5;        /* 增加行距，讓換行後的代碼更容易閱讀 */
+        }
+
+        .slider-container {
+            margin-bottom: 15px;
+        }
+        .slider-container label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent-blue);
+        }
+
+        .stage-progressbar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .stage-progressbar::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: #334155;
+            z-index: 1;
+        }
+        .stage-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #1e293b;
+            border: 2px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            z-index: 2;
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        .stage-dot.active {
+            border-color: var(--accent-blue);
+            background-color: #0f172a;
+            color: var(--accent-blue);
+            box-shadow: 0 0 8px var(--accent-blue);
+        }
+        .stage-dot.completed {
+            border-color: var(--accent-green);
+            background-color: var(--accent-green);
+            color: #0f172a;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>
+            <h1>蛋白質合成模擬器 - HinHin Biology</h1>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="canvas-container">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="control-panel">
+            <div class="stage-progressbar">
+                <div class="stage-dot id-trans">轉錄</div>
+                <div class="stage-dot id-export">運送</div>
+                <div class="stage-dot id-transl">轉譯</div>
+                <div class="stage-dot id-fold">折疊</div>
+            </div>
+
+            <div class="section-title">生理進程</div>
+            <div class="info-card">
+                <div id="status-title" class="status-text">準備就緒</div>
+                <div id="explanation" class="explanation-box">點擊「開始模擬」，製造蛋白質。</div>
+            </div>
+
+            <div class="section-title">系統控制</div>
+            <div class="btn-group">
+                <button id="btn-play" class="primary">開始模擬</button>
+                <button id="btn-reset">重置</button>
+            </div>
+
+            <div class="slider-container">
+                <label><span>播放速度</span><span id="speed-val">1.0x</span></label>
+                <input type="range" id="speed-slider" min="0.5" max="3.0" step="0.1" value="1.0">
+            </div>
+
+            <div class="section-title">分子序列</div>
+            <div class="sequence-viewer">
+                <div class="sequence-line">
+                    <span class="seq-label">DNA 編碼鏈 (5'→3'):</span>
+                    <span id="seq-dna-coding" class="seq-content" style="color: #94a3b8;"></span>
+                </div>
+                <div class="sequence-line">
+                    <span class="seq-label">DNA 模板鏈 (3'→5'):</span>
+                    <span id="seq-dna" class="seq-content" style="color: #cbd5e1;"></span>
+                </div>
+                <div class="sequence-line">
+                    <span class="seq-label">mRNA (5'→3'):</span>
+                    <span id="seq-mrna" class="seq-content" style="color: var(--accent-blue);">尚未生成</span>
+                </div>
+                <div class="sequence-line">
+                    <span class="seq-label">tRNA 反密碼 (3'→5'):</span>
+                    <span id="seq-trna" class="seq-content" style="color: #fb923c;">尚未生成</span>
+                </div>
+                <div class="sequence-line">
+                    <span class="seq-label">多肽鏈 (N端→C端):</span>
+                    <span id="seq-peptide" class="seq-content" style="color: var(--accent-green)">[尚未合成]</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simulation-canvas');
+        const ctx = canvas.getContext('2d');
+
+        const btnPlay = document.getElementById('btn-play');
+        const btnReset = document.getElementById('btn-reset');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedVal = document.getElementById('speed-val');
+        const statusTitle = document.getElementById('status-title');
+        const explanation = document.getElementById('explanation');
+        
+        const seqDnaDisplay = document.getElementById('seq-dna');
+        const seqMrnaDisplay = document.getElementById('seq-mrna');
+        const seqPeptideDisplay = document.getElementById('seq-peptide');
+        const seqDnaCodingDisplay = document.getElementById('seq-dna-coding');
+        const seqTrnaDisplay = document.getElementById('seq-trna');
+        
+        let trnaHistory = []; 
+
+        const DNA_TEMPLATE = [
+            "T","A","C", "T","T","C", "A","A","A", "C","C","G", "C","G","A", "G","G","A", 
+            "A","A","G", "A","T","G", "C","T","G", "G","T","A", "A","C","C", "A","T","T"
+        ];
+        const DNA_CODING   = [
+            "A","T","G", "A","A","G", "T","T","T", "G","G","C", "G","C","T", "C","C","T", 
+            "T","T","C", "T","A","C", "G","A","C", "C","A","T", "T","G","G", "T","A","A"
+        ];
+        const MRNA_MAP     = [
+            "A","U","G", "A","A","G", "U","U","U", "G","G","C", "G","C","U", "C","C","U", 
+            "U","U","C", "U","A","C", "G","A","C", "C","A","U", "U","G","G", "U","A","A"
+        ];
+        
+        const AMINO_ACIDS  = [
+            { codon: "AUG", name: "Met", color: "#f43f5e" },
+            { codon: "AAG", name: "Lys", color: "#3b82f6" },
+            { codon: "UUU", name: "Phe", color: "#10b981" },
+            { codon: "GGC", name: "Gly", color: "#8b5cf6" },
+            { codon: "GCU", name: "Ala", color: "#f59e0b" },
+            { codon: "CCU", name: "Pro", color: "#06b6d4" },
+            { codon: "UUC", name: "Phe", color: "#10b981" },
+            { codon: "UAC", name: "Tyr", color: "#d946ef" },
+            { codon: "GAC", name: "Asp", color: "#ef4444" },
+            { codon: "CAU", name: "His", color: "#84cc16" },
+            { codon: "UGG", name: "Trp", color: "#a855f7" }
+        ];
+
+        const TOTAL_CODONS = AMINO_ACIDS.length + 1; 
+
+        const STAGES = {
+            IDLE: 'IDLE', TRANSCRIPTION: 'TRANSCRIPTION', EXPORT: 'EXPORT',
+            TRANSLATION_INIT: 'TRANSLATION_INIT', TRANSLATION_ELONGATION: 'TRANSLATION_ELONGATION',
+            FOLDING: 'FOLDING', COMPLETE: 'COMPLETE'
+        };
+
+        let currentStage = STAGES.IDLE;
+        let isPlaying = false, simSpeed = 1.0, timer = 0, foldingProgress = 0;
+        let width, height, nuclearMembraneY;
+        let rnaPolymerase = { x: 0, y: 0, targetX: 0, index: 0 };
+        let dnaStrands = [], mrnaStrand = [], tRNAPool = [], peptideChain = [];
+        let ribosome = { x: 0, y: 0, scale: 0, alpha: 0, currentCodonIndex: 0 };
+        let mrnaSpacing = 18; 
+
+        function resize() {
+            const container = canvas.parentElement;
+            const dpr = window.devicePixelRatio || 1;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
+            nuclearMembraneY = height * 0.35;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function getBaseColor(base) {
+            switch(base) {
+                case 'A': return '#38bdf8'; case 'T': return '#f87171';
+                case 'U': return '#fb923c'; case 'C': return '#facc15';
+                case 'G': return '#4ade80'; default: return '#94a3b8';
+            }
+        }
+
+        // 把鹼基陣列每 3 個分一組並加上中線，方便閱讀與換行
+        function formatSequenceDisplay(arr) {
+            let res = "";
+            for(let i=0; i<arr.length; i++) {
+                res += arr[i];
+                if ((i+1) % 3 === 0 && i !== arr.length - 1) {
+                    res += " - ";
+                }
+            }
+            return res;
+        }
+
+        function initSimulation() {
+            currentStage = STAGES.IDLE;
+            isPlaying = false;
+            timer = 0; foldingProgress = 0;
+            
+            btnPlay.innerText = "開始模擬";
+            btnPlay.style.backgroundColor = "var(--accent-blue)";
+            statusTitle.innerText = "準備就緒";
+            explanation.innerText = "點擊「開始模擬」，觀測細胞核內延長的基因序列轉錄。";
+            
+            // 初始化還原完整的單條長鏈
+            seqDnaCodingDisplay.innerText = formatSequenceDisplay(DNA_CODING);
+            seqDnaDisplay.innerText = formatSequenceDisplay(DNA_TEMPLATE);
+            
+            seqMrnaDisplay.innerText = "尚未生成";
+            seqTrnaDisplay.innerText = "尚未生成"; 
+            seqPeptideDisplay.innerText = "[尚未合成]";
+            trnaHistory = []; 
+            
+            document.querySelectorAll('.stage-dot').forEach(d => {
+                d.classList.remove('active', 'completed');
+            });
+
+            dnaStrands = [];
+            let dnaSpacing = (width * 0.85) / (DNA_TEMPLATE.length - 1);
+            let startX = width * 0.075;
+            
+            for (let i = 0; i < DNA_TEMPLATE.length; i++) {
+                dnaStrands.push({
+                    x: startX + i * dnaSpacing,
+                    topY: nuclearMembraneY * 0.35,
+                    bottomY: nuclearMembraneY * 0.65,
+                    baseT: DNA_TEMPLATE[i],
+                    baseC: DNA_CODING[i],
+                    unzipRatio: 0
+                });
+            }
+
+            rnaPolymerase = { x: dnaStrands[0].x - 40, y: nuclearMembraneY * 0.5, index: 0, timer: 0 };
+            mrnaStrand = []; tRNAPool = []; peptideChain = []; activeTRNA = null;
+            ribosome = { x: width * 0.5, y: height * 0.75, scale: 1, alpha: 0, currentCodonIndex: 0 };
+        }
+
+        function update() {
+            if (!isPlaying) return;
+            timer += 0.02 * simSpeed;
+
+            switch(currentStage) {
+                case STAGES.TRANSCRIPTION:
+                    document.querySelector('.id-trans').classList.add('active');
+                    statusTitle.innerText = "第一階段：轉錄中";
+                    explanation.innerText = "RNA聚合酶沿DNA移動，游離的核糖核苷酸按照模板鏈的鹼基序列，以互補的形式一個一個接上去，形成mRNA。";
+                    
+                    let targetPolyX = dnaStrands[Math.min(rnaPolymerase.index, dnaStrands.length - 1)].x;
+                    rnaPolymerase.x += (targetPolyX - rnaPolymerase.x) * 0.1 * simSpeed;
+
+                    dnaStrands.forEach((strand, idx) => {
+                        let dist = Math.abs(strand.x - rnaPolymerase.x);
+                        if (dist < 80 && rnaPolymerase.index >= idx && rnaPolymerase.index < idx + 4) {
+                            strand.unzipRatio += (1 - strand.unzipRatio) * 0.15;
+                        } else if (idx < rnaPolymerase.index) {
+                            strand.unzipRatio += (0 - strand.unzipRatio) * 0.08;
+                        }
+                    });
+
+                    rnaPolymerase.timer += 0.05 * simSpeed;
+                    if (rnaPolymerase.timer >= 1.0 && rnaPolymerase.index < DNA_TEMPLATE.length) {
+                        let idx = rnaPolymerase.index;
+                        mrnaStrand.push({
+                            x: dnaStrands[idx].x, y: dnaStrands[idx].bottomY - 15,
+                            targetX: dnaStrands[idx].x, targetY: dnaStrands[idx].bottomY + 35,
+                            base: MRNA_MAP[idx], alpha: 0
+                        });
+                        rnaPolymerase.index++;
+                        rnaPolymerase.timer = 0;
+                        
+                        // 動態轉錄時，即時加長字串
+                        seqMrnaDisplay.innerText = formatSequenceDisplay(mrnaStrand.map(m => m.base));
+                    }
+
+                    mrnaStrand.forEach(m => {
+                        m.y += (m.targetY - m.y) * 0.15;
+                        if (m.alpha < 1) m.alpha += 0.1;
+                    });
+
+                    if (rnaPolymerase.index >= DNA_TEMPLATE.length && Math.abs(rnaPolymerase.x - dnaStrands[dnaStrands.length-1].x) < 5) {
+                        currentStage = STAGES.EXPORT;
+                        document.querySelector('.id-trans').classList.remove('active');
+                        document.querySelector('.id-trans').classList.add('completed');
+                    }
+                    break;
+
+                case STAGES.EXPORT:
+                    document.querySelector('.id-export').classList.add('active');
+                    statusTitle.innerText = "核孔轉運中";
+                    explanation.innerText = "長鏈 mRNA 通過核膜進入細胞質，準備進行轉譯。";
+
+                    let allExported = true;
+                    mrnaStrand.forEach((m, idx) => {
+                        let targetX = width * 0.5 + (idx - DNA_TEMPLATE.length/2) * mrnaSpacing;
+                        let targetY = height * 0.55;
+                        m.x += (targetX - m.x) * 0.04 * simSpeed;
+                        m.y += (targetY - m.y) * 0.04 * simSpeed;
+                        if (Math.abs(m.y - targetY) > 5) allExported = false;
+                    });
+
+                    if (allExported) {
+                        currentStage = STAGES.TRANSLATION_INIT;
+                        document.querySelector('.id-export').classList.remove('active');
+                        document.querySelector('.id-export').classList.add('completed');
+                        timer = 0;
+                    }
+                    break;
+
+                case STAGES.TRANSLATION_INIT:
+                    document.querySelector('.id-transl').classList.add('active');
+                    statusTitle.innerText = "第二階段：轉譯啟動";
+                    explanation.innerText = "核糖體和mRNA結合， 並定位起始密碼子 (AUG)。";
+
+                    ribosome.alpha += (1 - ribosome.alpha) * 0.05;
+                    mrnaStrand.forEach((m, idx) => {
+                        let targetX = ribosome.x + (idx - ribosome.currentCodonIndex - 1) * mrnaSpacing;
+                        let targetY = ribosome.y + 12;
+                        m.x += (targetX - m.x) * 0.08 * simSpeed;
+                        m.y += (targetY - m.y) * 0.08 * simSpeed;
+                    });
+
+                    if (timer > 2) { currentStage = STAGES.TRANSLATION_ELONGATION; timer = 0; }
+                    break;
+
+                case STAGES.TRANSLATION_ELONGATION:
+                    statusTitle.innerText = "轉譯延伸與終止";
+                    mrnaStrand.forEach((m, idx) => {
+                        let targetX = ribosome.x + (idx - ribosome.currentCodonIndex - 1) * mrnaSpacing;
+                        let targetY = ribosome.y + 12;
+                        m.x += (targetX - m.x) * 0.15;
+                        m.y += (targetY - m.y) * 0.15;
+                    });
+
+                    let currentCodonGroup = Math.floor(ribosome.currentCodonIndex / 3);
+
+                    if (!activeTRNA && currentCodonGroup < TOTAL_CODONS) {
+                        if (currentCodonGroup === TOTAL_CODONS - 1) { 
+                            explanation.innerText = "遇見終止密碼子 UAA，不對應任何 tRNA 或胺基酸。\n此時「釋放因子(Release Factor)」進入核糖體，催化多肽鏈斷開並釋放。";
+                            timer = 0;
+                            activeTRNA = { isReleaseFactor: true, x: ribosome.x, y: height + 50, targetY: ribosome.y - 45, alpha: 1 };
+                        } else {
+                            let aaInfo = AMINO_ACIDS[currentCodonGroup];
+                            let antiCodon = aaInfo.codon.split('').map(b => b==='A'?'U': b==='U'?'A': b==='C'?'G':'C').join('');
+                            explanation.innerText = `tRNA把特定的氨基酸帶到核糖體，並與mRNA上的密碼子互補配對。兩個相鄰的氨基酸之間形成肽鍵。`;
+
+                            if (trnaHistory.length === currentCodonGroup) {
+                                trnaHistory.push(antiCodon);
+                                seqTrnaDisplay.innerText = trnaHistory.join(" - "); 
+                            }
+
+                            activeTRNA = {
+                                x: ribosome.x + 120, y: height - 20,
+                                targetX: ribosome.x, targetY: ribosome.y - 55, 
+                                bases: antiCodon.split(''), aa: aaInfo,
+                                stage: 'ENTERING', timer: 0
+                            };
+                        }
+                    }
+
+                    if (activeTRNA) {
+                        if (activeTRNA.isReleaseFactor) {
+                            activeTRNA.y += (activeTRNA.targetY - activeTRNA.y) * 0.06 * simSpeed;
+                            if (Math.abs(activeTRNA.y - activeTRNA.targetY) < 5) {
+                                currentStage = STAGES.FOLDING;
+                                activeTRNA = null;
+                                document.querySelector('.id-transl').classList.remove('active');
+                                document.querySelector('.id-transl').classList.add('completed');
+                                timer = 0;
+                            }
+                        } else {
+                            if (activeTRNA.stage === 'ENTERING') {
+                                activeTRNA.x += (activeTRNA.targetX - activeTRNA.x) * 0.08 * simSpeed;
+                                activeTRNA.y += (activeTRNA.targetY - activeTRNA.y) * 0.08 * simSpeed;
+                                if (Math.abs(activeTRNA.x - activeTRNA.targetX) < 1 && Math.abs(activeTRNA.y - activeTRNA.targetY) < 1) {
+                                    activeTRNA.stage = 'BONDING'; activeTRNA.timer = 0;
+                                }
+                            } else if (activeTRNA.stage === 'BONDING') {
+                                activeTRNA.timer += 0.02 * simSpeed;
+                                if (activeTRNA.timer >= 1.0) {
+                                    peptideChain.push({ x: activeTRNA.x, y: activeTRNA.y - 30, color: activeTRNA.aa.color, name: activeTRNA.aa.name });
+                                    seqPeptideDisplay.innerText = peptideChain.map(p => p.name).join(" - ");
+                                    activeTRNA.stage = 'LEAVING';
+                                    activeTRNA.targetX = ribosome.x - 150; activeTRNA.targetY = ribosome.y - 100;
+                                }
+                            } else if (activeTRNA.stage === 'LEAVING') {
+                                activeTRNA.x += (activeTRNA.targetX - activeTRNA.x) * 0.06 * simSpeed;
+                                activeTRNA.y += (activeTRNA.targetY - activeTRNA.y) * 0.06 * simSpeed;
+                                if (Math.abs(activeTRNA.x - activeTRNA.targetX) < 30) {
+                                    activeTRNA = null;
+                                    ribosome.currentCodonIndex += 3; 
+                                }
+                            }
+                        }
+                    }
+
+                    peptideChain.forEach((p, idx) => {
+                        let targetX = ribosome.x - (peptideChain.length - 1 - idx) * 20;
+                        let targetY = ribosome.y - 85 - Math.sin(idx + timer)*5;
+                        p.x += (targetX - p.x) * 0.15;
+                        p.y += (targetY - p.y) * 0.15;
+                    });
+                    break;
+
+                case STAGES.FOLDING:
+                    document.querySelector('.id-fold').classList.add('active');
+                    statusTitle.innerText = "最終階段：立體折疊";
+                    explanation.innerText = "多肽鏈自核糖體脫落，正透過引力自發捲曲成具有特定三維結構的蛋白質。";
+
+                    foldingProgress += 0.005 * simSpeed;
+                    let centerX = width * 0.5, centerY = height * 0.65;
+                    
+                    peptideChain.forEach((p, idx) => {
+                        let angle = idx * 1.5 + foldingProgress * 6;
+                        let radius = 30 + Math.sin(idx * 2 + foldingProgress) * 15 * (1 - Math.min(foldingProgress, 1));
+                        p.x += ((centerX + Math.cos(angle) * radius) - p.x) * 0.05 * simSpeed;
+                        p.y += ((centerY + Math.sin(angle) * radius) - p.y) * 0.05 * simSpeed;
+                    });
+
+                    ribosome.alpha += (0 - ribosome.alpha) * 0.05;
+                    mrnaStrand.forEach(m => m.alpha += (0 - m.alpha) * 0.05);
+
+                    if (foldingProgress >= 1.2) {
+                        currentStage = STAGES.COMPLETE;
+                        document.querySelector('.id-fold').classList.remove('active');
+                        document.querySelector('.id-fold').classList.add('completed');
+                    }
+                    break;
+
+                case STAGES.COMPLETE:
+                    statusTitle.innerText = "蛋白質合成完成！";
+                    explanation.innerText = "完整的蛋白質已折疊成形，準備在細胞內發揮其獨特的生理功能。";
+                    isPlaying = false;
+                    btnPlay.innerText = "重新開始";
+                    break;
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 3; ctx.setLineDash([12, 10]);
+            ctx.beginPath(); ctx.moveTo(0, nuclearMembraneY); ctx.lineTo(width * 0.4, nuclearMembraneY); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(width * 0.6, nuclearMembraneY); ctx.lineTo(width, nuclearMembraneY); ctx.stroke();
+            ctx.setLineDash([]);
+            
+            ctx.fillStyle = '#475569'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'left';
+            ctx.fillText("細胞核 (Nucleus)", 15, nuclearMembraneY - 15);
+            ctx.fillText("細胞質 (Cytoplasm)", 15, nuclearMembraneY + 25);
+            ctx.textAlign = 'center';
+            ctx.fillText("核孔", width * 0.5, nuclearMembraneY + 5);
+
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            dnaStrands.forEach((strand, idx) => {
+                let curTopY = strand.topY - (25 * strand.unzipRatio);
+                let curBotY = strand.bottomY + (25 * strand.unzipRatio);
+
+                if (idx < dnaStrands.length - 1) {
+                    let ns = dnaStrands[idx+1];
+                    let nTop = ns.topY - (25 * ns.unzipRatio);
+                    let nBot = ns.bottomY + (25 * ns.unzipRatio);
+                    ctx.strokeStyle = '#334155'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(strand.x, curTopY); ctx.lineTo(ns.x, nTop); ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(strand.x, curBotY); ctx.lineTo(ns.x, nBot); ctx.stroke();
+                }
+
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = getBaseColor(strand.baseC);
+                ctx.beginPath(); ctx.moveTo(strand.x, curTopY); ctx.lineTo(strand.x, curTopY + 12); ctx.stroke();
+                ctx.strokeStyle = getBaseColor(strand.baseT);
+                ctx.beginPath(); ctx.moveTo(strand.x, curBotY); ctx.lineTo(strand.x, curBotY - 12); ctx.stroke();
+
+                if (strand.unzipRatio < 0.2) {
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)'; ctx.lineWidth = 1; ctx.setLineDash([2, 2]);
+                    ctx.beginPath(); ctx.moveTo(strand.x, curTopY+12); ctx.lineTo(strand.x, curBotY-12); ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                ctx.font = 'bold 11px monospace'; ctx.fillStyle = '#f8fafc';
+                ctx.fillText(strand.baseC, strand.x, curTopY - 14);
+                ctx.fillText(strand.baseT, strand.x, curBotY + 14);
+            });
+
+            if (currentStage === STAGES.TRANSCRIPTION) {
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.2)'; ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(rnaPolymerase.x + 10, rnaPolymerase.y, 40, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#38bdf8'; ctx.font = 'bold 11px sans-serif';
+                ctx.fillText("聚合酶", rnaPolymerase.x + 10, rnaPolymerase.y);
+            }
+
+            ctx.textAlign = 'center';
+            mrnaStrand.forEach((m, idx) => {
+                ctx.save(); ctx.globalAlpha = m.alpha;
+                if (idx < mrnaStrand.length - 1 && mrnaStrand[idx+1].alpha > 0.1) {
+                    ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(mrnaStrand[idx+1].x, mrnaStrand[idx+1].y); ctx.stroke();
+                }
+                ctx.strokeStyle = getBaseColor(m.base); ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(m.x, m.y); ctx.lineTo(m.x, m.y - 12); ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 12px monospace';
+                ctx.fillText(m.base, m.x, m.y + 12);
+                ctx.restore();
+            });
+
+            if (ribosome.alpha > 0) {
+                ctx.save(); ctx.globalAlpha = ribosome.alpha;
+                ctx.fillStyle = 'rgba(219, 39, 119, 0.3)'; ctx.strokeStyle = '#db2777'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.moveTo(ribosome.x - 70, ribosome.y - 10);
+                ctx.bezierCurveTo(ribosome.x - 70, ribosome.y - 80, ribosome.x + 70, ribosome.y - 80, ribosome.x + 70, ribosome.y - 10);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                
+                ctx.fillStyle = 'rgba(244, 114, 182, 0.4)'; ctx.strokeStyle = '#f472b6';
+                ctx.beginPath(); ctx.roundRect(ribosome.x - 75, ribosome.y + 5, 150, 30, 10); ctx.fill(); ctx.stroke();
+                ctx.restore();
+            }
+
+            if (activeTRNA) {
+                ctx.save(); ctx.globalAlpha = activeTRNA.alpha || 1;
+                if (activeTRNA.isReleaseFactor) {
+                    ctx.fillStyle = '#e4e4e7'; ctx.strokeStyle = '#a1a1aa'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(activeTRNA.x - 26, activeTRNA.y, 52, 40, 4); ctx.fill(); ctx.stroke();
+                    ctx.fillStyle = '#0f172a'; ctx.font = 'bold 11px sans-serif'; 
+                    ctx.fillText("釋放因子", activeTRNA.x, activeTRNA.y + 12);
+                } else {
+                    ctx.fillStyle = '#312e81'; ctx.strokeStyle = '#818cf8'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.roundRect(activeTRNA.x - 20, activeTRNA.y, 40, 40, 6); ctx.fill(); ctx.stroke();
+
+                    activeTRNA.bases.forEach((b, bIdx) => {
+                        let bx = activeTRNA.x + (bIdx - 1) * mrnaSpacing; 
+                        ctx.strokeStyle = getBaseColor(b); ctx.lineWidth = 4;
+                        ctx.beginPath(); ctx.moveTo(bx, activeTRNA.y + 40); ctx.lineTo(bx, activeTRNA.y + 52); ctx.stroke();
+                        ctx.fillStyle = '#fff'; ctx.font = 'bold 11px monospace';
+                        ctx.fillText(b, bx, activeTRNA.y + 64);
+                    });
+
+                    if (activeTRNA.stage !== 'LEAVING') {
+                        ctx.fillStyle = activeTRNA.aa.color; ctx.beginPath(); ctx.arc(activeTRNA.x, activeTRNA.y - 12, 12, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = '#fff'; ctx.font = '10px sans-serif';
+                        ctx.fillText(activeTRNA.aa.name, activeTRNA.x, activeTRNA.y - 12);
+                        ctx.strokeStyle = '#fff'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(activeTRNA.x, activeTRNA.y); ctx.lineTo(activeTRNA.x, activeTRNA.y-2); ctx.stroke();
+                    }
+                }
+                ctx.restore();
+            }
+
+            if (peptideChain.length > 0) {
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 3;
+                ctx.beginPath();
+                peptideChain.forEach((p, idx) => {
+                    if (idx === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+                });
+                ctx.stroke();
+
+                peptideChain.forEach(p => {
+                    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 11, 0, Math.PI*2); ctx.fill();
+                    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1; ctx.stroke();
+                    ctx.fillStyle = '#fff'; ctx.font = '9px sans-serif';
+                    ctx.fillText(p.name, p.x, p.y);
+                });
+            }
+
+            if (currentStage === STAGES.COMPLETE) {
+                ctx.fillStyle = 'rgba(74, 222, 128, 0.15)'; ctx.strokeStyle = 'var(--accent-green)';
+                ctx.lineWidth = 2; ctx.setLineDash([4, 4]);
+                ctx.beginPath(); ctx.arc(width * 0.5, height * 0.65, 55, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = 'var(--accent-green)'; ctx.font = 'bold 14px sans-serif'; ctx.setLineDash([]);
+                ctx.fillText("完成折疊的活性蛋白質", width * 0.5, height * 0.65 + 75);
+            }
+        }
+
+        function loop() { update(); draw(); requestAnimationFrame(loop); }
+
+        btnPlay.addEventListener('click', () => {
+            if (currentStage === STAGES.IDLE || currentStage === STAGES.COMPLETE) {
+                if(currentStage === STAGES.COMPLETE) initSimulation();
+                currentStage = STAGES.TRANSCRIPTION;
+            }
+            isPlaying = !isPlaying;
+            btnPlay.innerText = isPlaying ? "暫停模擬" : "繼續模擬";
+            btnPlay.style.backgroundColor = isPlaying ? "#ea580c" : "var(--accent-blue)";
+        });
+
+        btnReset.addEventListener('click', () => { initSimulation(); draw(); });
+        speedSlider.addEventListener('input', (e) => {
+            simSpeed = parseFloat(e.target.value);
+            speedVal.innerText = simSpeed.toFixed(1) + "x";
+        });
+
+        initSimulation(); loop();
+    </script>
+</body>
+</html>
