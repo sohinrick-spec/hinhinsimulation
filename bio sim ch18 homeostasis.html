@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>血糖生死邊緣 — HinHin Biology</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── DESIGN TOKENS ── */
+    :root {
+      --bg-app:        #f0f3f8;
+      --bg-panel:      #ffffff;
+      --bg-inset:      #f7f9fc;
+      --bg-screen:     #111622;   /* instrument display surround */
+      --text-primary:  #1a2332;
+      --text-secondary:#4a5a70;
+      --text-muted:    #8a9ab0;
+      --border:        #d4dbe6;
+      --border-light:  #e8edf4;
+      --cyan:          #1565c0;
+      --cyan-hover:    #0d47a1;
+      --danger:        #b71c1c;
+      --danger-mid:    #c62828;
+      --success:       #1b5e20;
+      --success-mid:   #2e7d32;
+      --warning:       #bf360c;
+      --warning-mid:   #e65100;
+      --violet:        #4527a0;
+      --radius:        5px;
+      --radius-sm:     4px;
+      --font-ui:       'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+      --font-mono:     'IBM Plex Mono', 'Fira Code', 'Courier New', monospace;
+    }
+
+    /* ── RESET ── */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      height: 100%; margin: 0; padding: 0;
+      font-family: var(--font-ui);
+      background-color: var(--bg-app);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* ── LAYOUT ── */
+    .container { display: flex; flex-direction: row; height: 100%; width: 100%; }
+
+    /* Chart area = instrument display (dark) */
+    .chart-area {
+      flex: 1;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      background-color: var(--bg-screen);
+      padding: 28px 28px 22px;
+      position: relative; min-width: 0; min-height: 0;
+    }
+
+    .chart-title {
+      font-family: var(--font-mono);
+      color: #5a6a85;
+      font-size: 10px; font-weight: 600;
+      margin-bottom: 12px;
+      letter-spacing: 3px; text-transform: uppercase;
+    }
+
+    .chart-container { width: 100%; max-width: 920px; height: 430px; position: relative; }
+
+    canvas#smoothie-chart {
+      display: block; width: 100%; height: 100%;
+      background: #0e111a;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    /* Danger pulse — border glow on canvas */
+    .danger-flash {
+      position: absolute; inset: 0;
+      border-radius: var(--radius);
+      pointer-events: none;
+      outline: 2px solid transparent;
+      outline-offset: -2px;
+      transition: outline-color 0.12s;
+    }
+    .danger-flash.active { outline-color: #b71c1c; }
+
+    /* Screen annotation strip below chart */
+    .screen-legend {
+      display: flex; gap: 20px; margin-top: 10px;
+      font-family: var(--font-mono); font-size: 10px; color: #3d4e66; letter-spacing: 1.5px;
+    }
+    .screen-legend span { display: flex; align-items: center; gap: 5px; }
+    .leg-dot { width: 8px; height: 2px; border-radius: 1px; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 344px;
+      background-color: var(--bg-panel);
+      border-left: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      padding: 0;
+      box-sizing: border-box;
+      justify-content: space-between;
+      overflow-y: auto;
+    }
+
+    /* Header strip */
+    .brand-title {
+      font-family: var(--font-mono);
+      font-size: 11px; font-weight: 700; text-align: center;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border);
+      padding: 13px 16px;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      background: var(--bg-inset);
+    }
+
+    /* ── STATUS CARD ── */
+    .status-card {
+      background: var(--bg-panel);
+      border-radius: 0;
+      padding: 0;
+      border: none;
+    }
+
+    .status-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .status-item:last-child { border-bottom: none; }
+
+    .label {
+      font-family: var(--font-ui);
+      font-weight: 500;
+      color: var(--text-muted);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .value {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-primary);
+    }
+
+    /* ── EVENT BANNER ── */
+    .event-banner {
+      display: flex; justify-content: center; align-items: center; text-align: center;
+      padding: 10px 14px;
+      color: #ffffff;
+      font-family: var(--font-ui);
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 0.2px;
+      background-color: #4a5a70;
+      line-height: 1.4; min-height: 36px;
+      border-bottom: 1px solid var(--border);
+      /* Ensure text reads on any badge bg including light ones */
+      text-shadow: 0 1px 3px rgba(0,0,0,0.65), 0 0 12px rgba(0,0,0,0.4);
+    }
+    @keyframes eventPop {
+      0%   { opacity: 0.55; }
+      60%  { opacity: 1; }
+      100% { opacity: 1; }
+    }
+    .event-banner.pop { animation: eventPop 0.28s ease-out; }
+
+    /* ── SUGAR DISPLAY ── */
+    .sugar-display-container {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-inset);
+      text-align: center;
+    }
+
+    #sugarLevel {
+      font-family: var(--font-mono);
+      font-size: 54px; font-weight: 700;
+      color: var(--success-mid);
+      transition: color 0.25s;
+      margin: 2px 0 6px;
+      line-height: 1;
+      letter-spacing: -1px;
+    }
+
+    .progress-bar-bg {
+      width: 100%; height: 5px;
+      background-color: var(--border);
+      border-radius: 0;
+      margin-top: 6px; overflow: hidden; position: relative;
+    }
+    #progressBar {
+      height: 100%; width: 50%;
+      background-color: var(--success-mid);
+      transition: width 0.1s ease, background-color 0.3s;
+    }
+    .target-zone-marker {
+      position: absolute; left: 20.83%; width: 29.17%; height: 100%;
+      border-left: 1px solid rgba(46,125,50,0.45);
+      border-right: 1px solid rgba(46,125,50,0.45);
+      background-color: rgba(46,125,50,0.14);
+      top: 0; pointer-events: none;
+    }
+    .death-marker-lo {
+      position: absolute; left: 4.17%; width: 1px; height: 100%;
+      background: rgba(183,28,28,0.7); top: 0;
+    }
+    .death-marker-hi {
+      position: absolute; left: 95.83%; width: 1px; height: 100%;
+      background: rgba(183,28,28,0.7); top: 0;
+    }
+
+    .bar-labels {
+      font-family: var(--font-mono);
+      font-size: 10px; color: var(--text-muted);
+      margin-top: 5px;
+      display: flex; justify-content: space-between;
+    }
+    .bar-labels span.death-label { color: var(--danger-mid); font-weight: 700; }
+
+    /* ── THREAT / TREND BAR ── */
+    .threat-bar-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 9px 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .threat-label {
+      font-family: var(--font-ui);
+      font-size: 10px; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 1px;
+      min-width: 30px;
+    }
+    .threat-bar-bg {
+      flex: 1; height: 3px;
+      background: var(--border);
+      border-radius: 0; overflow: hidden;
+    }
+    .threat-bar-fill {
+      height: 100%; width: 0%;
+      border-radius: 0;
+      transition: width 0.2s linear, background-color 0.3s;
+      background: var(--success-mid);
+    }
+
+    /* ── SCORE DELTA FLASH ── */
+    #scoreDelta {
+      font-family: var(--font-mono);
+      font-size: 12px; font-weight: 700;
+      min-width: 44px; text-align: right;
+      opacity: 0; transition: opacity 0.2s;
+    }
+    #scoreDelta.show { opacity: 1; }
+
+    /* ── CONTROLS ── */
+    .controls-wrap { padding: 14px 14px 0; }
+
+    .controls { display: flex; flex-direction: column; gap: 8px; }
+
+    button {
+      font-family: var(--font-ui);
+      font-size: 14px; font-weight: 600;
+      padding: 14px 16px; min-height: 52px;
+      border-radius: var(--radius); border: none; color: #ffffff;
+      cursor: pointer; transition: filter 0.14s, transform 0.12s;
+      box-shadow: none;
+      display: flex; justify-content: space-between; align-items: center;
+      user-select: none; -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      position: relative; overflow: hidden;
+      letter-spacing: 0.2px;
+    }
+
+    button .key-hint {
+      font-family: var(--font-mono);
+      background: rgba(255,255,255,0.2);
+      padding: 3px 9px; border-radius: 3px;
+      font-size: 12px; font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .btn-cooldown {
+      position: absolute; bottom: 0; left: 0; height: 2px;
+      background: rgba(255,255,255,0.55);
+      border-radius: 0;
+      transition: width 0.1s linear; width: 0%;
+    }
+
+    .btn-insulin  { background-color: #1565c0; }
+    .btn-insulin:hover:not(:disabled)  { filter: brightness(1.14); }
+    .btn-glucagon { background-color: #d84315; }
+    .btn-glucagon:hover:not(:disabled) { filter: brightness(1.14); }
+
+    button:active:not(:disabled) { transform: scale(0.975); filter: brightness(0.9); }
+    button:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .hint-row {
+      font-family: var(--font-ui);
+      font-size: 11px; color: var(--text-muted);
+      text-align: center; margin-top: 10px; margin-bottom: 14px;
+      line-height: 1.65; padding: 0 4px;
+      border-top: 1px solid var(--border-light);
+      padding-top: 10px;
+    }
+
+    .score-breakdown {
+      font-family: var(--font-mono);
+      font-size: 11px; color: var(--text-muted);
+      text-align: center; padding: 6px 16px 8px;
+      border-top: 1px solid var(--border-light);
+    }
+
+    /* ── MODALS ── */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15,20,30,0.88);
+      display: flex; justify-content: center; align-items: center;
+      z-index: 1000; opacity: 0; pointer-events: none;
+      transition: opacity 0.25s ease;
+      backdrop-filter: blur(5px);
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+    .modal-content {
+      background: var(--bg-panel);
+      padding: 30px 26px;
+      border-radius: 6px;
+      text-align: center;
+      max-width: 500px; width: 92%;
+      border: 1px solid var(--border);
+      box-shadow: 0 2px 24px rgba(0,0,0,0.18);
+    }
+    .modal-content h2 {
+      margin-top: 0; font-size: 20px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-weight: 700; letter-spacing: 0.5px;
+    }
+    .modal-content p {
+      font-family: var(--font-ui);
+      font-size: 13px; color: var(--text-secondary);
+      line-height: 1.85; margin: 12px 0 18px; text-align: left;
+    }
+    .modal-content b     { color: var(--text-primary); }
+    .modal-content .accent { color: var(--success-mid); font-weight: 700; }
+    .modal-content .danger { color: var(--danger-mid); font-weight: 700; }
+
+    .btn-start-game {
+      background-color: #1565c0;
+      color: white; padding: 13px 30px;
+      font-size: 14px; border-radius: var(--radius);
+      width: auto; min-height: 48px; margin: 0 auto;
+      font-weight: 700; cursor: pointer; border: none;
+      justify-content: center;
+      touch-action: manipulation;
+      display: flex; align-items: center; gap: 8px;
+      letter-spacing: 0.4px;
+      font-family: var(--font-ui);
+      transition: filter 0.14s, transform 0.12s;
+    }
+    .btn-start-game:hover { filter: brightness(1.12); transform: translateY(-1px); }
+
+    .btn-restart {
+      background-color: var(--bg-inset);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      padding: 12px 26px;
+      font-size: 13px; border-radius: var(--radius);
+      width: auto; min-height: 44px; margin: 0 auto;
+      cursor: pointer; justify-content: center;
+      display: flex; font-weight: 600;
+      touch-action: manipulation;
+      font-family: var(--font-ui);
+      transition: filter 0.14s;
+    }
+    .btn-restart:hover { filter: brightness(0.94); }
+
+    /* Result card in game-over modal */
+    .result-card {
+      background: var(--bg-inset);
+      border-radius: var(--radius-sm); padding: 0;
+      margin: 12px 0; border: 1px solid var(--border);
+    }
+    .result-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 9px 14px; border-bottom: 1px solid var(--border-light);
+      font-size: 12px; color: var(--text-muted);
+      font-family: var(--font-ui);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-val {
+      font-family: var(--font-mono);
+      font-weight: 700; color: var(--text-primary); font-size: 15px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 700px) {
+      body { overflow: auto; }
+      .container { flex-direction: column; height: auto; }
+      .sidebar { width: 100%; border-left: none; border-top: 1px solid var(--border); }
+      .chart-area { min-height: 280px; padding: 14px; }
+      .chart-container { height: 240px; }
+    }
+    @media (min-width:701px) and (max-width:1100px) and (orientation:landscape) {
+      .sidebar { width: 300px; }
+      .chart-container { height: min(340px,58vh); }
+      .controls { flex-direction: row; gap: 8px; }
+      button { flex: 1 1 100%; min-height: 48px; font-size: 13px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- ── CHART AREA ── -->
+  <div class="chart-area">
+    <div class="chart-title">⬤ CONTINUOUS GLUCOSE MONITOR — LIVE FEED</div>
+    <div class="chart-container">
+      <canvas id="smoothie-chart"></canvas>
+      <div class="danger-flash" id="dangerFlash"></div>
+    </div>
+    <div class="screen-legend">
+      <span><span class="leg-dot" style="background:#1b5e20"></span>TARGET ZONE 70–110</span>
+      <span><span class="leg-dot" style="background:#b71c1c"></span>DEATH BOUNDARY 55 / 145</span>
+      <span><span class="leg-dot" style="background:#5a6a85"></span>IDEAL 90 mg/dL</span>
+    </div>
+  </div>
+
+  <!-- ── SIDEBAR / CONTROL PANEL ── -->
+  <div class="sidebar">
+    <div>
+      <div class="brand-title">🩸 血糖生死邊緣</div>
+
+      <div class="status-card">
+        <!-- Time -->
+        <div class="status-item">
+          <span class="label">虛擬時間</span>
+          <span class="value" id="timeDisplay" style="font-family:'IBM Plex Mono',monospace;font-size:20px;color:#1565c0;letter-spacing:2px;">00:00</span>
+        </div>
+
+        <!-- Event banner -->
+        <div class="event-banner" id="situation">尚未開始</div>
+
+        <!-- BG reading -->
+        <div class="sugar-display-container">
+          <div class="label" style="margin-bottom:2px;">血糖值 mg/dL</div>
+          <div id="sugarLevel">100</div>
+          <div class="progress-bar-bg">
+            <div class="death-marker-lo"></div>
+            <div class="death-marker-hi"></div>
+            <div class="target-zone-marker"></div>
+            <div id="progressBar"></div>
+          </div>
+          <div class="bar-labels">
+            <span class="death-label">55</span>
+            <span>70</span><span>90</span><span>110</span>
+            <span class="death-label">145</span>
+          </div>
+        </div>
+
+        <!-- Trend bar -->
+        <div class="threat-bar-row">
+          <span class="threat-label">趨勢</span>
+          <div class="threat-bar-bg">
+            <div class="threat-bar-fill" id="threatBar"></div>
+          </div>
+          <span id="threatPct" style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a9ab0;min-width:52px;text-align:right;">→ 穩定</span>
+        </div>
+
+        <!-- Score -->
+        <div class="status-item">
+          <span class="label">當前得分</span>
+          <span style="display:flex;align-items:center;gap:8px;">
+            <span class="value" id="score" style="color:#e65100;">0</span>
+            <span id="scoreDelta"></span>
+          </span>
+        </div>
+
+        <!-- Days -->
+        <div class="status-item" style="border-bottom:none;">
+          <span class="label">生存天數</span>
+          <span class="value" id="living" style="color:#1565c0;">0 天</span>
+        </div>
+
+        <div class="score-breakdown" id="scoreBreakdown">維持黃金血糖值即可得分</div>
+      </div>
+    </div>
+
+    <!-- ── BUTTONS ── -->
+    <div class="controls-wrap">
+      <div class="controls">
+        <button class="btn-insulin" id="btnInsulin" onclick="injectInsulin()">
+          <span>💉 施打胰島素</span>
+          <span class="key-hint">I</span>
+          <div class="btn-cooldown" id="cdInsulin"></div>
+        </button>
+        <button class="btn-glucagon" id="btnGlucagon" onclick="injectGlucagon()">
+          <span>⬆ 施打升糖素</span>
+          <span class="key-hint">G</span>
+          <div class="btn-cooldown" id="cdGlucagon"></div>
+        </button>
+      </div>
+      <div class="hint-row">
+        ⚠ 生存區間 <b style="color:#b71c1c">55–145 mg/dL</b>　理想值 <b style="color:#2e7d32">90</b><br>
+        胰島素需提前 <b>1 秒</b>打，否則來不及壓制大餐
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── START MODAL ── -->
+<div class="modal-overlay active" id="startModal">
+  <div class="modal-content">
+    <h2>🩸 血糖生死邊緣<br><small style="font-family:'IBM Plex Sans',sans-serif;font-size:11px;color:#b71c1c;letter-spacing:3px;font-weight:600;">HARD MODE</small></h2>
+    <p>
+      你接管了一個暴飲暴食、作息混亂的人的內分泌系統。<br><br>
+      🍱 <b>午餐 / 晚餐</b>血糖衝擊劇烈，必須<b>提前</b>施打胰島素才能及時壓制。<br>
+      🏃 劇烈運動和隨機事件頻繁發生，血糖可能快速崩潰，需補充升糖素。<br>
+      🌀 隨著天數增加，事件衝擊力逐漸加劇。<br><br>
+      <span class="danger">⚡ 死亡邊界收緊至 55 / 145 mg/dL</span>——只有黃金控制才能活下去。<br><br>
+      <b>🏆 得分規則：</b><br>
+      • 血糖越近 <b class="accent">90 mg/dL</b>，每秒得分越高（最高 +12/秒）<br>
+      • 偏離危險區扣分最高 <b class="danger">-20/秒</b><br>
+      • 每撐過一天 <b class="accent">+500</b> 生存獎勵<br>
+      • 兩支激素各自冷卻，<b>胰島素 18 秒</b>、<b>升糖素 14 秒</b>
+    </p>
+    <button class="btn-start-game" onclick="pressStart()">⚡ 開始挑戰</button>
+  </div>
+</div>
+
+<!-- ── GAME OVER MODAL ── -->
+<div class="modal-overlay" id="gameOverModal">
+  <div class="modal-content">
+    <h2 id="modalTitle" style="color:#b71c1c;">遊戲結束</h2>
+    <p id="modalReason" style="text-align:center;font-size:14px;margin:8px 0 14px;color:#4a5a70;"></p>
+    <div class="result-card">
+      <div class="result-row"><span>最終得分</span><span class="result-val" id="finalScore" style="color:#e65100;">0</span></div>
+      <div class="result-row"><span>存活天數</span><span class="result-val" id="finalLiving" style="color:#1565c0;">0 天</span></div>
+      <div class="result-row"><span>生存獎勵</span><span class="result-val" id="finalBonus" style="color:#2e7d32;">0</span></div>
+      <div class="result-row"><span>評語</span><span class="result-val" id="finalGrade" style="font-size:12px;color:#4a5a70;max-width:200px;text-align:right;white-space:normal;line-height:1.4;"></span></div>
+    </div>
+    <button class="btn-restart" onclick="closeModalAndReset()">🔄 再試一次</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// 即時折線圖
+// ============================================================
+class SimpleLiveChart {
+  constructor(canvas, opts) {
+    this.canvas = canvas; this.ctx = canvas.getContext('2d');
+    this.minValue = opts.minValue; this.maxValue = opts.maxValue;
+    this.windowMs = opts.windowMs || 60000; this.points = [];
+    this.dpr = window.devicePixelRatio || 1; this.resize();
+    window.addEventListener('resize', () => this.resize());
+    window.addEventListener('orientationchange', () => this.resize());
+    this._loop = this._loop.bind(this); this._running = false;
+  }
+  resize() {
+    const rect = this.canvas.parentElement.getBoundingClientRect();
+    this.dpr = window.devicePixelRatio || 1;
+    this.canvas.width  = Math.max(1, Math.floor(rect.width  * this.dpr));
+    this.canvas.height = Math.max(1, Math.floor(rect.height * this.dpr));
+  }
+  append(t, v) {
+    this.points.push({ t, v });
+    const cutoff = t - this.windowMs - 2000;
+    while (this.points.length && this.points[0].t < cutoff) this.points.shift();
+  }
+  clear() { this.points = []; }
+  start() { if (this._running) return; this._running = true; this._loop(); }
+  _loop()  { if (!this._running) return; this.draw(); requestAnimationFrame(this._loop); }
+  draw() {
+    const ctx = this.ctx, w = this.canvas.width, h = this.canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = '#0e111a'; ctx.fillRect(0, 0, w, h);
+    if (!this.points.length) return;
+    const now = this.points[this.points.length - 1].t;
+    const tMin = now - this.windowMs;
+    const vMin = this.minValue, vMax = this.maxValue;
+    const xOf = t => ((t - tMin) / this.windowMs) * w;
+    const yOf = v => { const c = Math.max(vMin, Math.min(vMax, v)); return h - ((c - vMin) / (vMax - vMin)) * h; };
+
+    // Death zones
+    ctx.fillStyle = 'rgba(183,28,28,0.10)';
+    ctx.fillRect(0, 0, w, yOf(145));
+    ctx.fillRect(0, yOf(55), w, h - yOf(55));
+
+    // Warning zones
+    ctx.fillStyle = 'rgba(230,81,0,0.06)';
+    ctx.fillRect(0, yOf(145), w, yOf(110) - yOf(145));
+    ctx.fillRect(0, yOf(70), w, yOf(55) - yOf(70));
+
+    // Golden zone
+    ctx.fillStyle = 'rgba(46,125,50,0.10)';
+    ctx.fillRect(0, yOf(110), w, yOf(70) - yOf(110));
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)'; ctx.lineWidth = 1 * this.dpr;
+    for (let i = 1; i < 6; i++) {
+      const y = (h / 6) * i; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+
+    // Boundary lines
+    ctx.setLineDash([5 * this.dpr, 4 * this.dpr]); ctx.lineWidth = 1.2 * this.dpr;
+    ctx.strokeStyle = 'rgba(183,28,28,0.55)';
+    [55, 145].forEach(v => { ctx.beginPath(); ctx.moveTo(0, yOf(v)); ctx.lineTo(w, yOf(v)); ctx.stroke(); });
+    ctx.strokeStyle = 'rgba(230,81,0,0.28)';
+    [70, 110].forEach(v => { ctx.beginPath(); ctx.moveTo(0, yOf(v)); ctx.lineTo(w, yOf(v)); ctx.stroke(); });
+    ctx.strokeStyle = 'rgba(46,125,50,0.32)';
+    ctx.beginPath(); ctx.moveTo(0, yOf(90)); ctx.lineTo(w, yOf(90)); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Data line
+    ctx.beginPath();
+    let started = false, firstX = 0;
+    for (const p of this.points) {
+      if (p.t < tMin) continue;
+      const x = xOf(p.t), y = yOf(p.v);
+      if (!started) { ctx.moveTo(x, y); started = true; firstX = x; } else ctx.lineTo(x, y);
+    }
+    const last = this.points[this.points.length - 1];
+    const lineColor = last.v > 110 ? '#ef5350' : last.v < 70 ? '#ff7043' : '#66bb6a';
+    ctx.strokeStyle = lineColor; ctx.lineWidth = 2.5 * this.dpr; ctx.lineJoin = 'round'; ctx.stroke();
+    ctx.lineTo(w, h); ctx.lineTo(firstX, h); ctx.closePath();
+    ctx.fillStyle = last.v > 110 ? 'rgba(239,83,80,0.07)' : last.v < 70 ? 'rgba(255,112,67,0.07)' : 'rgba(102,187,106,0.08)';
+    ctx.fill();
+
+    // Labels
+    ctx.fillStyle = '#3d4e66'; ctx.font = `${11 * this.dpr}px 'IBM Plex Mono', monospace`; ctx.textBaseline = 'middle';
+    [vMin, 55, 70, 90, 110, 145, vMax].forEach(v => ctx.fillText(String(v), 5 * this.dpr, yOf(v)));
+  }
+}
+
+// ============================================================
+// 遊戲狀態
+// ============================================================
+let chartInstance = null, series = null;
+let bloodLevel = 100;
+const TICK_MS  = 100;
+const DAY_MS   = 24000;
+
+let score = 0, survivalBonus = 0;
+let startTime = null, gameLoopInterval = null;
+let isGameOver = false, gameStarted = false;
+let daysAliveCount = 0;
+let pendingDoses = [];
+let dayMultiplier = 1.0;
+
+const TREND_WINDOW = 15;
+const recentBG = [];
+
+// ============================================================
+// 激素設定 (硬核版 — 1s onset，效果更強)
+//
+// 胰島素：onsetMs 1s，totalEffect -32~-40
+// 升糖素：onsetMs 1s，totalEffect +24~+30
+// ============================================================
+const HORMONE_PROFILES = {
+  insulin:  { onsetMs: 1000, durationMs: 14000, cooldownMs: 500 },
+  glucagon: { onsetMs: 1000, durationMs:  8000, cooldownMs: 14000 }
+};
+const cooldownUntil = { insulin: 0, glucagon: 0 };
+
+function queueDose(type, totalEffect) {
+  const now = Date.now();
+  if (now < cooldownUntil[type]) return;
+  const p = HORMONE_PROFILES[type];
+  cooldownUntil[type] = now + p.cooldownMs;
+  pendingDoses.push({
+    type, totalEffect, appliedSoFar: 0,
+    startedAt: now, onsetMs: p.onsetMs, durationMs: p.durationMs
+  });
+}
+
+function applyPendingDoses(now) {
+  pendingDoses = pendingDoses.filter(d => {
+    const elapsed = now - d.startedAt;
+    if (elapsed < d.onsetMs) return true;
+    const ratio = Math.min(1, (elapsed - d.onsetMs) / d.durationMs);
+    const target = d.totalEffect * ratio;
+    bloodLevel += target - d.appliedSoFar;
+    d.appliedSoFar = target;
+    return ratio < 1;
+  });
+}
+
+function updateCooldownUI(now) {
+  [['btnInsulin','cdInsulin','insulin'],['btnGlucagon','cdGlucagon','glucagon']].forEach(([bid, cid, type]) => {
+    const btn = document.getElementById(bid), bar = document.getElementById(cid);
+    const rem = cooldownUntil[type] - now, total = HORMONE_PROFILES[type].cooldownMs;
+    btn.disabled = rem > 0;
+    bar.style.width = rem > 0 ? ((rem / total) * 100) + '%' : '0%';
+  });
+}
+
+// ============================================================
+// 日程表 (硬核版)
+// ============================================================
+const DAILY_SCHEDULE = [
+  { startH:  0,   endH:  6.5, effect: -0.16, text: "深夜睡眠 🛌",         color: "#313244" },
+  { startH:  6.5, endH:  7.5, effect:  0.20, text: "起床 🌅",             color: "#45475a" },
+  { startH:  7.5, endH:  8.5, effect:  0.80, text: "早餐 🍳",             color: "#94e2d5" },
+  { startH:  8.5, endH:  9.5, effect: -0.30, text: "通勤 🚌",             color: "#6c7086" },
+  { startH:  9.5, endH: 11.5, effect: -0.12, text: "上午工作 💻",         color: "#6c7086" },
+  { startH: 11.5, endH: 13.5, effect:  1.50, text: "大份午餐 🍱🍱",       color: "#e06303" },
+  { startH: 13.5, endH: 14.5, effect:  0.18, text: "餐後走路 🚶",         color: "#89dceb" },
+  { startH: 14.5, endH: 16.0, effect: -0.12, text: "下午工作 📋",         color: "#6c7086" },
+  { startH: 16.0, endH: 17.0, effect:  0.65, text: "高糖飲料 + 零食 🍫🥤", color: "#f9e2af" },
+  { startH: 17.0, endH: 18.0, effect: -0.55, text: "下班健走 🚶‍♂️",        color: "#89b4fa" },
+  { startH: 18.0, endH: 20.0, effect:  1.70, text: "豪華晚餐（大份）🍲🍺", color: "#dc3545" },
+  { startH: 20.0, endH: 21.0, effect: -0.25, text: "飯後散步 🌙",         color: "#89dceb" },
+  { startH: 21.0, endH: 22.0, effect:  0.35, text: "宵夜 + 啤酒 🍺",     color: "#fab387" },
+  { startH: 22.0, endH: 24.0, effect: -0.18, text: "夜間就寢 😴",         color: "#313244" }
+];
+
+// ============================================================
+// 隨機事件 (硬核版)
+// ============================================================
+const RANDOM_EVENTS = [
+  { text: "緊急追末班車！🏃💨",   effect: -0.80, color: "#f38ba8", duration:  9000 },
+  { text: "偷吃整袋薯片 🍟",       effect:  0.80, color: "#fab387", duration: 10000 },
+  { text: "老闆叫你狂跑樓梯 🏃",   effect: -0.75, color: "#f38ba8", duration:  9000 },
+  { text: "慶生吃大蛋糕 🎂🎂",     effect:  0.85, color: "#fab387", duration: 11000 },
+  { text: "突然爬山健行 ⛰️",       effect: -0.78, color: "#89b4fa", duration: 10000 },
+  { text: "壓力崩潰瘋狂暴食 😰",   effect:  0.90, color: "#f38ba8", duration: 12000 },
+  { text: "陪朋友長跑 🏃‍♀️",        effect: -0.82, color: "#89b4fa", duration: 11000 },
+  { text: "下午吃手搖飲料 🧋",     effect:  0.75, color: "#f9e2af", duration: 10000 },
+  { text: "忙到忘記吃飯 → 反彈 😵",effect: -0.70, color: "#f38ba8", duration:  8000 },
+  { text: "同事強迫你吃麻辣鍋 🌶️", effect:  1.00, color: "#e06303", duration: 11000 },
+  { text: "加班連續站立走動 🧍",    effect: -0.65, color: "#89b4fa", duration:  9000 },
+];
+
+const RANDOM_WINDOWS = [[7.5, 23.5]];
+let randomEventActive = null, lastRandomEventEnd = 0;
+
+// ============================================================
+// 得分系統
+// ============================================================
+function calcScoreDelta(blood) {
+  const d = Math.abs(blood - 90);
+  if (blood >= 70 && blood <= 110) {
+    return 12 - (d / 20) * 12;
+  } else {
+    const excess = d - 20;
+    return -(excess / 25) * 20;
+  }
+}
+
+function getScoreLabel(blood) {
+  if (blood >= 82 && blood <= 98)   return { text: "完美控制 ★★", color: "#2e7d32" };
+  if (blood >= 70 && blood <= 110)  return { text: "黃金區間 ✓",  color: "#1565c0" };
+  if (blood >= 62 && blood <= 122)  return { text: "輕微偏離 ⚠",  color: "#e65100" };
+  if (blood >= 55 && blood <= 145)  return { text: "危險邊緣 ✕",  color: "#b71c1c" };
+  return { text: "瀕死 ☠",                                          color: "#b71c1c" };
+}
+
+// ============================================================
+// 遊戲邏輯
+// ============================================================
+function getScheduleSegment(hour) {
+  return DAILY_SCHEDULE.find(s => hour >= s.startH && hour < s.endH) || DAILY_SCHEDULE[0];
+}
+function isInRandomWindow(hour) {
+  return RANDOM_WINDOWS.some(([s, e]) => hour >= s && hour < e);
+}
+
+function pressStart() {
+  document.getElementById("startModal").classList.remove("active");
+  gameStarted = true; startTime = Date.now();
+  initAndStartChart(); startGameLoop();
+}
+
+function initAndStartChart() {
+  if (chartInstance) return;
+  const canvas = document.getElementById('smoothie-chart');
+  chartInstance = new SimpleLiveChart(canvas, { minValue: 30, maxValue: 160, windowMs: 50000 });
+  series = chartInstance;
+  series.append(Date.now(), bloodLevel);
+  chartInstance.start();
+}
+
+let pendingScore = 0, scoreTickCount = 0;
+let scoreDeltaTimeout = null;
+
+function showDelta(text, color) {
+  const el = document.getElementById('scoreDelta');
+  el.textContent = text; el.style.color = color; el.classList.add('show');
+  clearTimeout(scoreDeltaTimeout);
+  scoreDeltaTimeout = setTimeout(() => el.classList.remove('show'), 950);
+}
+
+function startGameLoop() {
+  if (gameLoopInterval) clearInterval(gameLoopInterval);
+  gameLoopInterval = setInterval(() => {
+    if (isGameOver || !gameStarted) return;
+    const now = Date.now();
+    const elapsed  = now - startTime;
+    const hour     = (elapsed % DAY_MS) / (DAY_MS / 24);
+    const daysAlive = Math.floor(elapsed / DAY_MS);
+
+    if (daysAlive > daysAliveCount) {
+      daysAliveCount = daysAlive;
+      score += 500;
+      survivalBonus += 500;
+      dayMultiplier = Math.min(1.60, 1.0 + daysAlive * 0.05);
+      showDelta('+500 生存！', '#2e7d32');
+    }
+
+    let situationText, badgeColor, effectThisTick;
+
+    if (randomEventActive) {
+      if (now < randomEventActive.endsAt) {
+        ({ text: situationText, color: badgeColor, effect: effectThisTick } = randomEventActive);
+      } else {
+        randomEventActive = null;
+        lastRandomEventEnd = now;
+      }
+    }
+
+    if (!randomEventActive && isInRandomWindow(hour) && (now - lastRandomEventEnd > 4000) && Math.random() < 0.012) {
+      const ev = RANDOM_EVENTS[Math.floor(Math.random() * RANDOM_EVENTS.length)];
+      randomEventActive = { text: ev.text, effect: ev.effect, color: ev.color, endsAt: now + ev.duration };
+      ({ text: situationText, color: badgeColor, effect: effectThisTick } = randomEventActive);
+    }
+
+    if (!situationText) {
+      const seg = getScheduleSegment(hour);
+      situationText = seg.text; badgeColor = seg.color; effectThisTick = seg.effect;
+    }
+
+    if (effectThisTick > 0) {
+      effectThisTick *= dayMultiplier;
+    } else {
+      effectThisTick *= (1 + (dayMultiplier - 1) * 0.4);
+    }
+
+    const noise = (Math.random() * 0.50 - 0.25);
+    bloodLevel += effectThisTick + noise;
+
+    applyPendingDoses(now);
+    updateCooldownUI(now);
+
+    recentBG.push(bloodLevel);
+    if (recentBG.length > TREND_WINDOW) recentBG.shift();
+    const trend = recentBG.length > 1 ? recentBG[recentBG.length - 1] - recentBG[0] : 0;
+
+    series.append(now, bloodLevel);
+    calcAndApplyScore(now);
+    updateUI(hour, daysAlive, situationText, badgeColor, trend);
+  }, TICK_MS);
+}
+
+function calcAndApplyScore(now) {
+  if (bloodLevel > 145 || bloodLevel < 55) { checkRules(); return; }
+  const delta = calcScoreDelta(bloodLevel);
+  pendingScore += delta;
+  scoreTickCount++;
+  if (scoreTickCount >= 10) {
+    const rounded = Math.round(pendingScore);
+    score = Math.max(0, score + rounded);
+    if (rounded >= 0) showDelta('+' + rounded, '#2e7d32');
+    else showDelta(String(rounded), '#b71c1c');
+    pendingScore = 0; scoreTickCount = 0;
+  }
+  checkRules();
+}
+
+function updateUI(hour, daysAlive, situationText, badgeColor, trend) {
+  const h = Math.floor(hour), m = Math.floor((hour % 1) * 60);
+  document.getElementById("timeDisplay").innerHTML =
+    (h < 10 ? '0' + h : h) + ':' + (m < 10 ? '0' + m : m);
+
+  const badge = document.getElementById("situation");
+  if (badge.dataset.lastText !== situationText) {
+    badge.dataset.lastText = situationText;
+    badge.classList.remove("pop"); void badge.offsetWidth; badge.classList.add("pop");
+  }
+  badge.innerHTML = situationText; badge.style.backgroundColor = badgeColor;
+
+  const sugarEl = document.getElementById("sugarLevel");
+  const progressBar = document.getElementById("progressBar");
+  const dangerFlash = document.getElementById("dangerFlash");
+  sugarEl.innerHTML = Math.floor(bloodLevel);
+
+  let pct = Math.max(0, Math.min(100, ((bloodLevel - 30) / 130) * 100));
+  progressBar.style.width = pct + '%';
+
+  const lbl = getScoreLabel(bloodLevel);
+  const isRed = bloodLevel > 110 || bloodLevel < 70;
+  const isDanger = bloodLevel > 130 || bloodLevel < 62;
+  sugarEl.style.color     = isRed ? (isDanger ? '#b71c1c' : '#e65100') : '#2e7d32';
+  progressBar.style.backgroundColor = isRed ? (isDanger ? '#c62828' : '#e65100') : '#2e7d32';
+  dangerFlash.classList.toggle('active', isDanger);
+
+  const threatPct = Math.min(100, Math.abs(trend) / 8 * 100);
+  const threatBar = document.getElementById("threatBar");
+  threatBar.style.width = threatPct + '%';
+  threatBar.style.backgroundColor = Math.abs(trend) > 5 ? '#c62828' : Math.abs(trend) > 2.5 ? '#e65100' : '#2e7d32';
+  const trendArrow = trend > 2 ? '↑↑ 急升' : trend > 0.5 ? '↑ 上升' : trend < -2 ? '↓↓ 急降' : trend < -0.5 ? '↓ 下降' : '→ 穩定';
+  document.getElementById("threatPct").textContent = trendArrow;
+  document.getElementById("threatPct").style.color = Math.abs(trend) > 2 ? '#b71c1c' : '#8a9ab0';
+
+  document.getElementById("score").innerHTML  = score.toLocaleString();
+  document.getElementById("living").innerHTML = daysAlive + ' 天';
+  document.getElementById("scoreBreakdown").textContent = lbl.text;
+  document.getElementById("scoreBreakdown").style.color = lbl.color;
+}
+
+function checkRules() {
+  if (bloodLevel > 145) {
+    endGame("⚡ 高血糖危機", "血糖衝破 145 mg/dL！餐後胰島素來不及壓制，引發嚴重高血糖，器官衰竭。");
+  } else if (bloodLevel < 55) {
+    endGame("☠ 低血糖休克", "血糖跌破 55 mg/dL！運動過度或未及時補充升糖素，大腦斷糧，陷入昏迷。");
+  }
+}
+
+function gradeScore(s, days) {
+  if (days === 0 && s < 50) return "瞬間陣亡……連一天都撐不住";
+  if (days < 1)  return "活不過一天，需要重新理解激素機制";
+  if (days < 3)  return "掙扎求生，血糖管理仍不穩定";
+  if (days < 7)  return "有點心得了，繼續磨練！";
+  if (days < 14) return "令人敬佩的血糖管理能力！";
+  if (days < 30) return "🏆 硬核玩家！胰島素大師認證";
+  return "🌟 傳說級內分泌掌控者！";
+}
+
+function injectInsulin() {
+  if (isGameOver || !gameStarted) return;
+  queueDose('insulin', -(32 + Math.random() * 8));
+}
+function injectGlucagon() {
+  if (isGameOver || !gameStarted) return;
+  queueDose('glucagon', (24 + Math.random() * 6));
+}
+
+function bindEvents() {
+  document.onkeypress = e => {
+    const k = e.key.toLowerCase();
+    if (k === 'i') injectInsulin();
+    if (k === 'g') injectGlucagon();
+  };
+  [['btn-insulin', injectInsulin],['btn-glucagon', injectGlucagon]].forEach(([cls, fn]) => {
+    document.querySelector('.' + cls).addEventListener('touchstart', ev => { ev.preventDefault(); fn(); });
+  });
+}
+
+function endGame(title, reason) {
+  isGameOver = true; clearInterval(gameLoopInterval);
+  document.getElementById("dangerFlash").classList.remove('active');
+  document.getElementById("modalTitle").innerText = title;
+  document.getElementById("modalReason").innerText = reason;
+  document.getElementById("finalScore").innerText  = score.toLocaleString();
+  document.getElementById("finalLiving").innerText = daysAliveCount + ' 天';
+  document.getElementById("finalBonus").innerText  = '+' + survivalBonus.toLocaleString();
+  document.getElementById("finalGrade").innerText  = gradeScore(score, daysAliveCount);
+  document.getElementById("gameOverModal").classList.add("active");
+}
+
+function closeModalAndReset() {
+  document.getElementById("gameOverModal").classList.remove("active");
+  bloodLevel = 100; score = 0; survivalBonus = 0; daysAliveCount = 0;
+  isGameOver = false; pendingDoses = []; pendingScore = 0; scoreTickCount = 0;
+  randomEventActive = null; lastRandomEventEnd = 0; dayMultiplier = 1.0;
+  recentBG.length = 0;
+  cooldownUntil.insulin = 0; cooldownUntil.glucagon = 0;
+  startTime = Date.now();
+  series.clear(); series.append(Date.now(), bloodLevel);
+  startGameLoop();
+}
+
+bindEvents();
+</script>
+</body>
+</html>
