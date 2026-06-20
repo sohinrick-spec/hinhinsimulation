@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>人體水份調節互動模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        html, body {
+            font-family: 'Noto Sans TC', sans-serif;
+            height: 100%;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f0f4f8, #d9e2ec);
+        }
+        .glass {
+            background: rgba(255,255,255,0.80);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        @keyframes flow { 0%{stroke-dashoffset:28} 100%{stroke-dashoffset:0} }
+        .blood-flow { stroke-dasharray:8,6; animation:flow 1.8s linear infinite; }
+        @keyframes pulseglow {
+            0%,100%{ filter:drop-shadow(0 0 4px rgba(59,130,246,.8)); }
+            50%{ filter:drop-shadow(0 0 16px rgba(59,130,246,1)); }
+        }
+        .adh-glow { animation:pulseglow 1.8s ease-in-out infinite; }
+        input[type=range]{ cursor:pointer; }
+    </style>
+</head>
+<body class="p-2 flex flex-col text-slate-800" style="height:100vh;">
+
+<header class="flex-shrink-0 mb-1.5">
+    <h1 class="text-base font-bold text-slate-900 flex items-center gap-2">
+        <span class="text-blue-600 text-lg">💧</span>人體水份調節與滲透調節模擬器
+    </h1>
+    <p class="text-[10px] text-slate-500 mt-0.5">腎臟和水份調節 - HinHin Biology</p>
+</header>
+
+<div class="flex-1 grid gap-2 min-h-0 overflow-hidden" style="grid-template-columns:5fr 7fr;">
+
+    <!-- ═════ LEFT PANEL ═════ -->
+    <div class="flex flex-col gap-2 min-h-0 overflow-hidden">
+        <div class="glass rounded-xl shadow-md flex-shrink-0 p-2.5">
+            <h2 class="text-xs font-bold text-slate-800 border-b border-slate-200 pb-1 mb-2">⚙️ 生理參數輸入</h2>
+            <div class="mb-1.5">
+                <div class="flex justify-between items-center mb-0.5">
+                    <label class="text-xs font-medium text-slate-700">水分攝取量</label>
+                    <span class="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded-full text-[11px]" id="val-water">1.2 升</span>
+                </div>
+                <input type="range" id="input-water" min="0" max="3" step="0.1" value="1.2" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none accent-blue-600">
+                <div class="flex justify-between text-[9px] text-slate-400 mt-0.5"><span>0升 缺水</span><span>1.5升 適中</span><span>3升 過多</span></div>
+            </div>
+            <div class="mb-1.5">
+                <div class="flex justify-between items-center mb-0.5">
+                    <label class="text-xs font-medium text-slate-700">排汗量</label>
+                    <span class="text-orange-600 font-bold bg-orange-50 px-2 py-0.5 rounded-full text-[11px]" id="val-sweat">正常狀態</span>
+                </div>
+                <input type="range" id="input-sweat" min="0" max="2" step="1" value="0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none accent-orange-500">
+                <div class="flex justify-between text-[9px] text-slate-400 mt-0.5"><span>正常靜止</span><span>運動出汗</span><span>高溫多汗 🔥</span></div>
+            </div>
+            <div class="mb-1.5">
+                <div class="flex justify-between items-center mb-0.5">
+                    <label class="text-xs font-medium text-slate-700">咖啡因攝入</label>
+                    <span class="text-amber-700 font-bold bg-amber-50 px-2 py-0.5 rounded-full text-[11px]" id="val-caffeine">無</span>
+                </div>
+                <input type="range" id="input-caffeine" min="0" max="2" step="1" value="0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none accent-amber-700">
+                <div class="flex justify-between text-[9px] text-slate-400 mt-0.5"><span>無</span><span>輕度 ☕</span><span>高度 ☕☕</span></div>
+            </div>
+            <div>
+                <div class="flex justify-between items-center mb-0.5">
+                    <label class="text-xs font-medium text-slate-700">酒精攝入</label>
+                    <span class="text-purple-600 font-bold bg-purple-50 px-2 py-0.5 rounded-full text-[11px]" id="val-alcohol">無</span>
+                </div>
+                <input type="range" id="input-alcohol" min="0" max="2" step="1" value="0" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none accent-purple-600">
+                <div class="flex justify-between text-[9px] text-slate-400 mt-0.5"><span>無</span><span>微醺 🍺</span><span>酩酊 🍺🍺</span></div>
+            </div>
+        </div>
+
+        <div class="glass rounded-xl shadow-md flex-1 min-h-0 overflow-hidden flex flex-col p-2.5">
+            <h2 class="text-xs font-bold text-slate-800 border-b border-slate-200 pb-1 mb-2 flex-shrink-0">📊 體內核心生理指標</h2>
+            <div class="mb-2 flex-shrink-0">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-medium text-slate-700">血液水勢</span>
+                    <span id="status-wp" class="text-xs font-bold text-emerald-600">正常</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-3.5 relative overflow-hidden">
+                    <div id="bar-wp" class="h-3.5 bg-emerald-500 transition-all duration-500" style="width:50%"></div>
+                    <div class="absolute inset-0 flex justify-between px-2 text-[8px] text-slate-600 font-bold items-center pointer-events-none">
+                        <span>↓ 脫水</span><span>正常</span><span>↑ 過高</span>
+                    </div>
+                </div>
+            </div>
+            <div class="p-1.5 rounded-lg mb-2 text-[11px] font-medium transition-all duration-300 flex-shrink-0" id="box-osmoreceptor">
+                🧠 下丘腦滲壓感受器：<span id="text-osmoreceptor">偵測中...</span>
+            </div>
+            <div class="mb-2 flex-shrink-0">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-medium text-slate-700">垂體釋放抗利尿激素（ADH）</span>
+                    <span id="val-adh" class="text-xs font-bold text-blue-600">50%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                    <div id="bar-adh" class="bg-blue-600 h-2.5 rounded-full transition-all duration-500" style="width:50%"></div>
+                </div>
+            </div>
+            <div class="flex items-start gap-3 mb-2 flex-shrink-0">
+                <div class="relative border-4 border-slate-400 border-t-0 rounded-b-xl flex items-end overflow-hidden bg-slate-50/50 shadow-inner flex-shrink-0" style="width:46px;height:62px;">
+                    <div id="urine-fluid" class="w-full transition-all duration-500 ease-out" style="height:40%;background-color:#FFFBE6"></div>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-[11px] font-bold text-slate-700 mb-0.5">尿液輸出狀態</p>
+                    <p class="text-[11px] text-slate-600">排出量：<span id="urine-volume-txt" class="font-bold text-slate-800">正常</span></p>
+                    <p class="text-[11px] text-slate-600">濃縮度：<span id="urine-conc-txt" class="font-bold text-slate-800">正常</span></p>
+                </div>
+            </div>
+            <div class="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <h3 class="text-[11px] font-bold text-slate-800 mb-1 flex-shrink-0">🧠 當前生理協調狀態</h3>
+                <div id="explanation-box" class="flex-1 text-[10px] leading-relaxed text-slate-700 bg-white/60 p-2 rounded-lg border border-slate-200 overflow-y-auto">計算中...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═════ RIGHT PANEL ═════ -->
+    <div class="flex flex-col bg-white rounded-xl shadow-lg border border-slate-200 min-h-0 overflow-hidden">
+        <div class="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
+            <button id="tab-macro-btn" class="flex-1 py-2 px-2 text-[11px] font-bold text-blue-600 border-b-2 border-blue-600 transition-all focus:outline-none" onclick="switchTab('macro')"> 腎臟結構圖</button>
+            <button id="tab-micro-btn" class="flex-1 py-2 px-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 transition-all focus:outline-none" onclick="switchTab('micro')"> 腎元動態圖</button>
+        </div>
+
+        <!-- ═══ MACRO TAB ═══ -->
+        <div id="tab-macro" class="flex-1 min-h-0 flex flex-col p-2 overflow-hidden">
+            <svg viewBox="0 0 560 502" class="flex-1 min-h-0 w-full" style="font-family:'Noto Sans TC',sans-serif;" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <clipPath id="lkClip">
+                        <path d="M112,108 C88,106 58,122 46,155 C34,188 38,232 56,260 C72,282 96,293 122,291 C144,289 162,274 170,253 C177,238 179,221 175,213 L170,207 C167,203 164,197 166,193 C168,189 173,183 177,177 L181,170 C186,153 182,126 167,115 C155,106 134,106 112,108 Z"/>
+                    </clipPath>
+                    <clipPath id="rkClip">
+                        <path d="M448,108 C472,106 502,122 514,155 C526,188 522,232 504,260 C488,282 464,293 438,291 C416,289 398,274 390,253 C383,238 381,221 385,213 L390,207 C393,203 396,197 394,193 C392,189 387,183 383,177 L379,170 C374,153 378,126 393,115 C405,106 426,106 448,108 Z"/>
+                    </clipPath>
+                </defs>
+                <!-- LEFT KIDNEY -->
+                <path d="M112,108 C88,106 58,122 46,155 C34,188 38,232 56,260 C72,282 96,293 122,291 C144,289 162,274 170,253 C177,238 179,221 175,213 L170,207 C167,203 164,197 166,193 C168,189 173,183 177,177 L181,170 C186,153 182,126 167,115 C155,106 134,106 112,108 Z" fill="#B91C1C" stroke="#7F1D1D" stroke-width="2"/>
+                <ellipse cx="110" cy="198" rx="50" ry="78" fill="#7F1D1D" clip-path="url(#lkClip)"/>
+                <polygon points="76,129 114,119 152,161" fill="#5C1515" clip-path="url(#lkClip)"/>
+                <polygon points="60,160 76,129 150,170" fill="#5C1515" clip-path="url(#lkClip)"/>
+                <polygon points="58,188 60,160 150,179" fill="#5C1515" clip-path="url(#lkClip)"/>
+                <polygon points="60,218 58,188 152,198" fill="#5C1515" clip-path="url(#lkClip)"/>
+                <polygon points="72,246 60,218 153,215" fill="#5C1515" clip-path="url(#lkClip)"/>
+                <polygon points="98,267 72,246 154,230" fill="#5C1515" clip-path="url(#lkClip)"/>
+                <ellipse cx="158" cy="196" rx="20" ry="37" fill="#7F2424" clip-path="url(#lkClip)"/>
+                <ellipse cx="160" cy="196" rx="12" ry="28" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1" clip-path="url(#lkClip)"/>
+                <!-- RIGHT KIDNEY -->
+                <path d="M448,108 C472,106 502,122 514,155 C526,188 522,232 504,260 C488,282 464,293 438,291 C416,289 398,274 390,253 C383,238 381,221 385,213 L390,207 C393,203 396,197 394,193 C392,189 387,183 383,177 L379,170 C374,153 378,126 393,115 C405,106 426,106 448,108 Z" fill="#B91C1C" stroke="#7F1D1D" stroke-width="2"/>
+                <ellipse cx="450" cy="198" rx="50" ry="78" fill="#7F1D1D" clip-path="url(#rkClip)"/>
+                <polygon points="484,129 446,119 408,161" fill="#5C1515" clip-path="url(#rkClip)"/>
+                <polygon points="500,160 484,129 410,170" fill="#5C1515" clip-path="url(#rkClip)"/>
+                <polygon points="502,188 500,160 410,179" fill="#5C1515" clip-path="url(#rkClip)"/>
+                <polygon points="500,218 502,188 408,198" fill="#5C1515" clip-path="url(#rkClip)"/>
+                <polygon points="488,246 500,218 407,215" fill="#5C1515" clip-path="url(#rkClip)"/>
+                <polygon points="462,267 488,246 406,230" fill="#5C1515" clip-path="url(#rkClip)"/>
+                <ellipse cx="402" cy="196" rx="20" ry="37" fill="#7F2424" clip-path="url(#rkClip)"/>
+                <ellipse cx="400" cy="196" rx="12" ry="28" fill="#FEF3C7" stroke="#FCD34D" stroke-width="1" clip-path="url(#rkClip)"/>
+                <!-- CENTRAL VESSELS -->
+                <rect x="268" y="20" width="11" height="355" rx="5.5" fill="#991B1B"/>
+                <rect x="282" y="20" width="11" height="355" rx="5.5" fill="#1D4ED8"/>
+                <line x1="273" y1="20" x2="273" y2="375" stroke="#FCA5A5" stroke-width="3" stroke-dasharray="8,6" style="animation:flow 1.8s linear infinite"/>
+                <line x1="287" y1="375" x2="287" y2="20" stroke="#93C5FD" stroke-width="2.5" stroke-dasharray="8,6" style="animation:flow 1.8s linear infinite"/>
+                <!-- RENAL VESSELS LEFT -->
+                <path d="M268,162 C244,156 218,159 192,177" stroke="#991B1B" stroke-width="8" fill="none" stroke-linecap="round"/>
+                <path d="M268,162 C244,156 218,159 192,177" stroke="#FCA5A5" stroke-width="2" fill="none" stroke-dasharray="5,4" style="animation:flow 1.8s linear infinite"/>
+                <path d="M192,215 C218,222 246,220 282,214" stroke="#1D4ED8" stroke-width="9" fill="none" stroke-linecap="round"/>
+                <path d="M192,215 C218,222 246,220 282,214" stroke="#93C5FD" stroke-width="2.5" fill="none" stroke-dasharray="5,4" style="animation:flow 1.8s linear infinite"/>
+                <!-- RENAL VESSELS RIGHT -->
+                <path d="M279,162 C304,156 330,159 368,177" stroke="#991B1B" stroke-width="8" fill="none" stroke-linecap="round"/>
+                <path d="M279,162 C304,156 330,159 368,177" stroke="#FCA5A5" stroke-width="2" fill="none" stroke-dasharray="5,4" style="animation:flow 1.8s linear infinite"/>
+                <path d="M368,215 C338,222 314,220 293,214" stroke="#1D4ED8" stroke-width="9" fill="none" stroke-linecap="round"/>
+                <path d="M368,215 C338,222 314,220 293,214" stroke="#93C5FD" stroke-width="2.5" fill="none" stroke-dasharray="5,4" style="animation:flow 1.8s linear infinite"/>
+                <!-- URETERS -->
+                <path d="M192,234 C198,278 222,348 245,394" stroke="#FDE047" stroke-width="4" fill="none" stroke-linecap="round"/>
+                <path d="M368,234 C362,278 338,348 315,394" stroke="#FDE047" stroke-width="4" fill="none" stroke-linecap="round"/>
+                <!-- BLADDER -->
+                <path d="M245,394 C238,384 225,391 220,409 C215,427 221,449 237,461 C250,471 267,477 280,477 C293,477 310,471 323,461 C339,449 345,427 340,409 C335,391 322,384 315,394 C306,382 293,376 280,376 C267,376 254,382 245,394 Z" fill="#FDA4AF" stroke="#E11D48" stroke-width="2.5"/>
+                <ellipse cx="280" cy="477" rx="17" ry="8" fill="none" stroke="#BE123C" stroke-width="3"/>
+                <rect x="273" y="485" width="14" height="14" rx="7" fill="#FDA4AF" stroke="#E11D48" stroke-width="1.5"/>
+                <!-- MACRO LABELS (REVISED) -->
+                <!-- 腹主動脈：觸碰主動脈左緣 (268,44)，文字延伸至左上空白 -->
+                <line x1="268" y1="44" x2="202" y2="38" stroke="#FCA5A5" stroke-width="1.2"/>
+                <text x="152" y="41" fill="#FCA5A5" font-size="9.5" font-weight="bold">腹主動脈</text>
+                <!-- 下腔靜脈：觸碰靜脈右緣 (293,44)，文字延伸至右上空白 -->
+                <line x1="293" y1="44" x2="357" y2="38" stroke="#93C5FD" stroke-width="1.2"/>
+                <text x="359" y="41" fill="#93C5FD" font-size="9.5" font-weight="bold">下腔靜脈</text>
+                <!-- 左腎：觸碰腎頂 (92,110)，文字於左側短距 -->
+                <line x1="92" y1="110" x2="56" y2="92" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="4" y="95" fill="#FECACA" font-size="11" font-weight="bold">左腎</text>
+                <!-- 皮質（左）：觸碰皮質左緣 (47,152)，文字緊貼左側 -->
+                <line x1="47" y1="152" x2="8" y2="150" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="4" y="148" fill="#FECACA" font-size="9.5" font-weight="bold">皮質</text>
+                <!-- 髓質（左）：觸碰髓質橢圓左緣 (60,200)，文字緊貼左側 -->
+                <line x1="60" y1="200" x2="8" y2="198" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="4" y="196" fill="#F87171" font-size="9.5" font-weight="bold">髓質</text>
+                <!-- 腎盂（左）：觸碰腎盂右緣 (172,196) 經腎門向右，文字在腎門右側空白 -->
+                <line x1="172" y1="196" x2="194" y2="196" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="196" y="199" fill="#FDE68A" font-size="9.5" font-weight="bold">腎盂</text>
+                <!-- 腎動脈（左）：觸碰動脈弧中段 (236,160)，文字於上方 Zone B -->
+                <line x1="236" y1="160" x2="212" y2="145" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="185" y="143" fill="#FCA5A5" font-size="9" font-weight="bold">腎動脈</text>
+                <!-- 腎靜脈（左）：觸碰靜脈弧中段 (224,219)，文字於下方 Zone B -->
+                <line x1="224" y1="219" x2="205" y2="232" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="178" y="240" fill="#93C5FD" font-size="9" font-weight="bold">腎靜脈</text>
+                <!-- 右腎：觸碰腎頂 (468,110)，文字於右側短距 -->
+                <line x1="468" y1="110" x2="508" y2="92" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="512" y="95" fill="#FECACA" font-size="11" font-weight="bold">右腎</text>
+                <!-- 皮質（右）：觸碰皮質右緣 (513,152)，文字緊貼右側 -->
+                <line x1="513" y1="152" x2="529" y2="150" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="531" y="148" fill="#FECACA" font-size="9.5" font-weight="bold">皮質</text>
+                <!-- 髓質（右）：觸碰髓質橢圓右緣 (500,200)，文字緊貼右側 -->
+                <line x1="500" y1="200" x2="529" y2="198" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="531" y="196" fill="#F87171" font-size="9.5" font-weight="bold">髓質</text>
+                <!-- 腎盂（右）：觸碰腎盂左緣 (388,196) 經腎門向左，文字在腎門左側空白 -->
+                <line x1="388" y1="196" x2="366" y2="196" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="330" y="199" fill="#FDE68A" font-size="9.5" font-weight="bold">腎盂</text>
+                <!-- 腎動脈（右）：觸碰動脈弧中段 (320,160)，文字於上方 Zone C -->
+                <line x1="320" y1="160" x2="344" y2="145" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="316" y="143" fill="#FCA5A5" font-size="9" font-weight="bold">腎動脈</text>
+                <!-- 腎靜脈（右）：觸碰靜脈弧中段 (336,219)，文字於下方 Zone C -->
+                <line x1="336" y1="219" x2="355" y2="232" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="329" y="240" fill="#93C5FD" font-size="9" font-weight="bold">腎靜脈</text>
+                <!-- 左輸尿管：觸碰輸尿管中段 (209,304)，水平向左至空白區 -->
+                <line x1="209" y1="304" x2="150" y2="304" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="118" y="307" fill="#FDE047" font-size="9.5" font-weight="bold">輸尿管</text>
+                <!-- 右輸尿管：觸碰輸尿管中段 (351,304)，水平向右至空白區 -->
+                <line x1="351" y1="304" x2="410" y2="304" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="412" y="307" fill="#FDE047" font-size="9.5" font-weight="bold">輸尿管</text>
+                <!-- 膀胱：觸碰膀胱左壁 (233,408)，文字延伸至左上空白 -->
+                <line x1="233" y1="408" x2="196" y2="396" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="160" y="399" fill="#881337" font-size="10" font-weight="bold">膀胱</text>
+                <!-- 尿道：觸碰尿道頸 (274,490)，水平向左至空白 -->
+                <line x1="274" y1="490" x2="242" y2="490" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="196" y="493" fill="#6B7280" font-size="9" font-weight="bold">尿道</text>
+            </svg>
+        </div>
+
+        <!-- ═══ MICRO TAB ═══ -->
+        <div id="tab-micro" class="flex-1 min-h-0 flex flex-col min-h-0 overflow-hidden" style="display:none;">
+            <svg id="micro-svg" viewBox="0 0 800 520"
+                 style="font-family:'Noto Sans TC',sans-serif; background:white;"
+                 preserveAspectRatio="xMidYMid meet"
+                 class="flex-1 min-h-0 w-full">
+
+                <!-- ══ WHITE BACKGROUND ══ -->
+                <rect width="800" height="520" fill="white"/>
+
+                <!-- ══ CORTEX / MEDULLA ZONE ══ -->
+                <line x1="0" y1="248" x2="800" y2="248" stroke="#E2E8F0" stroke-width="1.5" stroke-dasharray="8,4"/>
+                <text x="8" y="242" fill="#CBD5E1" font-size="9" font-weight="bold">皮 質</text>
+                <text x="8" y="264" fill="#CBD5E1" font-size="9" font-weight="bold">髓 質</text>
+
+                <!-- ════════════════════════
+                     LAYER 1 — BLOOD VESSELS (all red, connected)
+                     ════════════════════════ -->
+
+                <!-- 1a. Afferent arteriole -->
+                <path d="M 0,450 C 24,430 48,400 68,370
+                               C 84,344 96,314 106,282
+                               C 112,260 115,240 116,222
+                               C 117,212 114,206 108,203
+                               C 100,199 92,198 86,200"
+                      stroke="#DC2626" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <path d="M 0,450 C 24,430 48,400 68,370
+                               C 84,344 96,314 106,282
+                               C 112,260 115,240 116,222
+                               C 117,212 114,206 108,203
+                               C 100,199 92,198 86,200"
+                      stroke="#FCA5A5" stroke-width="2.5" fill="none"
+                      stroke-dasharray="7,5" class="blood-flow"/>
+
+                <!-- 1b. Efferent arteriole → PCT peritubular capillary -->
+                <path d="M 150,178
+                         C 165,160 183,152 205,158
+                         C 227,164 233,212 261,218
+                         C 289,224 289,96 319,92
+                         C 349,88 359,214 385,218
+                         C 401,220 404,192 405,248"
+                      stroke="#DC2626" stroke-width="8" fill="none" stroke-linecap="round"/>
+                <path d="M 150,178
+                         C 165,160 183,152 205,158
+                         C 227,164 233,212 261,218
+                         C 289,224 289,96 319,92
+                         C 349,88 359,214 385,218
+                         C 401,220 404,192 405,248"
+                      stroke="#FCA5A5" stroke-width="2" fill="none"
+                      stroke-dasharray="6,5" class="blood-flow"/>
+
+                <!-- 1c. Vasa recta (descending + U-turn + ascending) -->
+                <path d="M 405,248
+                         C 395,254 382,260 380,272
+                         L 380,494
+                         C 380,512 484,512 484,494
+                         L 484,272
+                         C 484,260 484,252 484,248"
+                      stroke="#DC2626" stroke-width="8" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M 405,248 C 395,254 382,260 380,272 L 380,494"
+                      stroke="#FCA5A5" stroke-width="2" fill="none"
+                      stroke-dasharray="6,5" class="blood-flow"/>
+                <path d="M 484,494 L 484,272 C 484,260 484,252 484,248"
+                      stroke="#FCA5A5" stroke-width="2" fill="none"
+                      stroke-dasharray="6,5" class="blood-flow"
+                      style="animation-direction:reverse"/>
+
+                <!-- 1d. DCT peritubular capillary -->
+                <path d="M 484,248
+                         C 484,230 484,210 484,198
+                         C 484,186 498,162 522,196
+                         C 546,212 546,96 574,92
+                         C 602,88 606,210 632,214
+                         C 658,218 668,160 680,142"
+                      stroke="#DC2626" stroke-width="8" fill="none" stroke-linecap="round"/>
+                <path d="M 484,248
+                         C 484,230 484,210 484,198
+                         C 484,186 498,162 522,196
+                         C 546,212 546,96 574,92
+                         C 602,88 606,210 632,214
+                         C 658,218 668,160 680,142"
+                      stroke="#FCA5A5" stroke-width="2" fill="none"
+                      stroke-dasharray="6,5" class="blood-flow"/>
+
+                <!-- 1e. Venule toward renal vein -->
+                <path d="M 680,142 C 698,118 726,90 752,62 C 762,50 768,40 770,32"
+                      stroke="#DC2626" stroke-width="10" fill="none" stroke-linecap="round"/>
+                <path d="M 680,142 C 698,118 726,90 752,62 C 762,50 768,40 770,32"
+                      stroke="#FCA5A5" stroke-width="2.5" fill="none"
+                      stroke-dasharray="7,5" class="blood-flow"/>
+
+                <!-- ════════════════════════
+                     LAYER 2 — BOWMAN'S CAPSULE
+                     ════════════════════════ -->
+                <ellipse cx="132" cy="196" rx="46" ry="42"
+                         fill="rgba(217,119,6,0.05)" stroke="#B45309" stroke-width="2.5"/>
+
+                <!-- ════════════════════════
+                     LAYER 2b — GLOMERULUS
+                     ════════════════════════ -->
+                <path d="M 118,205 C 112,195 108,185 114,175
+                               C 120,165 130,165 136,173
+                               C 142,181 142,194 136,203
+                               C 130,212 118,210 114,200
+                               C 110,190 114,179 122,177
+                               C 130,175 138,179 140,191"
+                      stroke="#EF4444" stroke-width="4" fill="none" stroke-linecap="round"/>
+
+                <!-- ════════════════════════
+                     LAYER 3 — TUBULE PATHS
+                     ════════════════════════ -->
+
+                <!-- PCT (2 humps) -->
+                <path id="pct-tube"
+                      d="M 178,196
+                         C 192,196 202,88 230,88
+                         C 258,88 268,196 292,196
+                         C 316,196 326,88 354,88
+                         C 382,88 390,196 404,196
+                         L 404,248"
+                      stroke="#D97706" stroke-width="9" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+
+                <!-- Loop descending limb -->
+                <path d="M 404,248 L 404,492"
+                      stroke="#D97706" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+                <!-- Loop U-turn bottom -->
+                <path d="M 404,492 C 404,510 464,510 464,492"
+                      stroke="#D97706" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+                <!-- Loop ascending limb -->
+                <path d="M 464,492 L 464,248"
+                      stroke="#D97706" stroke-width="8" fill="none" stroke-linecap="round"/>
+
+                <!-- DCT (2 humps) -->
+                <path id="dct-tube"
+                      d="M 464,248 L 464,196
+                         C 478,196 488,88 516,88
+                         C 544,88 554,196 578,196
+                         C 602,196 612,88 640,88
+                         C 668,88 676,168 682,186"
+                      stroke="#D97706" stroke-width="9" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+
+                <!-- DCT → CD connector -->
+                <path d="M 682,186 C 692,172 702,148 718,144"
+                      stroke="#D97706" stroke-width="9" fill="none" stroke-linecap="round"/>
+
+                <!-- Collecting Duct -->
+                <path id="cd-tube"
+                      d="M 718,36 L 718,514"
+                      stroke="#D97706" stroke-width="13" fill="none" stroke-linecap="round"/>
+
+                <!-- ════════════════════════
+                     LAYER 4 — FLOW ARROWS
+                     ════════════════════════ -->
+                <path d="M 224,82 L 234,88 L 224,94 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 348,82 L 358,88 L 348,94 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 398,215 L 404,227 L 410,215 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 398,370 L 404,382 L 410,370 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 428,503 L 438,510 L 428,517 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 458,382 L 464,370 L 470,382 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 510,82 L 520,88 L 510,94 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 634,82 L 644,88 L 634,94 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 712,195 L 718,207 L 724,195 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 712,360 L 718,372 L 724,360 Z" fill="#92400E" opacity="0.85"/>
+                <path d="M 712,460 L 718,472 L 724,460 Z" fill="#92400E" opacity="0.85"/>
+
+                <!-- ════════════════════════
+                     LAYER 5 — PCT WATER MOLECULES (SVG-native animation)
+                     ════════════════════════ -->
+                <g>
+                    <animateTransform attributeName="transform" type="translate"
+                        values="292,196; 292,106" dur="2.6s" repeatCount="indefinite" calcMode="linear"/>
+                    <circle r="5.5" fill="#3B82F6">
+                        <animate attributeName="opacity" values="0;1;1;0"
+                            keyTimes="0;0.1;0.82;1" dur="2.6s" repeatCount="indefinite"/>
+                    </circle>
+                    <text x="8" y="4" font-size="8" fill="#1D4ED8" font-weight="bold">H₂O
+                        <animate attributeName="opacity" values="0;1;1;0"
+                            keyTimes="0;0.1;0.82;1" dur="2.6s" repeatCount="indefinite"/>
+                    </text>
+                </g>
+                <g>
+                    <animateTransform attributeName="transform" type="translate"
+                        values="354,88; 354,214" dur="2.6s" begin="1.3s" repeatCount="indefinite" calcMode="linear"/>
+                    <circle r="5.5" fill="#3B82F6">
+                        <animate attributeName="opacity" values="0;1;1;0"
+                            keyTimes="0;0.1;0.82;1" dur="2.6s" begin="1.3s" repeatCount="indefinite"/>
+                    </circle>
+                    <text x="8" y="4" font-size="8" fill="#1D4ED8" font-weight="bold">H₂O
+                        <animate attributeName="opacity" values="0;1;1;0"
+                            keyTimes="0;0.1;0.82;1" dur="2.6s" begin="1.3s" repeatCount="indefinite"/>
+                    </text>
+                </g>
+
+                <!-- ════════════════════════
+                     LAYER 6 — ANNOTATION LINES
+                     每條線：一端觸碰結構，一端延伸至附近文字
+                     線條互不交叉
+                     ════════════════════════ -->
+
+                <!-- 1. 腎小球：觸碰腎小球線圈頂部 (120,166) → 文字於囊體左上方 -->
+                <line x1="120" y1="166" x2="88" y2="150" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="20" y="152" fill="#DC2626" font-size="9.5" font-weight="bold">腎小球</text>
+
+                <!-- 2. 鮑曼氏囊：觸碰囊體左緣 (86,196) → 文字於囊體左側 -->
+                <line x1="86" y1="196" x2="66" y2="196" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="6" y="199" fill="#B45309" font-size="9.5" font-weight="bold">鮑曼氏囊</text>
+
+                <!-- 3. 輸出小動脈：觸碰輸出動脈 (155,166) → 文字於囊體右上 -->
+                <line x1="155" y1="166" x2="188" y2="143" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="148" y="140" fill="#DC2626" font-size="9.5" font-weight="bold">輸出小動脈</text>
+
+                <!-- 4. 圍管微血管：觸碰PCT微血管起點 (205,158) → 文字於其右上 -->
+                <line x1="205" y1="158" x2="225" y2="136" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="224" y="133" fill="#DC2626" font-size="9.5" font-weight="bold">圍管微血管</text>
+
+                <!-- 5. 輸入小動脈：觸碰輸入動脈路徑 (68,370) → 文字於其右方空白處 -->
+                <line x1="68" y1="370" x2="92" y2="362" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="94" y="360" fill="#DC2626" font-size="9.5" font-weight="bold">輸入小動脈</text>
+                <text x="94" y="372" fill="#6B7280" font-size="8">（來自腎動脈）</text>
+
+                <!-- 6. 近曲小管：觸碰PCT第1峰頂 (230,88) → 文字於峰頂上方 -->
+                <line x1="230" y1="88" x2="214" y2="62" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="160" y="58" fill="#D97706" font-size="9.5" font-weight="bold">近曲小管</text>
+                <text x="160" y="70" fill="#6B7280" font-size="7.5">葡萄糖、鹽重吸收</text>
+
+                <!-- 7. 遠曲小管 ★ADH：觸碰DCT第1峰頂 (516,88) → 文字於峰頂上方 -->
+                <line x1="516" y1="88" x2="512" y2="58" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="458" y="55" fill="#D97706" font-size="9.5" font-weight="bold">遠曲小管 ★ADH</text>
+                <text x="458" y="67" fill="#6B7280" font-size="7.5">ADH↑：水重吸收↑</text>
+
+                <!-- 8. 往腎靜脈：觸碰靜脈路徑 (750,64) → 文字於其左上 -->
+                <line x1="750" y1="64" x2="724" y2="44" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="688" y="42" fill="#DC2626" font-size="9.5" font-weight="bold">往腎靜脈</text>
+
+                <!-- 9. 集尿管 ★ADH：觸碰集尿管右緣 (725,300) → 文字於右側 -->
+                <line x1="725" y1="300" x2="742" y2="296" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="744" y="292" fill="#D97706" font-size="9" font-weight="bold">集尿管</text>
+                <text x="744" y="304" fill="#2563EB" font-size="8.5">★ ADH</text>
+
+                <!-- 10. 直小血管：觸碰上行直小血管右緣 (488,375) → 文字於右側 -->
+                <line x1="488" y1="375" x2="504" y2="375" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="506" y="379" fill="#DC2626" font-size="9.5" font-weight="bold">直小血管</text>
+
+                <!-- 11. 亨利氏套：觸碰管袢底部中心 (434,506) → 文字於左下方空白區 -->
+                <line x1="434" y1="506" x2="300" y2="513" stroke="#94A3B8" stroke-width="1.2"/>
+                <text x="216" y="517" fill="#D97706" font-size="9.5" font-weight="bold">亨利氏套</text>
+
+                <!-- 超濾小標注 (近囊體下方，無需連線) -->
+                <text x="150" y="238" fill="#059669" font-size="8" font-weight="bold">超濾↓</text>
+
+                <!-- 集尿管末端 -->
+                <text x="724" y="512" fill="#92400E" font-size="8.5" font-weight="bold">↓往腎盂</text>
+
+                <!-- ════════════════════════
+                     LEGEND BOX (右下髓質空白區)
+                     ════════════════════════ -->
+                <rect x="526" y="382" width="180" height="130" rx="6"
+                      fill="white" stroke="#E2E8F0" stroke-width="1.2"/>
+                <text x="534" y="397" fill="#1E293B" font-size="12" font-weight="bold">圖 例</text>
+                <rect x="534" y="403" width="14" height="5" rx="2" fill="#D97706"/>
+                <text x="551" y="409" fill="#92400E" font-size="12">腎小管（PCT / DCT / 集尿管）</text>
+                <rect x="534" y="414" width="14" height="5" rx="2" fill="#DC2626"/>
+                <text x="551" y="420" fill="#DC2626" font-size="12">血管（動脈・微血管・靜脈）</text>
+                <circle cx="541" cy="430" r="4.5" fill="#3B82F6"/>
+                <text x="551" y="434" fill="#1D4ED8" font-size="12">水分子（PCT 重吸收）</text>
+                <circle cx="541" cy="444" r="4.5" fill="#60A5FA"/>
+                <text x="551" y="448" fill="#2563EB" font-size="12">水分子（ADH 依賴重吸收）</text>
+                <path d="M 534,456 L 541,460 L 534,464 Z" fill="#92400E"/>
+                <text x="551" y="463" fill="#92400E" font-size="12">管內液體流動方向</text>
+                <text x="534" y="477" fill="#EF4444" font-size="10">酒精→抑制垂體→ADH↓→大量稀釋尿</text>
+                <text x="534" y="488" fill="#B45309" font-size="10">咖啡因→腎小球濾過率↑→尿量↑</text>
+
+            </svg>
+        </div>
+    </div>
+</div>
+
+<script>
+const inputWater    = document.getElementById('input-water');
+const inputSweat    = document.getElementById('input-sweat');
+const inputCaffeine = document.getElementById('input-caffeine');
+const inputAlcohol  = document.getElementById('input-alcohol');
+const valWater      = document.getElementById('val-water');
+const valSweat      = document.getElementById('val-sweat');
+const valCaffeine   = document.getElementById('val-caffeine');
+const valAlcohol    = document.getElementById('val-alcohol');
+const statusWp      = document.getElementById('status-wp');
+const barWp         = document.getElementById('bar-wp');
+const boxOsmo       = document.getElementById('box-osmoreceptor');
+const txtOsmo       = document.getElementById('text-osmoreceptor');
+const valAdh        = document.getElementById('val-adh');
+const barAdh        = document.getElementById('bar-adh');
+const urineFluid    = document.getElementById('urine-fluid');
+const urineVolTxt   = document.getElementById('urine-volume-txt');
+const urineConcTxt  = document.getElementById('urine-conc-txt');
+const explainBox    = document.getElementById('explanation-box');
+const dctTube       = document.getElementById('dct-tube');
+const cdTube        = document.getElementById('cd-tube');
+const microSvg      = document.getElementById('micro-svg');
+
+const sweatMap   = ["正常狀態","運動出汗","高溫多汗 🔥"];
+const cafMap     = ["無","輕度 ☕","高度 ☕☕"];
+const alcMap     = ["無","微醺 🍺","酩酊 🍺🍺"];
+
+/* ADH-dependent water molecules */
+const adhMolDefs = [
+    { x0:516, y0:88,  ex:  0, ey:110, dur:2300, delay:   0 },
+    { x0:640, y0:88,  ex:  0, ey:126, dur:2300, delay: 767 },
+    { x0:712, y0:248, ex:-26, ey:  0, dur:2300, delay:   0 },
+    { x0:712, y0:365, ex:-26, ey:  0, dur:2300, delay: 767 },
+    { x0:712, y0:460, ex:-26, ey:  0, dur:2300, delay:1534 },
+];
+let adhActive   = false;
+let animStartTs = null;
+const ns = 'http://www.w3.org/2000/svg';
+const adhElems = adhMolDefs.map(() => {
+    const g = document.createElementNS(ns, 'g');
+    g.setAttribute('opacity','0');
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('r','5.5'); c.setAttribute('fill','#60A5FA');
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x','8'); t.setAttribute('y','4');
+    t.setAttribute('font-size','8'); t.setAttribute('fill','#1D4ED8');
+    t.setAttribute('font-weight','bold'); t.textContent='H₂O';
+    g.appendChild(c); g.appendChild(t);
+    microSvg.appendChild(g);
+    return g;
+});
+function animFrame(ts) {
+    if (!animStartTs) animStartTs = ts;
+    const elapsed = ts - animStartTs;
+    adhMolDefs.forEach((m, i) => {
+        const el = adhElems[i];
+        if (!adhActive) { el.setAttribute('opacity','0'); return; }
+        const cycle = ((elapsed + m.delay) % m.dur + m.dur) % m.dur;
+        const prog  = cycle / m.dur;
+        let opacity;
+        if      (prog < 0.10) opacity = prog / 0.10;
+        else if (prog > 0.80) opacity = (1 - prog) / 0.20;
+        else                  opacity = 1;
+        el.setAttribute('transform', `translate(${m.x0 + m.ex * prog},${m.y0 + m.ey * prog})`);
+        el.setAttribute('opacity', opacity.toFixed(3));
+    });
+    requestAnimationFrame(animFrame);
+}
+requestAnimationFrame(animFrame);
+
+function switchTab(tab) {
+    const macroTab = document.getElementById('tab-macro');
+    const microTab = document.getElementById('tab-micro');
+    const macroBtn = document.getElementById('tab-macro-btn');
+    const microBtn = document.getElementById('tab-micro-btn');
+    const on  = "flex-1 py-2 px-2 text-[11px] font-bold text-blue-600 border-b-2 border-blue-600 transition-all focus:outline-none";
+    const off = "flex-1 py-2 px-2 text-[11px] font-bold text-slate-500 hover:text-slate-700 transition-all focus:outline-none";
+    if (tab === 'macro') {
+        macroTab.style.display = 'flex'; microTab.style.display = 'none';
+        macroBtn.className = on; microBtn.className = off;
+    } else {
+        macroTab.style.display = 'none'; microTab.style.display = 'flex';
+        macroBtn.className = off; microBtn.className = on;
+    }
+}
+
+function updateSimulation() {
+    const water    = parseFloat(inputWater.value);
+    const sweat    = parseInt(inputSweat.value);
+    const caffeine = parseInt(inputCaffeine.value);
+    const alcohol  = parseInt(inputAlcohol.value);
+    valWater.innerText    = `${water.toFixed(1)} 升`;
+    valSweat.innerText    = sweatMap[sweat];
+    valCaffeine.innerText = cafMap[caffeine];
+    valAlcohol.innerText  = alcMap[alcohol];
+
+    let wp = 100 + (water - 1.2)*35 - sweat*25 - caffeine*3 - alcohol*5;
+    wp = Math.max(20, Math.min(180, wp));
+    barWp.style.width = `${((wp-20)/160)*100}%`;
+
+    const baseClass = "p-1.5 rounded-lg mb-2 text-[11px] font-medium transition-all duration-300 flex-shrink-0 ";
+    if (wp < 85) {
+        statusWp.className = "text-xs font-bold text-red-600";
+        statusWp.innerText = `偏低（脫水 ${Math.round(wp)}）`;
+        barWp.className    = "h-3.5 bg-red-500 transition-all duration-500";
+        boxOsmo.className  = baseClass + "bg-red-50 text-red-700 border border-red-200 animate-pulse";
+        txtOsmo.innerText  = "刺激！偵測到細胞外液水勢過低（滲透壓升高）。";
+    } else if (wp > 115) {
+        statusWp.className = "text-xs font-bold text-blue-500";
+        statusWp.innerText = `過高（水份過剩 ${Math.round(wp)}）`;
+        barWp.className    = "h-3.5 bg-cyan-400 transition-all duration-500";
+        boxOsmo.className  = baseClass + "bg-blue-50 text-blue-700 border border-blue-200";
+        txtOsmo.innerText  = "抑制！偵測到細胞外液水勢過高（滲透壓降低）。";
+    } else {
+        statusWp.className = "text-xs font-bold text-emerald-600";
+        statusWp.innerText = `正常（${Math.round(wp)}）`;
+        barWp.className    = "h-3.5 bg-emerald-500 transition-all duration-500";
+        boxOsmo.className  = baseClass + "bg-emerald-50 text-emerald-700 border border-emerald-200";
+        txtOsmo.innerText  = "正常。細胞外液滲透壓維持穩態。";
+    }
+
+    let baseAdh = wp < 110 ? (110 - wp)*1.4 : 5;
+    baseAdh = Math.max(5, Math.min(100, baseAdh));
+    const alcMult  = alcohol===1 ? 0.4 : alcohol===2 ? 0.15 : 1.0;
+    const finalAdh = baseAdh * alcMult;
+    valAdh.innerText   = `${Math.round(finalAdh)}%`;
+    barAdh.style.width = `${finalAdh}%`;
+
+    adhActive = finalAdh > 40;
+    if (adhActive) {
+        dctTube.setAttribute('stroke','#3B82F6');
+        cdTube.setAttribute('stroke','#3B82F6');
+        dctTube.classList.add('adh-glow');
+        cdTube.classList.add('adh-glow');
+    } else {
+        dctTube.setAttribute('stroke','#D97706');
+        cdTube.setAttribute('stroke','#D97706');
+        dctTube.classList.remove('adh-glow');
+        cdTube.classList.remove('adh-glow');
+    }
+
+    const rr  = finalAdh / 100;
+    const raw = (3.5 - rr*2.8) * (1 + caffeine*0.3) * (water/1.2);
+    const bh  = Math.max(10, Math.min(98, raw*25));
+    urineFluid.style.height = `${bh}%`;
+    if (bh < 25) {
+        urineFluid.style.backgroundColor = "#E6A23C";
+        urineVolTxt.innerText  = "極少（濃縮）";
+        urineConcTxt.innerText = "極高";
+    } else if (bh < 55) {
+        urineFluid.style.backgroundColor = "#FCD34D";
+        urineVolTxt.innerText  = "正常";
+        urineConcTxt.innerText = "正常";
+    } else {
+        urineFluid.style.backgroundColor = bh>75 ? "#FEFCE8" : "#FAF0A3";
+        urineVolTxt.innerText  = "大量（稀釋）";
+        urineConcTxt.innerText = "極低";
+    }
+
+    let html = "";
+    if (alcohol > 0 && wp < 85) {
+        html = `<strong class="text-red-600">🚨 脫水危險：</strong>排汗使血液水勢極低，本應大量釋放ADH，但<span class="bg-purple-100 px-1 font-bold text-purple-700 rounded">酒精抑制垂體</span>，ADH僅剩${Math.round(finalAdh)}%，大量稀釋尿排出，<strong>持續脫水！</strong>`;
+    } else if (wp < 85) {
+        html = `<strong class="text-amber-600">⚠️ 負反饋代償：</strong>血液水勢偏低，下丘腦滲壓感受器活化，<strong class="text-blue-600">垂體後葉大量釋放ADH（${Math.round(finalAdh)}%）</strong>，遠曲小管與集尿管水通道蛋白開啟，排出少量濃縮尿。`;
+    } else if (wp > 115) {
+        html = `<strong class="text-cyan-600">🌊 排除多餘水分：</strong>大量飲水使水勢升高，<strong class="text-slate-500">ADH分泌抑制</strong>，集尿管透性降低，排出大量稀釋尿液恢復穩態。`;
+    } else {
+        html = `<strong class="text-emerald-600">✅ 生理穩態正常：</strong>水分攝取與流失平衡，ADH分泌適中（${Math.round(finalAdh)}%），腎小管正常水分重吸收，尿液量與濃度均正常。`;
+    }
+    if (caffeine > 0) html += ` <span class="text-amber-700">（咖啡因：腎小球濾過率↑，尿量增加。）</span>`;
+    explainBox.innerHTML = html;
+}
+
+['input-water','input-sweat','input-caffeine','input-alcohol'].forEach(id =>
+    document.getElementById(id).addEventListener('input', updateSimulation)
+);
+window.onload = updateSimulation;
+</script>
+</body>
+</html>

@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>人體體溫調節機制互動模擬器</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500;700&family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; }
+html, body { font-family: 'IBM Plex Sans', 'Noto Sans TC', system-ui, sans-serif; height:100%; overflow:hidden; background:#f4f6f9; color:#1a2332; }
+.glass { background:#ffffff; border:1px solid #d4dbe6; }
+input[type=range] { -webkit-appearance:none; appearance:none; cursor:pointer; height:3px; background:#d4dbe6; border-radius:1px; outline:none; display:block; width:100%; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:13px; height:13px; border-radius:50%; border:1px solid #d4dbe6; cursor:pointer; transition: transform 0.1s ease; }
+input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.2); }
+input[type=range].c-orange::-webkit-slider-thumb { background:#e65100; }
+input[type=range].c-blue::-webkit-slider-thumb   { background:#1976d2; }
+input[type=range].c-cyan::-webkit-slider-thumb   { background:#1976d2; }
+input[type=range].c-green::-webkit-slider-thumb  { background:#2e7d32; }
+input[type=range].c-rose::-webkit-slider-thumb   { background:#c62828; }
+@keyframes pulseHot  { 0%,100%{ filter:drop-shadow(0 0 4px rgba(198,40,40,.6)); } 50%{ filter:drop-shadow(0 0 12px rgba(198,40,40,.9)); } }
+@keyframes pulseCold { 0%,100%{ filter:drop-shadow(0 0 1px rgba(25,118,210,.1)); } 50%{ filter:drop-shadow(0 0 3px rgba(25,118,210,.2)); } }
+.vessel-hot  { animation:pulseHot  .85s ease-in-out infinite; }
+.vessel-cold { animation:pulseCold 3.5s ease-in-out infinite; }
+@keyframes flowDash { 0%{ stroke-dashoffset:24; } 100%{ stroke-dashoffset:0; } }
+.blood-flow      { stroke-dasharray:8,5; animation:flowDash .7s  linear infinite; }
+.blood-flow-slow { stroke-dasharray:8,8; animation:flowDash 4.5s linear infinite; }
+@keyframes arrowFlow { 0%{ stroke-dashoffset:20; } 100%{ stroke-dashoffset:0; } }
+.nf-arrow       { stroke-dasharray:7,5; animation:arrowFlow .75s linear infinite; }
+.nf-arrow-cold  { stroke:#1976d2; }
+.nf-arrow-hot   { stroke:#c62828; }
+.nf-arrow-green { stroke:#2e7d32; }
+@keyframes glowPulse { 0%,100%{ opacity:.6; } 50%{ opacity:1; } }
+.glow-pulse { animation:glowPulse .95s ease-in-out infinite; }
+@keyframes capPulse { 0%,100%{ opacity:.75; } 50%{ opacity:1; } }
+.cap-pulse { animation:capPulse 1.1s ease-in-out infinite; }
+@keyframes flushShimmer  { 0%,100%{ opacity:.15; } 50%{ opacity:.35; } }
+.flush-shimmer { animation:flushShimmer 1.4s ease-in-out infinite; }
+@keyframes pallorShimmer { 0%,100%{ opacity:.10; } 50%{ opacity:.25; } }
+.pallor-shimmer { animation:pallorShimmer 2.2s ease-in-out infinite; }
+@keyframes shiverAnim { 0%,100%{transform:translateX(0)rotate(0deg);}20%{transform:translateX(-1px)rotate(-.4deg);}40%{transform:translateX(1px)rotate(.4deg);}60%{transform:translateX(-1px)rotate(-.3deg);}80%{transform:translateX(1px)rotate(.3deg);} }
+.shiver { animation:shiverAnim .11s linear infinite; }
+@keyframes flashRed  { 0%,100%{ background-color:rgba(198,40,40,.15); } 50%{ background-color:rgba(198,40,40,.35); } }
+.flash-red  { animation:flashRed  .8s ease-in-out infinite; }
+@keyframes flashBlue { 0%,100%{ background-color:rgba(25,118,210,.15); } 50%{ background-color:rgba(25,118,210,.35); } }
+.flash-blue { animation:flashBlue .8s ease-in-out infinite; }
+@keyframes glandPulse { 0%,100%{ opacity:.4; } 50%{ opacity:.9; } }
+.gland-pulse-fast { animation:glandPulse .6s  ease-in-out infinite; }
+.gland-pulse-slow { animation:glandPulse 2.5s ease-in-out infinite; }
+::-webkit-scrollbar { width:4px; } ::-webkit-scrollbar-track { background:transparent; } ::-webkit-scrollbar-thumb { background:#8a9ab0; border-radius:2px; }
+
+.monospace-metrics { font-family: 'IBM Plex Mono', Monaco, monospace; }
+</style>
+</head>
+<body class="flex flex-col" style="height:100dvh; min-height:560px; padding:6px 8px;">
+
+<header class="flex-shrink-0 flex items-center justify-between border-b border-[#d4dbe6]" style="margin-bottom:6px; padding-bottom:6px;">
+  <div>
+    <h1 class="font-bold text-[#1a2332] flex items-center gap-1.5" style="font-size:14px; letter-spacing: -0.025em;">
+      <span>🌡️</span>人體體溫調節機制模擬器 - HinHin Biology
+      <span class="font-mono font-medium text-[#4a5a70] bg-[#e4e9f0] border border-[#d4dbe6] px-1 rounded" style="font-size:8px; margin-left:6px;">負反饋調節</span>
+    </h1>
+    <p class="text-[#4a5a70]" style="font-size:8px; margin-top:1px;">高中生物學 · 體溫調節 / 皮膚結構 / 下丘腦負反饋路徑</p>
+  </div>
+  <button id="btn-reset" class="bg-white hover:bg-[#f4f6f9] text-[#c62828] font-bold rounded border border-[#c62828] transition-colors flex-shrink-0" style="font-size:10px; padding:4px 10px; border-radius:4px;">🔄 重設</button>
+</header>
+
+<div class="flex-1 min-h-0 grid" style="gap:6px; grid-template-columns:1fr 1fr;">
+
+  <div class="flex flex-col min-h-0 overflow-y-auto" style="gap:6px;">
+
+    <div id="gauge-row" class="glass rounded border border-[#d4dbe6] flex-shrink-0" style="padding:6px 10px; border-radius:4px;"></div>
+
+    <div class="glass rounded flex-shrink-0 flex flex-col overflow-hidden" style="height:200px; padding:6px; border-radius:4px; border:1px solid #d4dbe6;">
+      <h2 class="font-bold text-[#1a2332] flex-shrink-0" style="font-size:9px; border-bottom:1px solid #d4dbe6; padding-bottom:4px; margin-bottom:4px; text-transform: uppercase; letter-spacing: 0.05em;">
+        🧠 下丘腦體溫調節中樞 — 負反饋循環路徑圖
+      </h2>
+      <svg id="flowchart-svg" viewBox="0 0 500 238" class="flex-1 w-full min-h-0"
+           preserveAspectRatio="xMidYMid meet" style="font-family:'IBM Plex Sans', 'Noto Sans TC', sans-serif;">
+        <defs>
+          <marker id="arrowCold"  markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#1976d2"/></marker>
+          <marker id="arrowHot"   markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#c62828"/></marker>
+          <marker id="arrowGrey"  markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#4a5a70"/></marker>
+          <marker id="arrowGreen" markerWidth="7" markerHeight="7" refX="5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2e7d32"/></marker>
+        </defs>
+        <rect x="155" y="4" width="190" height="28" rx="4" fill="#ffffff" stroke="#1a2332" stroke-width="1.2"/>
+        <text x="250" y="15" text-anchor="middle" fill="#1a2332" font-size="9.5" font-weight="bold">體溫感應器</text>
+        <text x="250" y="25" text-anchor="middle" fill="#4a5a70" font-size="7.5" font-family="IBM Plex Mono">與調定點（37°C）比較</text>
+        <rect x="128" y="43" width="244" height="37" rx="4" fill="#ffffff" stroke="#1976d2" stroke-width="1.5"/>
+        <text x="250" y="56" text-anchor="middle" fill="#1976d2" font-size="10" font-weight="bold">下丘腦體溫調節中樞</text>
+        <text x="250" y="70" text-anchor="middle" fill="#4a5a70" font-size="7.5">偵測偏差，發出調節指令</text>
+        <line x1="250" y1="32" x2="250" y2="42" stroke="#4a5a70" stroke-width="1.2" marker-end="url(#arrowGrey)"/>
+        <path id="arrow-to-heatgain" d="M170,80 C130,97 88,108 65,120" fill="none" stroke="#4a5a70" stroke-width="1.2" marker-end="url(#arrowGrey)"/>
+        <path id="arrow-to-heatloss" d="M330,80 C370,97 412,108 435,120" fill="none" stroke="#4a5a70" stroke-width="1.2" marker-end="url(#arrowGrey)"/>
+        <rect id="box-heatgain" x="4"   y="121" width="124" height="28" rx="4" fill="#ffffff" stroke="#4a5a70" stroke-width="1.2"/>
+        <text x="66"  y="134" text-anchor="middle" fill="#c62828" font-size="9.5" font-weight="bold">產熱中樞</text>
+        <text x="66"  y="144" text-anchor="middle" fill="#4a5a70" font-size="7">受冷激活</text>
+        <rect id="box-heatloss" x="372" y="121" width="124" height="28" rx="4" fill="#ffffff" stroke="#4a5a70" stroke-width="1.2"/>
+        <text x="434" y="134" text-anchor="middle" fill="#1976d2" font-size="9.5" font-weight="bold">散熱中樞</text>
+        <text x="434" y="144" text-anchor="middle" fill="#4a5a70" font-size="7">受熱激活</text>
+        <line id="arrow-hg1" x1="35"  y1="149" x2="24"  y2="168" stroke="#4a5a70" stroke-width="1" marker-end="url(#arrowGrey)"/>
+        <line id="arrow-hg2" x1="66"  y1="149" x2="66"  y2="168" stroke="#4a5a70" stroke-width="1" marker-end="url(#arrowGrey)"/>
+        <line id="arrow-hg3" x1="97"  y1="149" x2="108" y2="168" stroke="#4a5a70" stroke-width="1" marker-end="url(#arrowGrey)"/>
+        <line id="arrow-hl1" x1="403" y1="149" x2="392" y2="168" stroke="#4a5a70" stroke-width="1" marker-end="url(#arrowGrey)"/>
+        <line id="arrow-hl2" x1="434" y1="149" x2="434" y2="168" stroke="#4a5a70" stroke-width="1" marker-end="url(#arrowGrey)"/>
+        <line id="arrow-hl3" x1="465" y1="149" x2="476" y2="168" stroke="#4a5a70" stroke-width="1" marker-end="url(#arrowGrey)"/>
+        <text x="24"  y="177" text-anchor="middle" fill="#1a2332" font-size="8" font-weight="bold">血管收縮</text>
+        <text x="24"  y="186" text-anchor="middle" fill="#4a5a70" font-size="6.5">↑ 保溫</text>
+        <text x="66"  y="177" text-anchor="middle" fill="#1a2332" font-size="8" font-weight="bold">肌肉顫抖</text>
+        <text x="66"  y="186" text-anchor="middle" fill="#4a5a70" font-size="6.5">↑ 產熱</text>
+        <text x="110" y="177" text-anchor="middle" fill="#1a2332" font-size="8" font-weight="bold">豎毛肌收縮</text>
+        <text x="110" y="186" text-anchor="middle" fill="#4a5a70" font-size="6.5">↑ 隔熱</text>
+        <text x="390" y="177" text-anchor="middle" fill="#1a2332" font-size="8" font-weight="bold">血管舒張</text>
+        <text x="390" y="186" text-anchor="middle" fill="#4a5a70" font-size="6.5">↑ 散熱</text>
+        <text x="434" y="177" text-anchor="middle" fill="#1a2332" font-size="8" font-weight="bold">排汗蒸發</text>
+        <text x="434" y="186" text-anchor="middle" fill="#4a5a70" font-size="6.5">↑ 散熱</text>
+        <text x="478" y="177" text-anchor="middle" fill="#1a2332" font-size="8" font-weight="bold">豎毛肌放鬆</text>
+        <text x="478" y="186" text-anchor="middle" fill="#4a5a70" font-size="6.5">↓ 隔熱</text>
+        <path id="loop-left"  d="M8,191 C2,178 2,78 2,42 C2,18 70,10 153,14"  fill="none" stroke="#d4dbe6" stroke-width="1.5" marker-end="url(#arrowGrey)"/>
+        <path id="loop-right" d="M494,191 C498,178 498,78 498,42 C498,18 432,10 374,14" fill="none" stroke="#d4dbe6" stroke-width="1.5" marker-end="url(#arrowGrey)"/>
+        <text id="lbl-left"  x="66"  y="194" text-anchor="middle" fill="#8a9ab0" font-size="7" font-weight="bold">↑ 體溫↑ 回饋感應器</text>
+        <text id="lbl-right" x="434" y="194" text-anchor="middle" fill="#8a9ab0" font-size="7" font-weight="bold">體溫↓ 回饋感應器 ↑</text>
+        <text id="result-hg"  x="66"  y="204" text-anchor="middle" fill="#2e7d32" font-size="8" font-weight="bold" opacity="0">→ 體溫回升</text>
+        <text id="result-hl"  x="434" y="204" text-anchor="middle" fill="#2e7d32" font-size="8" font-weight="bold" opacity="0">→ 體溫下降</text>
+        <rect x="94" y="210" width="312" height="16" rx="4" fill="#f4f6f9" stroke="#e65100" stroke-width="1"/>
+        <text id="feedback-label" x="250" y="221" text-anchor="middle" fill="#e65100" font-size="8.5" font-weight="bold">負反饋循環 → 體溫維持於調定點</text>
+        <rect id="hypothermia-warning" x="96" y="228" width="308" height="10" rx="2" fill="#ffffff" stroke="#c62828" stroke-width="1" opacity="0"/>
+        <text id="hypothermia-warning-text" x="250" y="236" text-anchor="middle" fill="#c62828" font-size="7" font-weight="bold" opacity="0">⚠️ 負反饋機制已無法維持熱平衡 — 持續失溫！</text>
+      </svg>
+    </div>
+
+    <div id="sliders-panel" class="glass rounded border border-[#d4dbe6]" style="padding:10px 12px; border-radius:4px;"></div>
+
+    <div class="glass rounded border border-[#d4dbe6]" style="padding:8px 11px; border-radius:4px;">
+      <p class="font-bold" style="font-size:10px; color:#1a2332; margin-bottom:3px;">📘 學習提示</p>
+      <p style="font-size:8.5px; color:#4a5a70; line-height:1.6;">
+        拖動滑桿，觀察皮膚血管、汗腺、豎毛肌、顫抖及甲狀腺素如何透過
+        <strong style="color:#e65100;">負反饋</strong>機制維持核心體溫於
+        <strong style="color:#2e7d32; font-family:'IBM Plex Mono'; font-weight:700;">37°C</strong> 調定點。
+        升高環境溫度 → 散熱中樞啟動；降低溫度 → 產熱中樞啟動。
+      </p>
+      <p style="font-size:8.5px; color:#c62828; font-weight:700; margin-top:3px;">
+        ⚠️ 極低溫（≤−5°C）配合強風和輕薄衣物時，負反饋機制無法維持熱平衡，體溫將持續下降。
+      </p>
+    </div>
+
+  </div><div class="flex flex-col min-h-0 overflow-y-auto" style="gap:6px;">
+
+    <div class="glass rounded flex-shrink-0 flex flex-col overflow-hidden" style="height:218px; padding:6px; border-radius:4px; border:1px solid #d4dbe6;">
+      <h2 class="font-bold text-[#1a2332] flex-shrink-0" style="font-size:9px; border-bottom:1px solid #d4dbe6; padding-bottom:4px; margin-bottom:4px; text-transform: uppercase; letter-spacing: 0.05em;">
+        🔬 皮膚橫切面 — 動態生理反應
+      </h2>
+      <svg id="skin-svg" viewBox="0 0 420 215" class="flex-1 w-full min-h-0"
+           preserveAspectRatio="xMidYMid meet" style="font-family:'IBM Plex Sans', 'Noto Sans TC', sans-serif;">
+        <defs><clipPath id="skinClip"><rect x="0" y="0" width="420" height="215"/></clipPath></defs>
+        <g clip-path="url(#skinClip)">
+          <rect x="0" y="0" width="420" height="215" fill="#fde8d0"/>
+          <path d="M0,0 L420,0 L420,208 C368,202 330,214 280,208 C230,202 185,213 140,207 C95,201 55,212 0,207 Z" fill="#f8c39a"/>
+          <path id="epidermis-path" d="M0,0 L420,0 L420,35 C368,31 330,40 280,35 C230,30 185,39 140,34 C95,29 55,38 0,34 Z" fill="#fcd9b6" stroke="#e8b888" stroke-width="1.5"/>
+          <path id="skin-color-overlay" d="M0,0 L420,0 L420,208 C368,202 330,214 280,208 C230,202 185,213 140,207 C95,201 55,212 0,207 Z" fill="#c62828" opacity="0"/>
+          <rect x="0" y="207" width="420" height="8" fill="#f5c280" opacity="0.45"/>
+          <g fill="#fef3d6" stroke="#f5dba8" stroke-width="1" opacity="0.6">
+            <circle cx="28"  cy="230" r="11"/><circle cx="78"  cy="226" r="12"/>
+            <circle cx="156" cy="232" r="11"/><circle cx="238" cy="226" r="12"/>
+            <circle cx="320" cy="245" r="9"/> <circle cx="376" cy="240" r="10"/>
+          </g>
+          <path d="M0,210 C50,204 100,216 155,210 C210,204 260,215 315,209 C360,204 390,212 420,208" fill="none" stroke="#b91c1c" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+          <path id="erector-muscle" d="M160,76 C148,60 136,48 126,36" fill="none" stroke="#e08a8a" stroke-width="6" stroke-linecap="round"/>
+          <ellipse cx="196" cy="76" rx="16" ry="12" fill="#fcd9a0" stroke="#e0ad6a" stroke-width="1.5"/>
+          <circle cx="190" cy="72" r="5" fill="#fbe2b8" stroke="#e0ad6a" stroke-width="1"/>
+          <circle cx="201" cy="73" r="5" fill="#fbe2b8" stroke="#e0ad6a" stroke-width="1"/>
+          <circle cx="196" cy="82" r="5" fill="#fbe2b8" stroke="#e0ad6a" stroke-width="1"/>
+          <path id="follicle-canal" d="M172,208 C170,175 167,142 165,114 C163,92 165,76 170,62" fill="none" stroke="#3f2a18" stroke-width="8" stroke-linecap="round"/>
+          <ellipse id="hair-bulb" cx="173" cy="210" rx="9" ry="11" fill="#2a1a0e"/>
+          <ellipse cx="173" cy="215" rx="3" ry="5" fill="#7c4a1e" opacity="0.6"/>
+          <path id="hair-shaft" fill="#2a1a0e" stroke="none"/>
+          <g id="goosebump-group" opacity="0">
+            <path d="M122,3 C124,-2 129,-2 131,3"  fill="none" stroke="#c8a07e" stroke-width="2.2"/>
+            <path d="M135,2 C137,-3 142,-3 144,2"  fill="none" stroke="#c8a07e" stroke-width="2.2"/>
+            <path d="M108,4 C110,-1 115,-1 117,4"  fill="none" stroke="#c8a07e" stroke-width="2"/>
+          </g>
+          <path id="arteriole-main" d="M178,210 C176,192 172,174 168,156 C164,140 162,124 165,108" fill="none" stroke="#7f1d1d" stroke-width="3" stroke-linecap="round"/>
+          <path id="arteriole-flow" d="M178,210 C176,192 172,174 168,156 C164,140 162,124 165,108" fill="none" stroke="#fecaca" stroke-width="1.5" class="blood-flow-slow" opacity="0.4"/>
+          <path id="cap-loop-main" d="M165,108 C160,90 158,72 161,56 C164,42 172,38 177,44 C182,50 182,66 176,80 C171,92 167,102 165,108" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" opacity="0.1"/>
+          <path id="cap-loop-flow" d="M165,108 C160,90 158,72 161,56 C164,42 172,38 177,44 C182,50 182,66 176,80 C171,92 167,102 165,108" fill="none" stroke="#fde8e8" stroke-width="1" class="blood-flow" opacity="0"/>
+          <path id="cap-loop-2" d="M197,210 C200,192 204,170 208,150 C212,132 214,116 210,102 C206,90 200,86 195,92 C190,98 190,112 195,124" fill="none" stroke="#c62828" stroke-width="2" stroke-linecap="round" opacity="0.08"/>
+          <path id="sweat-gland-path" d="M332,200 C325,208 325,220 333,225 C341,231 353,227 356,217 C359,207 350,198 339,201 C331,203 330,215 339,217" fill="none" stroke="#e65100" stroke-width="3.5" stroke-linecap="round"/>
+          <circle id="gact1" cx="333" cy="211" r="3" fill="#1976d2" opacity="0.3" class="gland-pulse-slow"/>
+          <circle id="gact2" cx="340" cy="218" r="3" fill="#1976d2" opacity="0.3" class="gland-pulse-slow"/>
+          <circle id="gact3" cx="348" cy="212" r="3" fill="#1976d2" opacity="0.3" class="gland-pulse-slow"/>
+          <path id="sweat-duct" d="M340,197 C338,160 336,95 334,34" fill="none" stroke="#c8a07e" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="334" cy="33" r="3" fill="#7c4a1e"/>
+          <g id="duct-moisture-group"></g>
+          <g id="sweat-drops"></g>
+          <g id="surface-water-drops"></g>
+
+          <rect x="348" y="96" width="68" height="60" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="382" y="107" text-anchor="middle" fill="#4a5a70" font-size="7" font-weight="bold">血管橫切面</text>
+          <circle id="vessel-outer" cx="382" cy="133" r="17" fill="none" stroke="#c62828" stroke-width="1.5"/>
+          <circle id="vessel-lumen" cx="382" cy="133" r="4"  fill="#c62828" opacity="0.9"/>
+          <text id="lumen-state" x="382" y="150" text-anchor="middle" fill="#4a5a70" font-size="7">收縮</text>
+          <text id="lumen-label" x="382" y="157" text-anchor="middle" fill="#c62828" font-size="7" font-weight="bold">管腔</text>
+
+          <rect id="sweat-evap-bg"   x="258" y="2" width="162" height="30" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0"/>
+          <text id="sweat-evap-line1" x="339" y="13" text-anchor="middle" fill="#1976d2"  font-size="8" font-weight="bold" opacity="0"/>
+          <text id="sweat-evap-line2" x="339" y="26" text-anchor="middle" fill="#4a5a70" font-size="7" opacity="0"/>
+
+          <rect x="2" y="2" width="82" height="22" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="6" y="12" fill="#1a2332" font-size="9" font-weight="bold">表皮層</text>
+          <text x="6" y="21" fill="#4a5a70" font-size="7.5">角質層 · 生發層</text>
+          <rect x="2" y="36" width="78" height="22" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="6" y="46" fill="#1a2332" font-size="9" font-weight="bold">真皮層</text>
+          <text x="6" y="55" fill="#4a5a70" font-size="7.5">含血管 · 腺體</text>
+          <rect x="2" y="66" width="98" height="22" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="6" y="76" fill="#1a2332" font-size="9" font-weight="bold">豎毛肌</text>
+          <text id="erector-state" x="6" y="85" fill="#4a5a70" font-size="7.5">放鬆（毛髮平伏）</text>
+          <line x1="100" y1="75" x2="142" y2="54" stroke="#4a5a70" stroke-width="1"/>
+          <rect x="215" y="65" width="52" height="14" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="219" y="75" fill="#1a2332" font-size="9" font-weight="bold">皮脂腺</text>
+          <line x1="215" y1="72" x2="212" y2="76" stroke="#4a5a70" stroke-width="1"/>
+          <rect x="188" y="196" width="44" height="14" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="192" y="206" fill="#1a2332" font-size="9" font-weight="bold">毛囊</text>
+          <line x1="188" y1="203" x2="183" y2="210" stroke="#4a5a70" stroke-width="1"/>
+          <rect x="220" y="95" width="98" height="48" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="224" y="106" fill="#1a2332" font-size="9" font-weight="bold">表皮微血管</text>
+          <text id="vessel-state"  x="224" y="118" fill="#4a5a70" font-size="8">血管收縮（正常）</text>
+          <text id="vessel-state2" x="224" y="130" fill="#8a9ab0" font-size="7.5">血流量少，減少散熱</text>
+          <line x1="220" y1="117" x2="172" y2="140" stroke="#4a5a70" stroke-width="1"/>
+          <rect x="348" y="43" width="42" height="14" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="352" y="53" fill="#1a2332" font-size="9" font-weight="bold">汗管</text>
+          <line x1="348" y1="50" x2="337" y2="50" stroke="#4a5a70" stroke-width="1"/>
+          <rect x="360" y="196" width="56" height="18" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="364" y="207" fill="#1a2332" font-size="9" font-weight="bold">汗腺</text>
+          <text id="sweat-state" x="364" y="211" fill="#4a5a70" font-size="0">不活躍</text>
+          <line x1="360" y1="203" x2="356" y2="210" stroke="#4a5a70" stroke-width="1"/>
+          <rect x="2" y="197" width="90" height="14" rx="4" fill="#ffffff" stroke="#d4dbe6" opacity="0.95"/>
+          <text x="6" y="207" fill="#1a2332" font-size="8" font-weight="bold">皮下脂肪層</text>
+          <rect id="state-box-bg" x="112" y="260" width="204" height="24" rx="4" fill="#ffffff" opacity="0"/>
+          <text id="state-box-title" x="214" y="272" text-anchor="middle" fill="#1a2332" font-size="9" font-weight="bold">正常體溫 — 平衡狀態</text>
+          <text id="state-box-l1" x="115" y="282" fill="#4a5a70" font-size="7.5">血管正常 · 汗腺低活躍 · 毛髮平伏</text>
+          <text id="fat-adapt" x="6" y="250" fill="#4a5a70" font-size="7.5">無顯著變化</text>
+        </g>
+      </svg>
+    </div>
+
+    <div class="glass rounded flex-1 min-h-0 overflow-y-auto" style="padding:10px; border-radius:4px; border:1px solid #d4dbe6;">
+      <div class="flex items-center justify-between flex-shrink-0" style="margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #d4dbe6;">
+        <span style="font-size:10px; color:#4a5a70; font-weight:600; text-transform: uppercase; letter-spacing: 0.05em;">⚡ 生理調節機制</span>
+        <span id="physio-state-badge" style="font-size:9px; font-weight:700; padding:2px 8px; border-radius:4px; background:#f4f6f9; color:#2e7d32; border:1px solid #d4dbe6;">✅ 平衡</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3" style="margin-bottom:8px;">
+        <div id="muscle-box" class="rounded border border-[#d4dbe6] bg-white" style="padding:10px; border-radius:4px;">
+          <div class="flex justify-between items-start">
+            <h3 class="font-bold text-[#1a2332]" style="font-size:9.5px;">🦴 骨骼肌反應</h3>
+          </div>
+          <p id="muscle-status" class="font-bold mt-1" style="font-size:8.5px; color:#4a5a70;">狀態：正常張力</p>
+          <p id="muscle-detail" class="mt-1" style="font-size:8px; color:#8a9ab0; line-height:1.4;">未觸發顫抖。肌肉維持基礎代謝產熱。</p>
+        </div>
+        <div id="thyroid-box" class="rounded border border-[#d4dbe6] bg-white" style="padding:10px; border-radius:4px;">
+          <div class="flex justify-between items-start">
+            <h3 class="font-bold text-[#1a2332]" style="font-size:9.5px;">🦋 内分泌：甲狀腺</h3>
+            <span id="thyroid-timer" class="font-mono text-[#5e35b1] font-bold" style="font-size:8px;">TIMER: 0s</span>
+          </div>
+          <p id="thyroid-status" class="font-bold mt-1" style="font-size:8.5px; color:#4a5a70;">狀態：基礎分泌量</p>
+          <p id="thyroid-detail" class="mt-1" style="font-size:8px; color:#8a9ab0; line-height:1.4;">未受長期寒冷刺激，維持基礎代謝率（BMR）。</p>
+        </div>
+      </div>
+      <div id="longterm-box" class="rounded border border-[#d4dbe6] bg-white" style="padding:8px 10px; border-radius:4px;">
+        <h3 class="font-bold text-[#1a2332]" style="font-size:9px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom:4px;">⏳ 長期環境適應機制（生理學延伸）</h3>
+        <p id="fat-adapt-html" class="font-medium text-[#4a5a70]" style="font-size:8.5px;">🥩 皮下脂肪：無顯著變化（環境溫度正常範圍）</p>
+        <p style="font-size:8.5px; color:#8a9ab0; line-height:1.6; margin-top:2px;">即時：神經（血管 · 汗腺）。長期：激素（甲狀腺素↑ 提升 BMR）。</p>
+      </div>
+    </div>
+
+  </div></div><script>
+// ── HAIR / ERECTOR HELPERS ──────────────────────────────────────────────
+function computeHairPath(e){
+  e=Math.max(0,Math.min(1,e));
+  const tx=114+48*e, ty=28-24*e;
+  const dx=tx-170, dy=ty-62, len=Math.sqrt(dx*dx+dy*dy)||1;
+  const hw=4.0;
+  const nx=(-dy/len)*hw, ny=(dx/len)*hw;
+  const lx=(170+nx).toFixed(1), ly=(62+ny).toFixed(1);
+  const rx=(170-nx).toFixed(1), ry=(62-ny).toFixed(1);
+  const c1x=155+13*e, c1y=44-6*e, c2x=137+27*e, c2y=34-14*e;
+  const ox=nx*.3, oy=ny*.3;
+  return `M${lx},${ly} C${(c1x+ox).toFixed(1)},${(c1y+oy).toFixed(1)} ${(c2x+ox).toFixed(1)},${(c2y+oy).toFixed(1)} ${tx.toFixed(1)},${ty.toFixed(1)} C${(c2x-ox).toFixed(1)},${(c2y-oy).toFixed(1)} ${(c1x-ox).toFixed(1)},${(c1y-oy).toFixed(1)} ${rx},${ry} Z`;
+}
+function computeErectorPath(e){
+  e=Math.max(0,Math.min(1,e));
+  const ex=(126+18*e).toFixed(1);
+  const c1x=(148+7*e).toFixed(1), c2x=(136+12*e).toFixed(1);
+  return `M160,76 C${c1x},60 ${c2x},48 ${ex},36`;
+}
+
+// ── STATE ────────────────────────────────────────────────────────────────
+const state={
+  envTemp:25,
+  humidity:50,
+  windSpeed:1,
+  clothing:1,
+  activity:0,
+  coreTemp:37.0,
+  setPoint:37.0,
+  netHeat:0,
+  heatLoss:0,
+  heatGain:0,
+  bloodFlowFactor:.38,
+  airLayerInsulation:0,
+  sweatOutput:0,
+  shiveringFactor:0,
+  thyroidTimer:0,
+  thyroidActive:false
+};
+const clothingLabels=['輕薄','正常','厚重'];
+const clothingFactor=[.05,.30,.65];
+const activityLabels=['休息','輕度','中度','劇烈','極限'];
+const activityHeatFactor=[0,1.5,3.5,7,11];
+
+let ductDropGroup=null, ductDropTimer=0, sweatDropTimer=0, surfaceWaterTimer=0;
+
+// ── SPAWN HELPERS ────────────────────────────────────────────────────────
+function spawnDuctDrop(sw){
+  if(!ductDropGroup)return;
+  const ns='http://www.w3.org/2000/svg';
+  const isAct=sw>.05;
+  const dur=isAct?Math.max(1.,3.2-sw*2.4):5.;
+  const r=isAct?2.6+sw*1.4:1.6;
+  const col=isAct?'#1976d2':'#8a9ab0';
+  const sx=338+(Math.random()-.5)*5;
+  const drop=document.createElementNS(ns,'circle');
+  drop.setAttribute('r',r.toFixed(1));
+  drop.setAttribute('fill',col);
+  drop.setAttribute('cx',sx.toFixed(1));
+  drop.setAttribute('cy','196');
+  drop.setAttribute('opacity','0');
+  ductDropGroup.appendChild(drop);
+  const t0=performance.now(), d=dur*1000;
+  (function f(now){
+    const p=Math.min(1,(now-t0)/d);
+    drop.setAttribute('cy',(196+(34-196)*p).toFixed(1));
+    drop.setAttribute('cx',(sx+(334-sx)*p).toFixed(1));
+    let op=p<.08?p/.08*.88:p<.84?.88:Math.max(0,(1-p)/.16*.88);
+    drop.setAttribute('opacity',op.toFixed(2));
+    if(p<1)requestAnimationFrame(f);
+    else if(drop.parentNode)drop.parentNode.removeChild(drop);
+  })(t0);
+}
+
+function spawnSweatDrop(sw){
+  const ns='http://www.w3.org/2000/svg';
+  const grp=document.getElementById('sweat-drops');
+  if(!grp)return;
+  const drop=document.createElementNS(ns,'circle');
+  drop.setAttribute('cx',(328+Math.random()*12-6).toFixed(1));
+  drop.setAttribute('cy','30');
+  drop.setAttribute('r',(2.2+sw*1.8).toFixed(1));
+  drop.setAttribute('fill','#1976d2');
+  drop.setAttribute('opacity','0.9');
+  grp.appendChild(drop);
+  const t0=performance.now(), dur=1800;
+  (function f(now){
+    const p=Math.min(1,(now-t0)/dur);
+    drop.setAttribute('cy',(30-p*34).toFixed(1));
+    const op=p<.1?p/.1:p<.75?1:Math.max(0,(1-p)/.25);
+    drop.setAttribute('opacity',op.toFixed(2));
+    if(p<1)requestAnimationFrame(f);
+    else if(drop.parentNode)drop.parentNode.removeChild(drop);
+  })(t0);
+}
+
+function spawnSurfaceWater(sw){
+  const ns='http://www.w3.org/2000/svg';
+  const grp=document.getElementById('surface-water-drops');
+  if(!grp)return;
+  const drop=document.createElementNS(ns,'ellipse');
+  drop.setAttribute('cx',(260+Math.random()*130).toFixed(1));
+  drop.setAttribute('cy',(31+Math.random()*3).toFixed(1));
+  drop.setAttribute('rx',(1.5+sw*3.5).toFixed(1));
+  drop.setAttribute('ry',(1.0+sw*1.8).toFixed(1));
+  drop.setAttribute('fill','#1976d2');
+  drop.setAttribute('opacity','0');
+  grp.appendChild(drop);
+  const t0=performance.now(), dur=2400+Math.random()*1200;
+  (function f(now){
+    const p=Math.min(1,(now-t0)/dur);
+    const op=p<.15?p/.15*.75:p<.8?.75:Math.max(0,(1-p)/.2*.75);
+    drop.setAttribute('opacity',op.toFixed(2));
+    if(p<1)requestAnimationFrame(f);
+    else if(drop.parentNode)drop.parentNode.removeChild(drop);
+  })(t0);
+}
+
+// ── RENDER GAUGE ROW (precision grid layout) ──────────────────────────────
+function renderGaugeRow(){
+  document.getElementById('gauge-row').innerHTML=`
+    <div class="flex items-center justify-between gap-4 w-full">
+      <div class="flex items-center gap-4 flex-1">
+        <div class="flex flex-col">
+          <span class="text-[8px] uppercase tracking-wider text-[#8a9ab0] font-bold">CORE TEMP</span>
+          <div class="flex items-baseline gap-0.5">
+            <span id="core-temp-val" class="text-xl font-bold monospace-metrics text-[#1976d2]">37.00</span>
+            <span class="text-[9px] font-bold text-[#4a5a70]">°C</span>
+          </div>
+        </div>
+        <div class="flex-1 px-1 flex flex-col justify-center">
+          <div class="w-full bg-[#d4dbe6] h-1.5 rounded relative" style="border-radius:2px;">
+            <div id="core-temp-bar" class="bg-[#1976d2] h-full rounded transition-all duration-300" style="width:50%; border-radius:2px;"></div>
+            <div class="absolute border-l border-[#c62828] h-3 top-1/2 -translate-y-1/2" style="left:50.0%;"></div>
+          </div>
+          <div class="flex justify-between text-[7px] text-[#8a9ab0] font-mono mt-0.5">
+            <span>34°C</span><span>37°C</span><span>41°C</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 flex-shrink-0 border-l border-[#d4dbe6] pl-4">
+        <div class="flex flex-col min-w-[55px]">
+          <span class="text-[7px] uppercase tracking-wider text-[#8a9ab0] font-bold">HEAT FLOW (W)</span>
+          <div class="flex justify-between mt-0.5" style="font-size:8px; font-family:'IBM Plex Mono'; font-weight:700;">
+            <span id="heatloss-val" class="text-[#1976d2]">散:0.0</span>
+            <span id="netheat-val" class="text-[#4a5a70]">淨:0.0</span>
+            <span id="heatgain-val" class="text-[#e65100]">產:0.0</span>
+          </div>
+        </div>
+        <div id="health-status-box" class="flex-shrink-0 border rounded bg-white border-[#2e7d32]" style="min-width:116px; padding:4px 8px; border-radius:4px;">
+          <p id="health-status-title" style="font-size:10px;" class="font-bold text-[#2e7d32]">✅ 體溫正常</p>
+          <p id="health-status-desc" style="font-size:7.5px;" class="text-[#4a5a70] mt-0.5">正常範圍 36.5–37.5°C</p>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── SLIDERS PANEL ────────────────────────────────────────────────────────
+function renderSliders(){
+  document.getElementById('sliders-panel').innerHTML=`
+    <div class="grid" style="grid-template-columns:1fr 1fr 1fr; gap:6px 14px;">
+      <div>
+        <div class="flex justify-between items-baseline" style="margin-bottom:2px;">
+          <span class="text-[9px] font-medium text-[#1a2332]">🌡️ 環境溫度</span>
+          <span id="val-envTemp" class="text-[9px] text-[#e65100] font-bold font-mono">25°C</span>
+        </div>
+        <input type="range" id="input-envTemp" min="-10" max="50" step="1" value="25" class="c-orange">
+        <div class="flex justify-between font-mono" style="margin-top:2px; font-size:7.5px; color:#8a9ab0;"><span>-10°C</span><span>50°C</span></div>
+      </div>
+      <div>
+        <div class="flex justify-between items-baseline" style="margin-bottom:2px;">
+          <span class="text-[9px] font-medium text-[#1a2332]">💧 空氣濕度</span>
+          <span id="val-humidity" class="text-[9px] text-[#1976d2] font-bold font-mono">50%</span>
+        </div>
+        <input type="range" id="input-humidity" min="0" max="100" step="1" value="50" class="c-blue">
+        <div class="flex justify-between font-mono" style="margin-top:2px; font-size:7.5px; color:#8a9ab0;"><span>乾燥</span><span>潮濕</span></div>
+      </div>
+      <div>
+        <div class="flex justify-between items-baseline" style="margin-bottom:2px;">
+          <span class="text-[9px] font-medium text-[#1a2332]">🍃 風速</span>
+          <span id="val-wind" class="text-[9px] text-[#1976d2] font-bold font-mono">1 m/s</span>
+        </div>
+        <input type="range" id="input-wind" min="0" max="15" step="0.5" value="1" class="c-cyan">
+        <div class="flex justify-between font-mono" style="margin-top:2px; font-size:7.5px; color:#8a9ab0;"><span>靜止</span><span>15 m/s</span></div>
+      </div>
+      <div>
+        <div class="flex justify-between items-baseline" style="margin-bottom:2px;">
+          <span class="text-[9px] font-medium text-[#1a2332]">🧥 衣物</span>
+          <span id="val-clothing" class="text-[9px] text-[#2e7d32] font-bold font-mono">正常</span>
+        </div>
+        <input type="range" id="input-clothing" min="0" max="2" step="1" value="1" class="c-green">
+        <div class="flex justify-between font-mono" style="margin-top:2px; font-size:7.5px; color:#8a9ab0;"><span>輕薄</span><span>厚重</span></div>
+      </div>
+      <div>
+        <div class="flex justify-between items-baseline" style="margin-bottom:2px;">
+          <span class="text-[9px] font-medium text-[#1a2332]">🏃 運動量</span>
+          <span id="val-activity" class="text-[9px] text-[#c62828] font-bold font-mono">休息</span>
+        </div>
+        <input type="range" id="input-activity" min="0" max="4" step="1" value="0" class="c-rose">
+        <div class="flex justify-between font-mono" style="margin-top:2px; font-size:7.5px; color:#8a9ab0;"><span>休息</span><span>極限</span></div>
+      </div>
+      <div class="flex items-center justify-center rounded bg-[#f4f6f9] border border-[#d4dbe6]" style="padding:4px; border-radius:4px;">
+        <p style="font-size:8px; color:#4a5a70; text-align:center; line-height:1.5;">調整五項<br>環境與<br>生理參數</p>
+      </div>
+    </div>`;
+
+  document.getElementById('input-envTemp').addEventListener('input',e=>{state.envTemp=+e.target.value;document.getElementById('val-envTemp').textContent=state.envTemp+'°C';});
+  document.getElementById('input-humidity').addEventListener('input',e=>{state.humidity=+e.target.value;document.getElementById('val-humidity').textContent=state.humidity+'%';});
+  document.getElementById('input-wind').addEventListener('input',e=>{state.windSpeed=+e.target.value;document.getElementById('val-wind').textContent=state.windSpeed+' m/s';});
+  document.getElementById('input-clothing').addEventListener('input',e=>{state.clothing=parseInt(e.target.value);document.getElementById('val-clothing').textContent=clothingLabels[state.clothing];});
+  document.getElementById('input-activity').addEventListener('input',e=>{state.activity=parseInt(e.target.value);document.getElementById('val-activity').textContent=activityLabels[state.activity];});
+}
+
+renderGaugeRow();
+renderSliders();
+ductDropGroup=document.getElementById('duct-moisture-group');
+const hsEl0=document.getElementById('hair-shaft');
+if(hsEl0)hsEl0.setAttribute('d',computeHairPath(0));
+
+// ── PHYSICS ───────────────────────────────────────────────────────────────
+function stepSimulation(){
+  const T=state.coreTemp, env=state.envTemp;
+  let bf;
+  if(T>=37.0)bf=Math.min(1.0,.38+(T-37.0)*1.3);
+  else bf=Math.max(.08,.38-(37.0-T)*.70);
+  state.bloodFlowFactor=bf;
+
+  let airIns=0;
+  if(T<36.8)airIns=Math.min(.5,(36.8-T)*.38);
+  state.airLayerInsulation=airIns;
+
+  let sweat=0;
+  if(T>37.0)sweat=Math.min(1.0,(T-37.0)*1.6);
+  state.sweatOutput=sweat;
+
+  let shiver=0;
+  if(T<36.5&&T>=32.0)shiver=Math.min(3.5,(36.5-T)*1.1);
+  state.shiveringFactor=shiver;
+
+  if(env<12){
+    if(!state.thyroidActive){
+      state.thyroidTimer+=0.04;
+      if(state.thyroidTimer>=5.0){state.thyroidActive=true;}
+    }
+  }else{
+    state.thyroidTimer=Math.max(0,state.thyroidTimer-0.08);
+    if(state.thyroidTimer===0)state.thyroidActive=false;
+  }
+
+  const clo=clothingFactor[state.clothing];
+  const wSpeed=state.windSpeed;
+  const hU=state.humidity/100;
+
+  const kRadConv=0.14*(1+0.35*Math.sqrt(wSpeed));
+  let hRadConv=(T-env)*kRadConv*(1-clo*0.75);
+
+  let pSatCore=Math.exp(20.386-5132/(T+273.15));
+  let pSatEnv=Math.exp(20.386-5132/(env+273.15));
+  let pEvapDiff=pSatCore-hU*pSatEnv;
+  if(pEvapDiff<0)pEvapDiff=0;
+  let maxEvap=0.42*pEvapDiff*(1+0.28*wSpeed)*(1-clo*0.6);
+  let hEvap=0.08*maxEvap;
+  if(sweat>0.01){hEvap+=sweat*maxEvap*0.88;}
+  if(hEvap>maxEvap)hEvap=maxEvap;
+  if(hEvap<0)hEvap=0;
+
+  let hLoss=hRadConv+hEvap;
+  if(hLoss<-15)hLoss=-15;
+
+  let bmr=3.8;
+  if(state.thyroidActive)bmr+=1.4;
+  let mus=activityHeatFactor[state.activity];
+  if(shiver>0.01){mus+=shiver*2.1;}
+  let hGain=bmr+mus;
+
+  let net=hGain-hLoss;
+  if(env<=-5&&wSpeed>=10&&state.clothing===0){net-=2.8;}
+
+  state.heatLoss=hLoss;
+  state.heatGain=hGain;
+  state.netHeat=net;
+
+  let cap=55;
+  let dT=(net/cap)*0.04;
+  let newT=T+dT;
+  if(newT<30)newT=30;
+  if(newT>43)newT=43;
+  state.coreTemp=newT;
+
+  updateDisplay();
+}
+
+// ── DISPLAY UPDATES ───────────────────────────────────────────────────────
+function updateDisplay(){
+  const T=state.coreTemp;
+  const pct=Math.max(0,Math.min(100,((T-34)/(41-34))*100));
+  
+  const elVal=document.getElementById('core-temp-val');
+  if(elVal){
+    elVal.textContent=T.toFixed(2);
+    if(T>37.5) { elVal.className='text-xl font-bold monospace-metrics text-[#c62828]'; }
+    else if(T<36.5) { elVal.className='text-xl font-bold monospace-metrics text-[#1976d2]'; }
+    else { elVal.className='text-xl font-bold monospace-metrics text-[#2e7d32]'; }
+  }
+  
+  const elBar=document.getElementById('core-temp-bar');
+  if(elBar){
+    elBar.style.width=pct+'%';
+    if(T>37.5) elBar.style.backgroundColor='#c62828';
+    else if(T<36.5) elBar.style.backgroundColor='#1976d2';
+    else elBar.style.backgroundColor='#2e7d32';
+  }
+
+  const elL=document.getElementById('heatloss-val');  if(elL)elL.textContent='散:'+state.heatLoss.toFixed(1);
+  const elN=document.getElementById('netheat-val');  if(elN){elN.textContent='淨:'+(state.netHeat>=0?'+':'')+state.netHeat.toFixed(1); elN.style.color=state.netHeat>=0?'#c62828':'#1976d2';}
+  const elG=document.getElementById('heatgain-val');  if(elG)elG.textContent='產:'+state.heatGain.toFixed(1);
+
+  // Health-status box
+  const box=document.getElementById('health-status-box');
+  const ttl=document.getElementById('health-status-title');
+  const dsc=document.getElementById('health-status-desc');
+  if(box&&ttl&&dsc){
+    box.className='flex-shrink-0 border rounded bg-white';
+    box.style.background='#ffffff';
+    if(T>40.0){
+      box.classList.add('flash-red','border-[#c62828]');
+      ttl.textContent='🚨 熱衰竭/中暑！'; ttl.style.color='#c62828';
+      dsc.textContent='核心體溫極高，危及生命'; dsc.style.color='#4a5a70';
+    } else if(T>37.5){
+      box.classList.add('border-[#e65100]');
+      ttl.textContent='⚠️ 體溫偏高'; ttl.style.color='#e65100';
+      dsc.textContent='散熱中 → 感覺悶熱'; dsc.style.color='#4a5a70';
+    } else if(T<33){
+      box.classList.add('flash-blue','border-[#c62828]');
+      ttl.textContent='🚨 嚴重失溫！'; ttl.style.color='#c62828';
+      dsc.textContent='調節機制衰竭'; dsc.style.color='#4a5a70';
+    } else if(T<35){
+      box.classList.add('flash-blue','border-[#1976d2]');
+      ttl.textContent='🚨 失溫危險！'; ttl.style.color='#1976d2';
+      dsc.textContent='體溫持續下降'; dsc.style.color='#4a5a70';
+    } else if(T<36.5){
+      box.classList.add('border-[#1976d2]');
+      ttl.textContent='🥶 體溫偏低'; ttl.style.color='#1976d2';
+      dsc.textContent='顫抖保溫中'; dsc.style.color='#4a5a70';
+    } else{
+      box.classList.add('border-[#2e7d32]');
+      ttl.textContent='✅ 體溫正常'; ttl.style.color='#2e7d32';
+      dsc.textContent='正常範圍 36.5–37.5°C'; dsc.style.color='#4a5a70';
+    }
+  }
+
+  // physio-state-badge
+  const badge=document.getElementById('physio-state-badge');
+  if(badge){
+    if(T>37.5){
+      badge.textContent='🔥 散熱中';
+      badge.style.background='#ffffff'; badge.style.color='#c62828'; badge.style.borderColor='#c62828';
+    } else if(T<36.5){
+      badge.textContent='🥶 產熱中';
+      badge.style.background='#ffffff'; badge.style.color='#1976d2'; badge.style.borderColor='#1976d2';
+    } else{
+      badge.textContent='✅ 平衡';
+      badge.style.background='#ffffff'; badge.style.color='#2e7d32'; badge.style.borderColor='#2e7d32';
+    }
+  }
+
+  updateFlowchart();
+  updateSkinAnatomy();
+}
+
+// ── FLOWCHART UPDATE ──────────────────────────────────────────────────────
+function updateFlowchart(){
+  const T=state.coreTemp;
+  const hgBox=document.getElementById('box-heatgain');
+  const hlBox=document.getElementById('box-heatloss');
+  const aGain=document.getElementById('arrow-to-heatgain');
+  const aLoss=document.getElementById('arrow-to-heatloss');
+  const lbl=document.getElementById('feedback-label');
+  const loopL=document.getElementById('loop-left');
+  const loopR=document.getElementById('loop-right');
+  const lblL=document.getElementById('lbl-left');
+  const lblR=document.getElementById('lbl-right');
+  const resHg=document.getElementById('result-hg');
+  const resHl=document.getElementById('result-hl');
+  const warn=document.getElementById('hypothermia-warning');
+  const warnT=document.getElementById('hypothermia-warning-text');
+  
+  const hgA=['arrow-hg1','arrow-hg2','arrow-hg3'].map(id=>document.getElementById(id));
+  const hlA=['arrow-hl1','arrow-hl2','arrow-hl3'].map(id=>document.getElementById(id));
+
+  hgBox.setAttribute('fill','#ffffff'); hgBox.setAttribute('stroke','#4a5a70'); hgBox.classList.remove('glow-pulse');
+  hlBox.setAttribute('fill','#ffffff'); hlBox.setAttribute('stroke','#4a5a70'); hlBox.classList.remove('glow-pulse');
+  
+  [aGain,aLoss].forEach(a=>{a.setAttribute('stroke','#4a5a70');a.setAttribute('stroke-width','1.2');a.setAttribute('marker-end','url(#arrowGrey)');a.classList.remove('nf-arrow','nf-arrow-cold','nf-arrow-hot');});
+  hgA.forEach(a=>{a.setAttribute('stroke','#4a5a70');a.setAttribute('stroke-width','1');a.setAttribute('marker-end','url(#arrowGrey)');a.classList.remove('nf-arrow','nf-arrow-cold','nf-arrow-hot');});
+  hlA.forEach(a=>{a.setAttribute('stroke','#4a5a70');a.setAttribute('stroke-width','1');a.setAttribute('marker-end','url(#arrowGrey)');a.classList.remove('nf-arrow','nf-arrow-cold','nf-arrow-hot');});
+  
+  loopL.setAttribute('stroke','#d4dbe6');loopL.setAttribute('stroke-width','1.5');loopL.setAttribute('marker-end','url(#arrowGrey)');loopL.classList.remove('nf-arrow','nf-arrow-green');
+  loopR.setAttribute('stroke','#d4dbe6');loopR.setAttribute('stroke-width','1.5');loopR.setAttribute('marker-end','url(#arrowGrey)');loopR.classList.remove('nf-arrow','nf-arrow-green');
+  
+  lblL.setAttribute('fill','#8a9ab0');lblR.setAttribute('fill','#8a9ab0');
+  resHg.setAttribute('opacity','0');resHl.setAttribute('opacity','0');
+  warn.setAttribute('opacity','0');warnT.setAttribute('opacity','0');
+
+  if(T<36.5){
+    hgBox.setAttribute('stroke','#c62828'); hgBox.classList.add('glow-pulse');
+    aGain.setAttribute('stroke','#c62828'); aGain.setAttribute('stroke-width','2'); aGain.setAttribute('marker-end','url(#arrowHot)'); aGain.classList.add('nf-arrow','nf-arrow-hot');
+    hgA.forEach(a=>{a.setAttribute('stroke','#c62828'); a.setAttribute('stroke-width','1.5'); a.setAttribute('marker-end','url(#arrowHot)'); a.classList.add('nf-arrow','nf-arrow-hot');});
+    loopL.setAttribute('stroke','#2e7d32'); loopL.setAttribute('stroke-width','2'); loopL.setAttribute('marker-end','url(#arrowGreen)'); loopL.classList.add('nf-arrow','nf-arrow-green');
+    lblL.setAttribute('fill','#2e7d32');
+    resHg.setAttribute('opacity','1');
+    if(state.netHeat<0&&T<35){warn.setAttribute('opacity','1');warnT.setAttribute('opacity','1');}
+  } else if(T>37.5){
+    hlBox.setAttribute('stroke','#1976d2'); hlBox.classList.add('glow-pulse');
+    aLoss.setAttribute('stroke','#1976d2'); aLoss.setAttribute('stroke-width','2'); aLoss.setAttribute('marker-end','url(#arrowCold)'); aLoss.classList.add('nf-arrow','nf-arrow-cold');
+    hlA.forEach(a=>{a.setAttribute('stroke','#1976d2'); a.setAttribute('stroke-width','1.5'); a.setAttribute('marker-end','url(#arrowCold)'); a.classList.add('nf-arrow','nf-arrow-cold');});
+    loopR.setAttribute('stroke','#2e7d32'); loopR.setAttribute('stroke-width','2'); loopR.setAttribute('marker-end','url(#arrowGreen)'); loopR.classList.add('nf-arrow','nf-arrow-green');
+    lblR.setAttribute('fill','#2e7d32');
+    resHl.setAttribute('opacity','1');
+  }
+}
+
+// ── SKIN ANATOMY UPDATE ───────────────────────────────────────────────────
+function updateSkinAnatomy(){
+  const bf=state.bloodFlowFactor;
+  const sw=state.sweatOutput;
+  const ins=state.airLayerInsulation;
+  const T=state.coreTemp;
+
+  // 1) Blood vessels
+  const vOuter=document.getElementById('vessel-outer');
+  const vLumen=document.getElementById('vessel-lumen');
+  const lState=document.getElementById('lumen-state');
+  const capMain=document.getElementById('cap-loop-main');
+  const capFlow=document.getElementById('cap-loop-flow');
+  const artFlow=document.getElementById('arteriole-flow');
+  const vSt1=document.getElementById('vessel-state');
+  const vSt2=document.getElementById('vessel-state2');
+
+  if(vOuter&&vLumen&&lState&&capMain&&capFlow&&artFlow&&vSt1&&vSt2){
+    let rOuter=12+bf*14;
+    let rLumen=2.5+bf*9.5;
+    vOuter.setAttribute('r',rOuter.toFixed(1));
+    vLumen.setAttribute('r',rLumen.toFixed(1));
+
+    if(bf>.55){
+      lState.textContent='擴張'; lState.style.fill='#c62828';
+      vOuter.setAttribute('stroke','#c62828'); vOuter.className='vessel-hot';
+      capMain.setAttribute('opacity',(0.1+bf*0.65).toFixed(2));
+      capMain.setAttribute('stroke','#c62828');
+      capFlow.setAttribute('opacity',(0.1+bf*0.85).toFixed(2));
+      artFlow.setAttribute('opacity','0.9'); artFlow.className='blood-flow';
+      vSt1.textContent='血管舒張（充血）'; vSt1.style.fill='#c62828';
+      vSt2.textContent='血流量大，加速輻射散熱'; vSt2.style.fill='#4a5a70';
+    } else if(bf<.22){
+      lState.textContent='收縮'; lState.style.fill='#1976d2';
+      vOuter.setAttribute('stroke','#1976d2'); vOuter.className='vessel-cold';
+      capMain.setAttribute('opacity','0.03');
+      capFlow.setAttribute('opacity','0');
+      artFlow.setAttribute('opacity','0.1'); artFlow.className='blood-flow-slow';
+      vSt1.textContent='血管收縮（貧血）'; vSt1.style.fill='#1976d2';
+      vSt2.textContent='血流極少，減少熱能流失'; vSt2.style.fill='#4a5a70';
+    } else{
+      lState.textContent='正常'; lState.style.fill='#4a5a70';
+      vOuter.setAttribute('stroke','#4a5a70'); vOuter.className='';
+      capMain.setAttribute('opacity','0.1'); capMain.setAttribute('stroke','#c62828');
+      capFlow.setAttribute('opacity','0');
+      artFlow.setAttribute('opacity','0.4'); artFlow.className='blood-flow-slow';
+      vSt1.textContent='血管正常（維持）'; vSt1.style.fill='#1a2332';
+      vSt2.textContent='血流量穩定，基礎散熱量'; vSt2.style.fill='#8a9ab0';
+    }
+  }
+
+  // 2) Skin flush color overlay
+  const ov=document.getElementById('skin-color-overlay');
+  if(ov){
+    if(bf>.38){ ov.setAttribute('fill','#c62828'); ov.setAttribute('opacity',((bf-.38)*0.55).toFixed(3)); ov.className='flush-shimmer'; }
+    else if(bf<.38){ ov.setAttribute('fill','#1976d2'); ov.setAttribute('opacity',((.38-bf)*0.35).toFixed(3)); ov.className='pallor-shimmer'; }
+    else { ov.setAttribute('opacity','0'); ov.className=''; }
+  }
+
+  // 3) Hair / Goosebumps / Erector muscle
+  const hs=document.getElementById('hair-shaft');
+  const em=document.getElementById('erector-muscle');
+  const es=document.getElementById('erector-state');
+  const gb=document.getElementById('goosebump-group');
+  if(hs&&em&&es&&gb){
+    let eFact=ins*2.0; if(eFact>1)eFact=1;
+    hs.setAttribute('d',computeHairPath(eFact));
+    em.setAttribute('d',computeErectorPath(eFact));
+    if(eFact>.5){
+      es.textContent='收縮（毛髮直立）'; es.style.fill='#c62828';
+      gb.setAttribute('opacity',(eFact*0.95).toFixed(2));
+    } else if(eFact>.05){
+      es.textContent='輕微收縮'; es.style.fill='#e65100';
+      gb.setAttribute('opacity',(eFact*0.5).toFixed(2));
+    } else{
+      es.textContent='放鬆（毛髮平伏）'; es.style.fill='#4a5a70';
+      gb.setAttribute('opacity','0');
+    }
+  }
+
+  // 4) Sweat Gland Activations / Timers / Particles
+  const ss=document.getElementById('sweat-state');
+  const eBg=document.getElementById('sweat-evap-bg');
+  const eL1=document.getElementById('sweat-evap-line1');
+  const eL2=document.getElementById('sweat-evap-line2');
+  const ga1=document.getElementById('gact1');
+  const ga2=document.getElementById('gact2');
+  const ga3=document.getElementById('gact3');
+
+  if(ss&&eBg&&eL1&&eL2&&ga1&&ga2&&ga3){
+    if(sw>.05){
+      ss.textContent='活躍 ('+Math.round(sw*100)+'%)'; ss.style.fill='#1976d2';
+      eBg.setAttribute('opacity','0.95');
+      eL1.setAttribute('opacity','1'); eL1.textContent='汗腺大量分泌：'+Math.round(sw*100)+'%';
+      eL2.setAttribute('opacity','1');
+      if(state.humidity>75) eL2.textContent='⚠️ 濕度高，蒸發受阻散熱低';
+      else if(state.windSpeed>8) eL2.textContent='💨 強風加速蒸發散熱';
+      else eL2.textContent='💦 汗水蒸發中，吸收大量汽化熱';
+      
+      let pO=0.3+sw*0.6;
+      [ga1,ga2,ga3].forEach(g=>{g.setAttribute('opacity',pO.toFixed(2)); g.setAttribute('fill','#1976d2'); g.className='gland-pulse-fast';});
+
+      let now=performance.now();
+      if(now-ductDropTimer>Math.max(160,800-sw*700)){spawnDuctDrop(sw); ductDropTimer=now;}
+      if(now-sweatDropTimer>Math.max(250,1500-sw*1300)){spawnSweatDrop(sw); sweatDropTimer=now;}
+      if(now-surfaceWaterTimer>Math.max(100,500-sw*400)){spawnSurfaceWater(sw); surfaceWaterTimer=now;}
+    } else{
+      ss.textContent='不活躍'; ss.style.fill='#4a5a70';
+      eBg.setAttribute('opacity','0'); eL1.setAttribute('opacity','0'); eL2.setAttribute('opacity','0');
+      [ga1,ga2,ga3].forEach(g=>{g.setAttribute('opacity','0.15'); g.setAttribute('fill','#8a9ab0'); g.className='gland-pulse-slow';});
+    }
+  }
+
+  // 5) Muscle & Thyroid UI panels
+  const ms=document.getElementById('muscle-status');
+  const md=document.getElementById('muscle-detail');
+  const mb=document.getElementById('muscle-box');
+  const shiver=state.shiveringFactor;
+
+  if(ms&&md&&mb){
+    if(shiver>.3){
+      ms.textContent='⚡ 不隨意顫抖中 → 細胞呼吸↑ → 產熱';
+      mb.className='rounded border border-[#c62828] bg-white shiver';
+      mb.style.padding='10px';
+      ms.style.color='#c62828';
+      md.textContent='肌肉快速不規則收縮，ATP分解加速，大量產生熱能，協助維持體溫。';
+      md.style.color='#4a5a70';
+    } else if(shiver>.02){
+      ms.textContent='⚡ 微弱顫抖/張力增加';
+      mb.className='rounded border border-[#e65100] bg-white';
+      mb.style.padding='10px';
+      ms.style.color='#e65100';
+      md.textContent='肌肉張力上升，細胞呼吸基礎產熱輕微增加。';
+      md.style.color='#4a5a70';
+    } else{
+      ms.textContent='狀態：正常張力';
+      mb.className='rounded border border-[#d4dbe6] bg-white';
+      mb.style.padding='10px';
+      ms.style.color='#4a5a70';
+      md.textContent='未觸發顫抖。肌肉維持基礎代謝產熱。';
+      md.style.color='#8a9ab0';
+    }
+  }
+
+  const ts=document.getElementById('thyroid-status');
+  const td=document.getElementById('thyroid-detail');
+  const tb=document.getElementById('thyroid-box');
+  const tt=document.getElementById('thyroid-timer');
+  const env=state.envTemp;
+
+  if(ts&&td&&tb&&tt){
+    tt.textContent='TIMER: '+state.thyroidTimer.toFixed(1)+'s';
+    if(state.thyroidActive){
+      ts.textContent='🔥 分泌增加：甲狀腺素↑';
+      tb.className='rounded border border-[#5e35b1] bg-white';
+      ts.style.color='#5e35b1';
+      td.textContent='受長期寒冷刺激，下丘腦促甲狀腺素釋放激素（TRH）及垂體 TSH 增加，使甲狀腺素分泌上升，提升基礎代謝率（BMR），增加全身細胞的產熱量。';
+      td.style.color='#4a5a70';
+    } else if(state.thyroidTimer>0.1){
+      ts.textContent='⏳ 寒冷調適中... 釋放路徑啟動';
+      tb.className='rounded border border-[#e65100] bg-white';
+      ts.style.color='#e65100';
+      td.textContent='神經中樞偵測到持續寒冷，正刺激內分泌軸線。需持續寒冷刺激 5 秒以完全活化激素效應。';
+      td.style.color='#4a5a70';
+    } else{
+      ts.textContent='狀態：基礎分泌量';
+      tb.className='rounded border border-[#d4dbe6] bg-white';
+      ts.style.color='#4a5a70';
+      td.textContent='未受長期寒冷刺激，維持基礎代謝率（BMR）。';
+      td.style.color='#8a9ab0';
+    }
+  }
+
+  const faHtml=document.getElementById('fat-adapt-html');
+  if(faHtml){
+    if(env<10) faHtml.textContent='🥩 皮下脂肪：長期低溫 → 脂肪層增厚，增加隔熱保溫';
+    else if(env>38) faHtml.textContent='🥩 皮下脂肪：長期高溫 → 脂肪層輕微減薄，利於散熱';
+    else faHtml.textContent='🥩 皮下脂肪：無顯著變化（環境溫度正常範圍）';
+  }
+
+  const fa=document.getElementById('fat-adapt');
+  if(fa){
+    if(env<10){fa.textContent='長期：脂肪層增厚（隔熱）';}
+    else if(env>38){fa.textContent='長期：脂肪層減薄（利散熱）';}
+    else{fa.textContent='無顯著變化';}
+  }
+}
+
+// ── RESET ─────────────────────────────────────────────────────────────────
+function resetSimulation(){
+  Object.assign(state,{envTemp:25,humidity:50,windSpeed:1,clothing:1,activity:0,coreTemp:37.0,thyroidTimer:0});
+  document.getElementById('input-envTemp').value=25;  document.getElementById('val-envTemp').textContent='25°C';
+  document.getElementById('input-humidity').value=50; document.getElementById('val-humidity').textContent='50%';
+  document.getElementById('input-wind').value=1;      document.getElementById('val-wind').textContent='1 m/s';
+  document.getElementById('input-clothing').value=1;  document.getElementById('val-clothing').textContent=clothingLabels[1];
+  document.getElementById('input-activity').value=0;  document.getElementById('val-activity').textContent=activityLabels[0];
+  if(ductDropGroup)while(ductDropGroup.firstChild)ductDropGroup.removeChild(ductDropGroup.firstChild);
+  const sd=document.getElementById('sweat-drops'); if(sd)while(sd.firstChild)sd.removeChild(sd.firstChild);
+  const sw=document.getElementById('surface-water-drops'); if(sw)while(sw.firstChild)sw.removeChild(sw.firstChild);
+  ductDropTimer=0;sweatDropTimer=0;surfaceWaterTimer=0;
+  updateDisplay();
+}
+document.getElementById('btn-reset').addEventListener('click',resetSimulation);
+
+// ── RUN LOOP ──────────────────────────────────────────────────────────────
+setInterval(stepSimulation,40);
+</script>
+</body>
+</html>

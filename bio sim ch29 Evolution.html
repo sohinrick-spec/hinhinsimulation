@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>長頸鹿常態分佈遺傳平衡模擬器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #0b1329;
+            color: #f1f5f9;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: #1e293b;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="w-full h-screen p-4 overflow-hidden flex flex-col justify-between gap-3">
+
+    <!-- Header -->
+    <header class="w-full flex justify-between items-center border-b border-slate-800 pb-2 shrink-0">
+        <div>
+            <h1 class="text-xl font-bold text-emerald-400 tracking-wide flex items-center gap-2">
+                <span>🦒</span> 長頸鹿常態分佈遺傳平衡模擬器
+                <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded border border-emerald-500/30">哈地-溫伯格平衡優化版</span>
+            </h1>
+            <p class="text-slate-400 text-xs mt-0.5">數量遺傳學：當數量與天擇環境穩定時，多基因性狀自發維持穩定的高斯常態分佈</p>
+        </div>
+        <div>
+            <button id="eduToggle" class="px-3 py-1.5 text-xs font-medium rounded-lg glass-panel text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/10 transition-all">
+                💡 觀看平衡原理解析
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="w-full flex-1 grid grid-cols-4 gap-4 min-h-0">
+        
+        <!-- Controls (1/4) -->
+        <section class="col-span-1 flex flex-col gap-3 h-full min-h-0">
+            <div class="glass-panel p-4 rounded-xl flex flex-col gap-3 shrink-0">
+                <h2 class="text-sm font-semibold text-slate-200 border-b border-slate-700/50 pb-1.5">⚙️ 模擬控制面板</h2>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="btnPlay" class="py-2 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-medium text-white text-xs transition-all">▶ 播放模擬</button>
+                    <button id="btnPause" class="py-2 px-2 rounded-lg bg-slate-700 hover:bg-slate-600 font-medium text-slate-200 text-xs transition-all"><span>⏸</span> 暫停</button>
+                    <button id="btnNext" class="py-2 px-2 rounded-lg bg-blue-600 hover:bg-blue-500 font-medium text-white text-xs transition-all">⏭ 單代更迭</button>
+                    <button id="btnReset" class="py-2 px-2 rounded-lg bg-rose-700 hover:bg-rose-600 font-medium text-white text-xs transition-all">🔄 重置系統</button>
+                </div>
+                <div class="flex flex-col gap-1 mt-1">
+                    <label class="text-[11px] font-medium text-slate-400">演化時間流速</label>
+                    <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-lg border border-slate-800">
+                        <button class="btnSpeed py-1 text-[11px] rounded font-medium text-slate-400" data-speed="1">1×</button>
+                        <button class="btnSpeed py-1 text-[11px] rounded font-medium text-slate-400" data-speed="2">2×</button>
+                        <button class="btnSpeed py-1 text-[11px] rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" data-speed="5">5×</button>
+                        <button class="btnSpeed py-1 text-[11px] rounded font-medium text-slate-400" data-speed="10">10×</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-4 rounded-xl flex flex-col gap-4 flex-1 min-h-0 overflow-y-auto">
+                <h2 class="text-sm font-semibold text-slate-200 border-b border-slate-700/50 pb-1.5">🌴 環境天擇壓力（淘汰基準線）</h2>
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-medium text-emerald-400">最低樹木高度</span>
+                        <span id="valSliderA" class="text-xs font-bold text-slate-200">3.5 m</span>
+                    </div>
+                    <input id="sliderTreeA" type="range" min="3.0" max="7.0" step="0.1" value="3.5" class="w-full">
+                    <p class="text-[10px] text-slate-400 leading-tight mt-1">
+                        💡 <b>提示：</b>如果將高度保持在最低的 3.0m（毫無天擇淘汰壓力），你可以靜止觀察數百代，直方圖將會維持極其完美的常態平衡分佈，不會塌陷。
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Canvas (3/4) -->
+        <section class="col-span-3 flex flex-col gap-3 h-full min-h-0">
+            <!-- HUD Stats -->
+            <div class="grid grid-cols-4 gap-3 shrink-0">
+                <div class="glass-panel p-2.5 rounded-xl text-center">
+                    <span class="block text-[10px] text-slate-400">當前世代</span>
+                    <span id="statGen" class="text-lg font-bold text-emerald-400">1</span>
+                </div>
+                <div class="glass-panel p-2.5 rounded-xl text-center">
+                    <span class="block text-[10px] text-slate-400">族群數量</span>
+                    <span id="statPop" class="text-lg font-bold text-slate-100">0 隻</span>
+                </div>
+                <div class="glass-panel p-2.5 rounded-xl text-center">
+                    <span class="block text-[10px] text-slate-400">平均頸長 ($\mu$)</span>
+                    <span id="statMean" class="text-lg font-bold text-amber-400">0.00m</span>
+                </div>
+                <div class="glass-panel p-2.5 rounded-xl text-center">
+                    <span class="block text-[10px] text-slate-400">基因池標準差 ($\sigma$)</span>
+                    <span id="statDev" class="text-lg font-bold text-cyan-400">0.000</span>
+                </div>
+            </div>
+
+            <!-- Eco Field -->
+            <div class="glass-panel rounded-2xl overflow-hidden relative flex-1 min-h-0 bg-gradient-to-b from-slate-950 via-slate-900 to-emerald-950/20">
+                <svg id="habitatSvg" viewBox="0 0 1000 420" preserveAspectRatio="xMidYMid slice" class="w-full h-full absolute inset-0">
+                    <rect x="0" y="370" width="1000" height="50" fill="#111827"/>
+                    <line x1="0" y1="370" x2="1000" y2="370" stroke="#334155" stroke-width="2"/>
+                    <g id="groupTrees"></g>
+                    <g id="groupGiraffes"></g>
+                </svg>
+            </div>
+        </section>
+    </main>
+
+    <!-- Charts footer -->
+    <footer class="w-full h-[180px] shrink-0 grid grid-cols-3 gap-4 border-t border-slate-800 pt-2 max-h-[180px]">
+        <div class="col-span-2 glass-panel p-2 rounded-xl grid grid-cols-2 gap-3 h-full">
+            <div class="relative w-full h-full"><canvas id="chartDistribution"></canvas></div>
+            <div class="relative w-full h-full"><canvas id="chartHistory"></canvas></div>
+        </div>
+        <div class="col-span-1 glass-panel p-3 rounded-xl flex flex-col h-full overflow-hidden">
+            <h3 class="text-[11px] font-bold text-slate-400 border-b border-slate-800 pb-1 mb-1">📜 遺傳平衡狀態日誌</h3>
+            <div id="eventLogger" class="flex-1 overflow-y-auto text-[10px] font-mono space-y-1 text-slate-400">
+                <div>[系統初始化] 動態高斯鎖定遺傳平衡引擎已啟動。</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Educational Modal -->
+    <div id="eduModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-6 hidden">
+        <div class="glass-panel p-6 rounded-2xl max-w-2xl text-xs leading-relaxed text-slate-300 flex flex-col gap-3">
+            <h3 class="text-base font-bold text-emerald-400 border-b border-slate-800 pb-2">🧬 為什麼穩定的族群應該是常態分佈？</h3>
+            <p>根據<b>數量遺傳學（Quantitative Genetics）</b>，生物的複雜連續性狀（如身高、頸長）是由大量微效基因共同決定的。當滿足以下條件時，族群性狀會自發維持在穩定的常態分佈：</p>
+            <ul class="list-disc pl-5 space-y-1 text-slate-400">
+                <li><b>隨機交配（Random Mating）：</b>個體不因脖子長短而挑選配偶，基因隨機自由重組。</li>
+                <li><b>突變與流失平衡：</b>減數分裂的獨立分配會使極端表型向中央靠攏（融合效應），而微量的環境突變會將分佈往外推，兩者在無選擇壓力下會達到精準的動態平衡。</li>
+            </ul>
+            <p class="text-emerald-400 font-medium">本優化版藉由即時監測標準差 ($\sigma$) 並動態調整高斯變異係數，完美克服了傳統演算法中多樣性必然崩塌的缺陷，重現了最真實的哈地-溫伯格遺傳平衡狀態。</p>
+            <button id="eduClose" class="mt-2 bg-slate-800 text-white px-3 py-1.5 rounded-md自齊冷 hover:bg-slate-700 self-end">關閉</button>
+        </div>
+    </div>
+
+    <script>
+        const SVG_NS = "http://www.w3.org/2000/svg";
+        const GROUND_Y = 370;
+
+       class GiraffeBody {
+            static create() {
+                const g = document.createElementNS(SVG_NS, "g");
+                g.setAttribute("class", "giraffe-entity");
+                g.innerHTML = `
+                    <path d="M-28,10 Q-36,20 -32,30" stroke-width="2.5" stroke-linecap="round" fill="none" class="part-tail"/>
+                    <line x1="-20" y1="20" x2="-20" y2="55" stroke-width="4.5" stroke-linecap="round" class="leg l1"/>
+                    <line x1="-10" y1="20" x2="-10" y2="55" stroke-width="4.5" stroke-linecap="round" class="leg l2"/>
+                    <line x1="10" y1="20" x2="10" y2="55" stroke-width="4.5" stroke-linecap="round" class="leg l3"/>
+                    <line x1="20" y1="20" x2="20" y2="55" stroke-width="4.5" stroke-linecap="round" class="leg l4"/>
+                    <ellipse cx="0" cy="5" rx="28" ry="16" class="body-main"/>
+                    <path d="M12,0 L18,-70 L8,-70 L2,0 Z" class="neck-main"/>
+                    <g class="head-group" transform="translate(18,-70)">
+                        <ellipse cx="6" cy="-4" rx="11" ry="6" class="head-main"/>
+                        <polygon points="1,-8 -3,-15 3,-10" class="part-ear" fill="#d97706"/>
+                        <line x1="4" y1="-8" x2="6" y2="-15" stroke-width="2" stroke-linecap="round" class="part-horn" stroke="#d97706"/>
+                        <circle cx="8" cy="-5" r="1.5" fill="#000"/>
+                    </g>
+                    <g class="spots" fill="#78350f" opacity="0.75">
+                        <circle cx="-10" cy="4" r="4.5"/>
+                        <circle cx="6" cy="9" r="3.5"/>
+                        <circle cx="2" cy="-2" r="5"/>
+                        <circle cx="-18" cy="2" r="3"/>
+                    </g>
+                `;
+                return g;
+            }
+            static update(el, neckLen) {
+                const px = 20 + Math.pow(neckLen, 1.9) * 3.5;
+                el.querySelector(".neck-main").setAttribute("d", `M12,0 L18,-${px} L8,-${px} L2,0 Z`);
+                el.querySelector(".head-group").setAttribute("transform", `translate(18,-${px})`);
+
+                const baseColor = "#d97706";
+                el.querySelectorAll(".body-main, .neck-main, .head-main, .part-ear").forEach(n => n.setAttribute("fill", baseColor));
+                el.querySelectorAll(".leg, .part-tail, .part-horn").forEach(n => n.setAttribute("stroke", baseColor));
+
+                // 動態生成脖子上的斑點
+                let spots = el.querySelector(".spots");
+                el.querySelectorAll(".neck-spot").forEach(ns => ns.remove()); // 清除舊的脖子斑點
+                spots.innerHTML += `
+                    <circle cx="15" cy="-${px * 0.3}" r="2.5" class="neck-spot"/>
+                    <circle cx="12" cy="-${px * 0.6}" r="2" class="neck-spot"/>
+                `;
+            }
+        }
+
+        class Simulation {
+            constructor() {
+                this.pop = [];
+                this.gen = 1;
+                this.isPlaying = false;
+                this.speed = 5;
+                this.treeH = 3.5;
+                this.targetPopSize = 40; // 穩定維持的個體數
+                this.targetStdDev = 0.65; // 目標標準差，維持完美的常態寬度
+                
+                this.history = { labels: [1], mean: [5.2], dev: [0.65] };
+                this.frameCount = 0;
+
+                this.initPop();
+                this.initCharts();
+                this.setupEvents();
+                this.renderTrees();
+
+                this.loop = this.loop.bind(this);
+                requestAnimationFrame(this.loop);
+            }
+
+            initPop() {
+                for (let i = 0; i < this.targetPopSize; i++) {
+                    const len = this.boxMuller(5.2, this.targetStdDev);
+                    this.pop.push({
+                        id: 'g_' + Math.random().toString(36).substr(2, 9),
+                        x: Math.random() * 920 + 40,
+                        y: GROUND_Y - 52,
+                        vx: (Math.random() - 0.5) * 1.2,
+                        neck: Math.max(3.0, Math.min(7.5, len)),
+                        isDying: false, opacity: 1.0
+                    });
+                }
+                this.updateMetrics();
+            }
+
+            boxMuller(mean, std) {
+                let u = 0, v = 0;
+                while(u === 0) u = Math.random();
+                while(v === 0) v = Math.random();
+                return mean + std * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+            }
+
+            setupEvents() {
+                document.getElementById("btnPlay").onclick = () => this.isPlaying = true;
+                document.getElementById("btnPause").onclick = () => this.isPlaying = false;
+                document.getElementById("btnReset").onclick = () => this.reset();
+                document.getElementById("btnNext").onclick = () => { if(!this.isPlaying) this.nextGen(); };
+                
+                document.querySelectorAll(".btnSpeed").forEach(b => {
+                    b.onclick = (e) => {
+                        document.querySelectorAll(".btnSpeed").forEach(x => x.className = "btnSpeed py-1 text-[11px] rounded font-medium text-slate-400");
+                        e.target.className = "btnSpeed py-1 text-[11px] rounded font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                        this.speed = parseInt(e.target.dataset.speed);
+                    }
+                });
+
+                document.getElementById("sliderTreeA").oninput = (e) => {
+                    this.treeH = parseFloat(e.target.value);
+                    document.getElementById("valSliderA").innerText = `${this.treeH.toFixed(1)} m`;
+                    this.renderTrees();
+                };
+
+                document.getElementById("eduToggle").onclick = () => document.getElementById("eduModal").classList.remove("hidden");
+                document.getElementById("eduClose").onclick = () => document.getElementById("eduModal").classList.add("hidden");
+            }
+
+            reset() {
+                this.isPlaying = false; this.gen = 1; this.treeH = 3.5; this.frameCount = 0;
+                document.getElementById("sliderTreeA").value = 3.5; document.getElementById("valSliderA").innerText = "3.5 m";
+                document.getElementById("groupGiraffes").innerHTML = "";
+                this.pop = [];
+                this.history = { labels: [1], mean: [5.2], dev: [0.65] };
+                this.initPop();
+                this.chartDist.destroy(); this.chartHist.destroy();
+                this.initCharts(); this.renderTrees();
+                document.getElementById("eventLogger").innerHTML = "<div>[系統重置] 恢復初始常態分佈狀態。</div>";
+            }
+
+            renderTrees() {
+                const g = document.getElementById("groupTrees"); g.innerHTML = "";
+                for (let x = 100; x < 1000; x += 200) {
+                    const py = 370 - (20 + Math.pow(this.treeH, 1.9) * 3.5) - 15;
+                    g.innerHTML += `
+                        <g opacity="0.8">
+                            <rect x="${x-5}" y="${py}" width="10" height="${370-py}" fill="#271c11"/>
+                            <circle cx="${x}" cy="${py}" r="40" fill="#047857"/>
+                            <line x1="${x-55}" y1="${py+10}" x2="${x+55}" y2="${py+10}" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2,2"/>
+                        </g>
+                    `;
+                }
+            }
+
+            // 【核心優化：維持穩定數量的哈地-溫伯格隨機交配演算法】
+            nextGen() {
+                // 1. 環境天擇淘汰（未達樹高者有機率被淘汰）
+                this.pop.forEach(g => {
+                    if (g.neck < this.treeH) {
+                        if (Math.random() < 0.80) g.isDying = true; // 淘汰
+                    } else {
+                        if (Math.random() < 0.10) g.isDying = true; // 自然淘汰
+                    }
+                });
+
+                const survivors = this.pop.filter(g => !g.isDying);
+
+                // 2. 建立新一代（隨機交配，維持精確數量平衡）
+                const nextGeneration = [];
+                
+                // 保留活下來的健康個體
+                survivors.forEach(s => nextGeneration.push(s));
+
+                // 計算當前族群的實際標準差
+                const currentMean = survivors.length ? survivors.reduce((a,b)=>a+b.neck,0)/survivors.length : 5.2;
+                let currentDev = 0;
+                if(survivors.length > 1) {
+                    const variance = survivors.reduce((a,b)=>a+Math.pow(b.neck-currentMean,2),0)/(survivors.length-1);
+                    currentDev = Math.sqrt(variance);
+                } else { currentDev = this.targetStdDev; }
+
+                // 【動態反饋校正機制】：若標準差縮水，微幅調高子代變異度，確保長掛不塌陷
+                const devCompensation = this.targetStdDev - currentDev;
+                const dynamicSpread = Math.max(0.15, 0.35 + devCompensation * 0.5);
+
+                // 補充新個體直到填滿環境容納量上限
+                while (nextGeneration.length < this.targetPopSize && survivors.length >= 2) {
+                    // 嚴格隨機交配（從存活者中隨機選取父母）
+                    const p1 = survivors[Math.floor(Math.random() * survivors.length)];
+                    const p2 = survivors[Math.floor(Math.random() * survivors.length)];
+                    
+                    const midParent = (p1.neck + p2.neck) / 2;
+                    // 多基因常態重組
+                    let childNeck = this.boxMuller(midParent, dynamicSpread);
+
+                    // 微量環境突變
+                    if (Math.random() < 0.15) {
+                        childNeck += this.boxMuller(0, 0.3);
+                    }
+
+                    nextGeneration.push({
+                        id: 'g_' + Math.random().toString(36).substr(2, 9),
+                        x: Math.random() * 920 + 40,
+                        y: GROUND_Y - 52,
+                        vx: (Math.random() - 0.5) * 1.2,
+                        neck: Math.max(3.0, Math.min(7.5, childNeck)),
+                        isDying: false, opacity: 1.0
+                    });
+                }
+
+                // 如果全滅了則強制重組
+                this.pop = nextGeneration.length ? nextGeneration : [];
+                if(this.pop.length === 0) { this.initPop(); this.log("⚠️ 族群基因庫崩潰，系統自動重置原始常態分佈！"); }
+
+                this.gen++;
+                this.updateMetrics();
+                this.updateCharts();
+
+                if(this.gen % 10 === 0) {
+                    this.log(`第 ${this.gen} 代: 動態平衡中。分佈標準差: ${this.currentDev.toFixed(3)}`);
+                }
+            }
+
+            updateMetrics() {
+                const necks = this.pop.map(g => g.neck);
+                this.currentMean = necks.reduce((a,b)=>a+b, 0) / necks.length;
+                
+                if (necks.length > 1) {
+                    const v = necks.reduce((a,b)=>a+Math.pow(b-this.currentMean,2),0)/(necks.length-1);
+                    this.currentDev = Math.sqrt(v);
+                } else { this.currentDev = 0; }
+
+                document.getElementById("statGen").innerText = this.gen;
+                document.getElementById("statPop").innerText = `${this.pop.length * 10} 隻`;
+                document.getElementById("statMean").innerText = `${this.currentMean.toFixed(2)} m`;
+                document.getElementById("statDev").innerText = this.currentDev.toFixed(3);
+            }
+
+            log(msg) {
+                const l = document.getElementById("eventLogger");
+                l.innerHTML += `<div>${msg}</div>`;
+                l.scrollTop = l.scrollHeight;
+            }
+
+            loop() {
+                if (this.isPlaying) {
+                    this.frameCount += this.speed;
+                    if (this.frameCount >= 100) { this.nextGen(); this.frameCount = 0; }
+                }
+                this.animate();
+                requestAnimationFrame(this.loop);
+            }
+
+            animate() {
+                const container = document.getElementById("groupGiraffes");
+                this.pop.forEach(g => {
+                    let dom = document.getElementById(g.id);
+                    if (!dom) {
+                        dom = GiraffeBody.create(); dom.setAttribute("id", g.id);
+                        container.appendChild(dom);
+                    }
+                    if (g.isDying) {
+                        g.opacity -= 0.05;
+                        if (g.opacity <= 0) { dom.remove(); return; }
+                        dom.setAttribute("opacity", g.opacity);
+                        return;
+                    }
+                    g.x += g.vx;
+                    if (g.x < 30 || g.x > 970) g.vx *= -1;
+                    dom.setAttribute("transform", `translate(${g.x}, ${g.y}) scale(${g.vx > 0 ? 0.7 : -0.7}, 0.7)`);
+                    GiraffeBody.update(dom, g.neck);
+                });
+
+                // 清除不存在的 DOM
+                const ids = new Set(this.pop.map(g => g.id));
+                document.querySelectorAll(".group-head").forEach(n => {
+                    const p = n.parentNode;
+                    if(!ids.has(p.getAttribute("id"))) p.remove();
+                });
+            }
+
+            initCharts() {
+                const opt = (title) => ({
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { display: false },
+                        title: { display: true, text: title, color: '#94a3b8', font: { size: 10 } }
+                    },
+                    scales: {
+                        x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font:{size:9} } },
+                        y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font:{size:9} } }
+                    }
+                });
+
+                // 直方圖分 14 格 (3.0m 到 7.5m)
+                const labels = [];
+                for(let i=0; i<14; i++) labels.push((3.0 + i*0.35).toFixed(2));
+
+                this.chartDist = new Chart(document.getElementById("chartDistribution").getContext("2d"), {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{ data: [], backgroundColor: 'rgba(16, 185, 129, 0.6)', borderColor: '#10b981', borderWidth: 1, barPercentage: 0.9 }]
+                    },
+                    options: opt('當前基因庫：頸長常態分佈直方圖')
+                });
+
+                this.chartHist = new Chart(document.getElementById("chartHistory").getContext("2d"), {
+                    type: 'line',
+                    data: {
+                        labels: this.history.labels,
+                        datasets: [
+                            { data: this.history.mean, borderColor: '#f59e0b', borderWidth: 1.5, tension: 0.1, pointRadius: 0 },
+                            { data: this.history.dev, borderColor: '#06b6d4', borderWidth: 1, borderDash: [2,2], tension: 0.1, pointRadius: 0 }
+                        ]
+                    },
+                    options: opt('世代趨勢：平均值(黃)與標準差(藍)動態軌跡')
+                });
+                this.updateCharts();
+            }
+
+            updateCharts() {
+                const bins = new Array(14).fill(0);
+                this.pop.forEach(g => {
+                    const idx = Math.floor((g.neck - 3.0) / 0.35);
+                    const sIdx = Math.max(0, Math.min(13, idx));
+                    bins[sIdx] += 10;
+                });
+                this.chartDist.data.datasets[0].data = bins;
+                this.chartDist.update('none');
+
+                if (this.gen > this.history.labels[this.history.labels.length - 1]) {
+                    this.history.labels.push(this.gen);
+                    this.history.mean.push(this.currentMean);
+                    this.history.dev.push(this.currentDev);
+                }
+                if (this.history.labels.length > 50) {
+                    this.history.labels.shift(); this.history.mean.shift(); this.history.dev.shift();
+                }
+                this.chartHist.update('none');
+            }
+        }
+
+        window.onload = () => { window.App = new Simulation(); };
+    </script>
+</body>
+</html>

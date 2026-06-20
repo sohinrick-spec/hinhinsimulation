@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紅色邊界測試</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+        </header>
+
+        <main>
+            <div id="gameMenu" class="game-menu">
+                <h1>紅色邊界測試</h1>
+                <p>這個測試將幫助了解你對紅色的認知邊界。</p>
+                <button class="start-btn" id="startButton">開始測試</button>
+            </div>
+
+            <div id="gameArea" class="game-area hidden">
+                <!-- Game content will be dynamically inserted here -->
+            </div>
+
+            <div id="results" class="results hidden">
+                <h2>測試結果</h2>
+                <div class="stats">
+                    <p>總測試次數: <span id="totalTests">0</span></p>
+                    <p>紅色判定次數: <span id="redCount">0</span></p>
+                    <p>紅色色相範圍: <span id="redRange">0</span>度</p>
+                </div>
+                <div id="boundaryMap" class="boundary-map"></div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { startGame, resetGame } from './game.js';
+        
+        // 添加事件監聽器
+        document.getElementById('startButton').addEventListener('click', startGame);
+        
+        // 將函數掛載到 window 對象（如果需要在其他地方使用）
+        window.startGame = startGame;
+        window.resetGame = resetGame;
+    </script>
+</body>
+</html> 
