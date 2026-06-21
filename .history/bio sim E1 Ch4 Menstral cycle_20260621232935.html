@@ -28,7 +28,7 @@
   .toggle::after{content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:3px; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,.3);}
   .toggle.on{background:var(--proge);}
   .toggle.on::after{left:20px;}
-  .flow-arrow{transition:stroke-width .25s ease, opacity .25s ease, filter .25s ease;}
+  .flow-arrow{transition:stroke-width .25s ease, opacity .25s ease;}
   .pulse-dot{animation:pulseDot 1.4s ease-in-out infinite;}
   @keyframes pulseDot{0%,100%{opacity:.3;} 50%{opacity:1;}}
   .btn{font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:6px 10px; border-radius:4px; border:1px solid var(--border); background:#fff; color:var(--txt-primary); cursor:pointer; transition:.1s;}
@@ -94,13 +94,6 @@
       </div>
       <svg id="anatomySvg" viewBox="0 0 480 460" class="w-full h-[420px]">
       </svg>
-      <div class="flex flex-wrap gap-3 justify-center mt-1 pt-2 border-t" style="border-color:var(--border)">
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--fsh)"></span>FSH</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--lh)"></span>LH</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--estro)"></span>雌激素</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--proge)"></span>孕酮</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--hcg)"></span>HCG</span>
-      </div>
     </div>
 
     <!-- ZONE 3: CHART -->
@@ -379,36 +372,13 @@ function buildStaticAnatomy(){
 
   <!-- Hormone flow paths Pituitary -> Ovary -->
   <defs>
-    <marker id="arrow-fsh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.fsh}"/></marker>
-    <marker id="arrow-lh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.lh}"/></marker>
-    <marker id="arrow-estro" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.estro}"/></marker>
-    <marker id="arrow-proge" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.proge}"/></marker>
-    <marker id="arrow-hcg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${COLORS.hcg}"/></marker>
+    <marker id="arrow-fsh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.fsh}"/></marker>
+    <marker id="arrow-lh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.lh}"/></marker>
+    <marker id="arrow-estro" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.estro}"/></marker>
+    <marker id="arrow-proge" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.proge}"/></marker>
+    <marker id="arrow-hcg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${COLORS.hcg}"/></marker>
   </defs>
-
-  <!-- Uterus (drawn before flow arrows/ovaries so endometrium sits beneath arrow lines, arrowheads stay on top) -->
-  <g>
-    <path d="M170,360 Q240,330 310,360 L310,420 Q240,450 170,420 Z" fill="#fdeef0" stroke="#e89aab"/>
-    <path id="endoLining" d="M185,368 Q240,348 295,368 L295,412 Q240,432 185,412 Z" fill="#f9c4cf" stroke="#d81b60" opacity="0.6"/>
-  </g>
-  <text x="240" y="443" text-anchor="middle" font-size="10" font-family="Noto Sans TC" fill="#4a5a70">子宮 (內膜)</text>
-  <text id="endoThickLabel" x="240" y="395" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#c62828" font-weight="700"></text>
-
-  <!-- Hormone flow paths: ALWAYS rendered (hormones are secreted continuously), each pair kept parallel & non-overlapping -->
-  <!-- Pituitary -> Left Ovary: FSH outer curve, LH inner curve -->
-  <path id="path-fsh" d="M196,98 C145,128 102,175 96,242" fill="none" stroke="${CHART_COLORS.fsh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-fsh)" class="flow-arrow"/>
-  <path id="path-lh-l" d="M218,104 C188,145 152,195 130,246" fill="none" stroke="${CHART_COLORS.lh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-lh)" class="flow-arrow"/>
-  <!-- Pituitary -> Right Ovary: FSH outer curve, LH inner curve -->
-  <path id="path-fsh-r" d="M284,98 C335,128 378,175 384,242" fill="none" stroke="${CHART_COLORS.fsh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-fsh)" class="flow-arrow"/>
-  <path id="path-lh" d="M262,104 C292,145 328,195 350,246" fill="none" stroke="${CHART_COLORS.lh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-lh)" class="flow-arrow"/>
-  <!-- BOTH ovaries secrete estrogen & progesterone -> Endometrium. Four separate lanes land across the top of the uterus, evenly spaced, no crossing. -->
-  <path id="path-estro" d="M352,300 C345,330 320,345 285,358" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-estro)" class="flow-arrow"/>
-  <path id="path-proge" d="M335,308 C310,332 275,340 255,356" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-proge)" class="flow-arrow"/>
-  <path id="path-estro-l" d="M128,300 C135,330 160,345 195,358" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-estro)" class="flow-arrow"/>
-  <path id="path-proge-l" d="M145,308 C170,332 205,340 225,356" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-proge)" class="flow-arrow"/>
-  <path id="path-hcg" d="M240,400 C240,388 240,376 240,368" fill="none" stroke="${COLORS.hcg}" stroke-width="3" opacity="0" stroke-linecap="round" marker-end="url(#arrow-hcg)" class="flow-arrow"/>
-
-  <!-- Ovaries (drawn after flow paths so glands sit on top of where lines originate) -->
+  <!-- Ovaries -->
   <g id="ovaryL">
     <ellipse cx="120" cy="280" rx="42" ry="32" fill="#fff7ef" stroke="#e8b98a"/>
     <circle id="follicleL" cx="120" cy="280" r="10" fill="#ffd9a0" stroke="#e65100"/>
@@ -421,6 +391,25 @@ function buildStaticAnatomy(){
   <text x="360" y="322" text-anchor="middle" font-size="10" font-family="Noto Sans TC" fill="#4a5a70">卵巢 (右)</text>
   <text id="ovaryStateL" x="120" y="334" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#8a9ab0"></text>
   <text id="ovaryStateR" x="360" y="334" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#8a9ab0"></text>
+
+  <!-- Uterus (drawn BEFORE flow arrows so arrowheads always render on top, fully visible) -->
+  <g>
+    <path d="M170,360 Q240,330 310,360 L310,420 Q240,450 170,420 Z" fill="#fdeef0" stroke="#e89aab"/>
+    <path id="endoLining" d="M185,368 Q240,348 295,368 L295,412 Q240,432 185,412 Z" fill="#f9c4cf" stroke="#d81b60" opacity="0.6"/>
+  </g>
+  <text x="240" y="443" text-anchor="middle" font-size="10" font-family="Noto Sans TC" fill="#4a5a70">子宮 (內膜)</text>
+  <text id="endoThickLabel" x="240" y="395" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#c62828" font-weight="700"></text>
+
+  <!-- Hormone flow paths: ALWAYS rendered (hormones are secreted continuously) -->
+  <!-- Pituitary -> both Ovaries -->
+  <path id="path-fsh" d="M210,110 C170,160 140,200 130,246" fill="none" stroke="${CHART_COLORS.fsh}" stroke-width="2" opacity="0.4" stroke-linecap="round" marker-end="url(#arrow-fsh)" class="flow-arrow"/>
+  <path id="path-fsh-r" d="M270,110 C300,160 330,200 350,246" fill="none" stroke="${CHART_COLORS.fsh}" stroke-width="2" opacity="0.4" stroke-linecap="round" marker-end="url(#arrow-fsh)" class="flow-arrow"/>
+  <path id="path-lh" d="M278,112 C322,160 346,200 354,246" fill="none" stroke="${CHART_COLORS.lh}" stroke-width="2" opacity="0.4" stroke-linecap="round" marker-end="url(#arrow-lh)" class="flow-arrow"/>
+  <path id="path-lh-l" d="M202,112 C168,160 144,200 126,246" fill="none" stroke="${CHART_COLORS.lh}" stroke-width="2" opacity="0.4" stroke-linecap="round" marker-end="url(#arrow-lh)" class="flow-arrow"/>
+  <!-- Ovary structures -> Endometrium -->
+  <path id="path-estro" d="M148,295 C190,335 230,338 222,362" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="2" opacity="0.4" stroke-linecap="round" marker-end="url(#arrow-estro)" class="flow-arrow"/>
+  <path id="path-proge" d="M342,295 C302,335 264,344 258,362" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="2" opacity="0.4" stroke-linecap="round" marker-end="url(#arrow-proge)" class="flow-arrow"/>
+  <path id="path-hcg" d="M240,402 C240,388 240,374 240,368" fill="none" stroke="${COLORS.hcg}" stroke-width="2" opacity="0" stroke-linecap="round" marker-end="url(#arrow-hcg)" class="flow-arrow"/>
 
   <!-- Badges -->
   <text id="badgeFollL" x="120" y="265" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#e65100"></text>
@@ -440,28 +429,21 @@ function updateAnatomy(lv, day, prevLv){
   document.getElementById('pitBadgeText').textContent = '持續釋放：FSH, LH';
   document.getElementById('pitBadge').style.opacity = state.contraception==='combined' ? 0.05 : 0.16;
 
-  // Hormone secretion is continuous. Concentration (lv.xxx) reflects the current secretion rate.
-  // Arrows stay solid and fully opaque, but width now swings DRAMATICALLY (2px -> 18px) and a
-  // colored glow intensifies at high levels, so a rising hormone is unmistakable at a glance.
-  const widthFor = (level)=> 2 + Math.pow(level/100, 1.3)*16;
-  const glowFor = (level, color)=>{
-    const intensity = Math.pow(level/100, 1.5);
-    if(intensity < 0.12) return 'none';
-    const blur = 2 + intensity*10;
-    return `drop-shadow(0 0 ${blur.toFixed(1)}px ${color})`;
-  };
+  // Hormone secretion is continuous. Concentration (lv.xxx) reflects the current secretion rate
+  // (under a simple secretion-vs-clearance balance), so we use it directly to drive arrow
+  // thickness/opacity — arrows never disappear, they just get thinner/fainter at low secretion.
+  const widthFor = (level)=> 1.5 + (level/100)*7;
+  const opacityFor = (level)=> 0.35 + (level/100)*0.55;
 
   // flow paths: pituitary sends both FSH and LH continuously to BOTH ovaries
-  setFlow('path-fsh', true, widthFor(lv.fsh), glowFor(lv.fsh, CHART_COLORS.fsh));
-  setFlow('path-fsh-r', true, widthFor(lv.fsh), glowFor(lv.fsh, CHART_COLORS.fsh));
-  setFlow('path-lh', true, widthFor(lv.lh), glowFor(lv.lh, CHART_COLORS.lh));
-  setFlow('path-lh-l', true, widthFor(lv.lh), glowFor(lv.lh, CHART_COLORS.lh));
-  setFlow('path-estro', true, widthFor(lv.estro), glowFor(lv.estro, CHART_COLORS.estro));
-  setFlow('path-proge', true, widthFor(lv.proge), glowFor(lv.proge, CHART_COLORS.proge));
-  setFlow('path-estro-l', true, widthFor(lv.estro), glowFor(lv.estro, CHART_COLORS.estro));
-  setFlow('path-proge-l', true, widthFor(lv.proge), glowFor(lv.proge, CHART_COLORS.proge));
+  setFlow('path-fsh', true, widthFor(lv.fsh), opacityFor(lv.fsh));
+  setFlow('path-fsh-r', true, widthFor(lv.fsh), opacityFor(lv.fsh));
+  setFlow('path-lh', true, widthFor(lv.lh), opacityFor(lv.lh));
+  setFlow('path-lh-l', true, widthFor(lv.lh), opacityFor(lv.lh));
+  setFlow('path-estro', true, widthFor(lv.estro), opacityFor(lv.estro));
+  setFlow('path-proge', true, widthFor(lv.proge), opacityFor(lv.proge));
   // HCG is the one hormone that is genuinely OFF (not secreted) unless pregnant
-  setFlow('path-hcg', state.pregnancy, widthFor(lv.hcg), glowFor(lv.hcg, COLORS.hcg));
+  setFlow('path-hcg', state.pregnancy, widthFor(lv.hcg), opacityFor(lv.hcg));
 
   // follicle / corpus luteum sizing
   let follR = 8, follColor = '#ffd9a0', follLabel='靜止濾泡';
@@ -476,8 +458,8 @@ function updateAnatomy(lv, day, prevLv){
   document.getElementById('follicleR').setAttribute('r', follR);
   document.getElementById('follicleR').setAttribute('fill', follColor);
   document.getElementById('ovaryStateR').textContent = follLabel;
-  document.getElementById('follicleL').setAttribute('r', 9);
-  document.getElementById('ovaryStateL').textContent = '同步分泌中';
+  document.getElementById('follicleL').setAttribute('r', 7);
+  document.getElementById('ovaryStateL').textContent = '靜止';
 
   // endometrium
   const scale = lv.endo/10; // 0-1
@@ -490,11 +472,10 @@ function updateAnatomy(lv, day, prevLv){
   document.getElementById('placentaMark').style.opacity = (state.pregnancy && state.pregWeek>=16) ? 1 : 0;
   document.getElementById('phaseLabel').textContent = `第 ${Math.floor(day)} 天 · ${phaseOf(day)}`;
 }
-function setFlow(id, active, width, glow){
+function setFlow(id, active, width, opacity){
   const el = document.getElementById(id);
-  el.style.opacity = active ? 1 : 0;
+  el.style.opacity = active ? opacity : 0;
   el.setAttribute('stroke-width', active ? width : 1);
-  el.style.filter = active ? (glow || 'none') : 'none';
 }
 
 // ============================ UI UPDATE ============================
