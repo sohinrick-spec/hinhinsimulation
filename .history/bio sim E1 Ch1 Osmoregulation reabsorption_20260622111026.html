@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>腎臟過濾與重吸收模型</title>
+    <style>
+        /* CSS 內容 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f4f8;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 900px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pathology-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .pathology-btn {
+            background-color: #8e44ad;
+        }
+
+        .pathology-btn:hover {
+            background-color: #732d91;
+        }
+
+        .pathology-btn.active {
+            background-color: #d35400;
+            box-shadow: 0 0 0 2px rgba(211,84,0,0.3);
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #2980b9;
+        }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .water { background-color: #3498db; }
+        .salt { background-color: #e74c3c; }
+        .urea { background-color: #f1c40f; }
+        .protein { background-color: #9b59b6; }
+        .glucose { background-color: #2ecc71; }
+
+        .visualization {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            background-color: #fff;
+        }
+
+        #nephron-svg {
+            width: 100%;
+            height: auto;
+            background-color: #fafafa;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f6f3;
+            border-left: 5px solid #1abc9c;
+            border-radius: 3px;
+            transition: all 0.3s ease;
+        }
+
+        #info-text {
+            margin: 0;
+            font-size: 16px;
+            color: #2c3e50;
+        }
+
+        /* SVG Styles */
+        .tubule {
+            fill: none;
+            stroke: #e67e22;
+            stroke-width: 40;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.3;
+        }
+
+        .glomerulus {
+            fill: #c0392b;
+            opacity: 0.6;
+        }
+
+        .bowman-capsule {
+            fill: none;
+            stroke: #e67e22;
+            stroke-width: 40;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: 0.3;
+        }
+
+        .capillary {
+            fill: none;
+            stroke: #e74c3c;
+            stroke-width: 15;
+            opacity: 0.4;
+        }
+
+        .particle {
+            transition: transform 0.1s linear;
+            pointer-events: none;
+        }
+
+        .label-text {
+            font-size: 14px;
+            font-weight: bold;
+            fill: #34495e;
+            pointer-events: none;
+        }
+
+        .interactive-region {
+            fill: rgba(52, 152, 219, 0.1);
+            stroke: rgba(52, 152, 219, 0.3);
+            stroke-width: 2;
+            transition: all 0.3s ease;
+            pointer-events: all;
+        }
+
+        .interactive-region:hover,
+        .interactive-region.region-hover {
+            fill: rgba(52, 152, 219, 0.25);
+            stroke: rgba(52, 152, 219, 0.6);
+            stroke-width: 3;
+        }
+
+        .floating-tooltip {
+            position: absolute;
+            background-color: white;
+            border: 2px solid #1abc9c;
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-width: 250px;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .floating-tooltip.visible {
+            opacity: 1;
+        }
+
+        .floating-tooltip.always-show {
+            opacity: 0.9;
+            display: block !important;
+        }
+
+        .tooltip-content {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #2c3e50;
+        }
+
+        .tooltip-content strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #1abc9c;
+            font-size: 15px;
+        }
+
+        .particle-label {
+            pointer-events: none;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>腎臟過濾與重吸收</h1>
+        <div class="controls">
+            <button id="startBtn">開始</button>
+            <button id="resetBtn">重置</button>
+            <button id="toggleLabelsBtn">顯示分子標籤</button>
+            <button id="toggleTooltipsBtn">總是顯示說明</button>
+            <div class="pathology-group">
+                <button id="hyperglycemiaBtn" class="pathology-btn" title="高血糖：葡萄糖載體飽和，出現葡萄糖尿">高血糖</button>
+                <button id="proteinuriaBtn" class="pathology-btn" title="蛋白尿：過濾障壁受損，蛋白質漏出至濾液">蛋白尿</button>
+            </div>
+            <div class="legend">
+                <div class="legend-item"><span class="dot water"></span>水分子 (H₂O)</div>
+                <div class="legend-item"><span class="dot salt"></span>鹽類 (Salts)</div>
+                <div class="legend-item"><span class="dot urea"></span>尿素 (Urea)</div>
+                <div class="legend-item"><span class="dot protein"></span>蛋白質 (Protein)</div>
+                <div class="legend-item"><span class="dot glucose"></span>葡萄糖 (Glucose)</div>
+            </div>
+        </div>
+        <div class="info-panel"><p id="info-text">點擊「開始」以啟動模擬。</p></div>
+        <div class="visualization">
+            <svg id="nephron-svg" viewBox="0 0 800 600">
+                <defs>
+                    <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto"
+                        markerUnits="strokeWidth">
+                        <path d="M0,0 L0,6 L9,3 z" fill="#f00" />
+                    </marker>
+                </defs>
+                <g id="structure-layer"></g>
+                <g id="path-layer"></g>
+                <g id="particle-layer"></g>
+                <g id="label-layer"></g>
+            </svg>
+        </div>
+    </div>
+
+    <script>
+        /* JS 內容 */
+        document.addEventListener('DOMContentLoaded', () => {
+            const svg = document.getElementById('nephron-svg');
+            const structureLayer = document.getElementById('structure-layer');
+            const particleLayer = document.getElementById('particle-layer');
+            const labelLayer = document.getElementById('label-layer');
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const toggleLabelsBtn = document.getElementById('toggleLabelsBtn');
+            const hyperglycemiaBtn = document.getElementById('hyperglycemiaBtn');
+            const proteinuriaBtn = document.getElementById('proteinuriaBtn');
+            const toggleTooltipsBtn = document.getElementById('toggleTooltipsBtn');
+            const infoText = document.getElementById('info-text');
+
+            let isRunning = false;
+            let particles = [];
+            let animationId;
+            let spawnTimer = 0;
+            let showParticleLabels = false;
+            let alwaysShowTooltips = false;
+            let pathology = { hyperglycemia: false, proteinuria: false };
+
+            function updatePathologyInfo() {
+                const active = [];
+                if (pathology.hyperglycemia) active.push('高血糖：近曲小管葡萄糖載體飽和，部分葡萄糖出現於尿液');
+                if (pathology.proteinuria) active.push('蛋白尿：過濾障壁受損，蛋白質進入濾液');
+                if (active.length === 0) {
+                    if (isRunning) infoText.textContent = '過濾與再吸收進行中';
+                    else infoText.textContent = '點擊「開始」以啟動模擬。';
+                    return;
+                }
+                infoText.textContent = active.join('；');
+            }
+
+            const nephronPathData = "M 190 150 C 220 150, 250 100, 280 150 S 230 250, 280 300 L 280 450 C 280 500, 380 500, 380 450 L 380 300 C 410 250, 450 250, 480 300 S 530 250, 580 300 L 580 550";
+            const bloodPathData = "m 50,140 h 60 c 10,-20 36.41243,-20.55193 46.41243,-0.55193 10,20 -38.279,40.48673 -38.279,10.48673 0,-20 35.39871,-22.59502 30.27597,6.96437 -3.03564,17.5163 -30.61713,11.99696 -38.68537,-4.35027 L 83.896133,152.27293 C 65.958293,152.80968 57.74672,180.81272 180,320 200,600 440,550 440,400 400,300 500,300 600,300 h 150";
+            const glomerulusPathData = "M 115 140 C 115 110, 155 110, 155 140 C 155 170, 115 170, 115 140 C 115 120, 175 120, 175 150 C 175 180, 135 180, 135 150 C 135 130, 165 130, 165 140";
+            const bowmanPathData = "M 110 120 A 45 45 0 1 1 110 180";
+
+            const interactiveRegions = [
+                { id: 'glomerulus-region', shape: 'circle', cx: 145, cy: 150, r: 50, title: '腎小球', description: '血液在此進行過濾作用。小分子（水、葡萄糖、鹽類、尿素）可通過，大分子（蛋白質）被阻擋。' },
+                { id: 'pct-region', shape: 'rect', x: 220, y: 120, width: 100, height: 200, title: '近曲小管', description: '主要的再吸收區域。葡萄糖被完全再吸收，大部分的水和鹽類也在此回收。' },
+                { id: 'loop-region', shape: 'rect', x: 250, y: 400, width: 150, height: 150, title: '亨利氏套', description: '下降支：水分再吸收。上升支：鹽類再吸收。此處建立滲透壓梯度，幫助尿液濃縮。' },
+                { id: 'dct-region', shape: 'rect', x: 430, y: 220, width: 150, height: 120, title: '遠曲小管', description: '精細調節水分和鹽類平衡，受荷爾蒙（如醛固酮、抗利尿激素）調控。' }
+            ];
+
+            function drawStructures() {
+                const nephron = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                nephron.setAttribute("d", nephronPathData);
+                nephron.setAttribute("class", "tubule");
+                structureLayer.appendChild(nephron);
+
+                const bowman = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                bowman.setAttribute("d", bowmanPathData);
+                bowman.setAttribute("class", "bowman-capsule");
+                structureLayer.appendChild(bowman);
+
+                const glomerulus = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                glomerulus.setAttribute("d", glomerulusPathData);
+                glomerulus.setAttribute("class", "glomerulus");
+                glomerulus.setAttribute("fill", "none");
+                glomerulus.setAttribute("stroke", "#c0392b");
+                glomerulus.setAttribute("stroke-width", "8");
+                structureLayer.appendChild(glomerulus);
+
+                const capillary = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                capillary.setAttribute("d", bloodPathData);
+                capillary.setAttribute("class", "capillary");
+                structureLayer.appendChild(capillary);
+
+                interactiveRegions.forEach(region => {
+                    let element;
+                    if (region.shape === 'circle') {
+                        element = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                        element.setAttribute("cx", region.cx); element.setAttribute("cy", region.cy); element.setAttribute("r", region.r);
+                    } else {
+                        element = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                        element.setAttribute("x", region.x); element.setAttribute("y", region.y);
+                        element.setAttribute("width", region.width); element.setAttribute("height", region.height); element.setAttribute("rx", 10);
+                    }
+                    element.setAttribute("class", "interactive-region");
+                    element.setAttribute("id", region.id);
+                    element.style.cursor = 'pointer';
+                    
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'floating-tooltip region-tooltip';
+                    tooltip.innerHTML = `<div class="tooltip-content"><strong>${region.title}</strong>${region.description}</div>`;
+                    document.body.appendChild(tooltip);
+                    
+                    const showTooltip = () => {
+                        requestAnimationFrame(() => {
+                            let tooltipX = region.shape === 'circle' ? region.cx + region.r / 2 : region.x + region.width + 10;
+                            let tooltipY = region.shape === 'circle' ? region.cy - region.r * 3 : region.y + region.height / 2;
+                            const pt = svg.createSVGPoint(); pt.x = tooltipX; pt.y = tooltipY;
+                            const screenPoint = pt.matrixTransform(svg.getScreenCTM());
+                            tooltip.style.left = screenPoint.x + 'px'; tooltip.style.top = screenPoint.y + 'px';
+                            tooltip.style.display = 'block';
+                            tooltip.offsetHeight; tooltip.classList.add('visible');
+                            element.classList.add('region-hover');
+                        });
+                    };
+                    
+                    element._showTooltip = showTooltip;
+                    element._tooltip = tooltip;
+                    
+                    element.addEventListener('mouseenter', () => { if (!alwaysShowTooltips) showTooltip(); });
+                    element.addEventListener('mouseleave', () => { if (!alwaysShowTooltips) { tooltip.classList.remove('visible'); setTimeout(() => tooltip.style.display = 'none', 300); element.classList.remove('region-hover'); } });
+                    structureLayer.appendChild(element);
+                });
+
+                addLabel(100, 80, "鮑氏囊"); addLabel(100, 200, "腎絲球"); addLabel(280, 200, "近曲小管"); addLabel(330, 520, "亨利氏套"); addLabel(530, 250, "遠曲小管"); addLabel(610, 500, "集尿管"); addLabel(30, 130, "小動脈"); addLabel(700, 280, "腎靜脈");
+            }
+
+            function addLabel(x, y, text) {
+                const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                textEl.setAttribute("x", x); textEl.setAttribute("y", y); textEl.setAttribute("class", "label-text");
+                textEl.textContent = text;
+                labelLayer.appendChild(textEl);
+            }
+
+            class Particle {
+                constructor() {
+                    const types = [
+                        { type: 'water', color: '#3498db', radius: 4, label: '水' },
+                        { type: 'salt', color: '#e74c3c', radius: 4, label: '鹽' },
+                        { type: 'urea', color: '#f1c40f', radius: 4, label: '尿素' },
+                        { type: 'protein', color: '#9b59b6', radius: 6, label: '蛋白質' },
+                        { type: 'glucose', color: '#2ecc71', radius: 5, label: '葡萄糖' }
+                    ];
+                    let typeData = types[Math.floor(Math.random() * types.length)];
+                    if (pathology.hyperglycemia && Math.random() < 0.4) typeData = types[4];
+                    this.type = typeData.type; this.color = typeData.color; this.radius = typeData.radius; this.label = typeData.label;
+                    this.element = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    this.element.setAttribute("r", this.radius); this.element.setAttribute("fill", this.color); this.element.setAttribute("class", "particle");
+                    particleLayer.appendChild(this.element);
+                    this.labelElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                    this.labelElement.setAttribute("class", "particle-label"); this.labelElement.setAttribute("font-size", "10"); this.labelElement.setAttribute("font-weight", "bold");
+                    this.labelElement.textContent = this.label; this.labelElement.style.display = showParticleLabels ? 'block' : 'none';
+                    particleLayer.appendChild(this.labelElement);
+                    this.path = 'blood'; this.progress = 0; this.speed = 0.002 + Math.random() * 0.001;
+                    this.bloodPathEl = document.createElementNS("http://www.w3.org/2000/svg", "path"); this.bloodPathEl.setAttribute("d", bloodPathData);
+                    this.nephronPathEl = document.createElementNS("http://www.w3.org/2000/svg", "path"); this.nephronPathEl.setAttribute("d", nephronPathData);
+                    this.bloodLength = this.bloodPathEl.getTotalLength(); this.nephronLength = this.nephronPathEl.getTotalLength();
+                }
+                update() {
+                    if (this.isReabsorbing) {
+                        const targetPoint = this.bloodPathEl.getPointAtLength(this.reabsorbTargetProgress * this.bloodLength);
+                        const dx = targetPoint.x - this.currentX; const dy = targetPoint.y - this.currentY;
+                        if (Math.sqrt(dx * dx + dy * dy) < 5) { this.isReabsorbing = false; this.path = 'blood'; this.progress = this.reabsorbTargetProgress; }
+                        else { this.currentX += dx * 0.1; this.currentY += dy * 0.1; this.element.setAttribute("cx", this.currentX); this.element.setAttribute("cy", this.currentY); return true; }
+                    }
+                    this.progress += this.speed;
+                    if (this.path === 'blood' && this.progress > 0.15 && this.progress < 0.25 && !this.filtered) {
+                        this.filtered = true;
+                        if (this.type !== 'protein' || (pathology.proteinuria && Math.random() < 0.5)) { this.path = 'nephron'; this.progress = 0; }
+                    }
+                    if (this.path === 'nephron' && !this.isReabsorbing) {
+                        if (this.progress >= 0.12 && this.progress < 0.3 && !this.checkedPCT) {
+                            this.checkedPCT = true;
+                            if (this.type === 'glucose') { if (!pathology.hyperglycemia || Math.random() < 0.9) this.startReabsorption(0.35); }
+                            else if (Math.random() < 0.6) this.startReabsorption(0.35 + Math.random() * 0.1);
+                        }
+                    }
+                    let point = (this.path === 'blood' ? this.bloodPathEl : this.nephronPathEl).getPointAtLength(this.progress * (this.path === 'blood' ? this.bloodLength : this.nephronLength));
+                    if (this.progress >= 1) { this.remove(); return false; }
+                    this.currentX = point.x; this.currentY = point.y;
+                    this.element.setAttribute("cx", this.currentX); this.element.setAttribute("cy", this.currentY);
+                    this.labelElement.setAttribute("x", this.currentX + this.radius + 3); this.labelElement.setAttribute("y", this.currentY + 4);
+                    return true;
+                }
+                startReabsorption(target) { this.isReabsorbing = true; this.reabsorbTargetProgress = target; }
+                remove() { if (this.element.parentNode) this.element.parentNode.removeChild(this.element); if (this.labelElement.parentNode) this.labelElement.parentNode.removeChild(this.labelElement); }
+            }
+
+            function animate() {
+                if (!isRunning) return;
+                if (++spawnTimer > 20) { particles.push(new Particle()); spawnTimer = 0; }
+                particles = particles.filter(p => p.update());
+                animationId = requestAnimationFrame(animate);
+            }
+
+            startBtn.addEventListener('click', () => {
+                isRunning = !isRunning;
+                startBtn.textContent = isRunning ? "暫停" : "繼續";
+                if (isRunning) { updatePathologyInfo(); animate(); } else cancelAnimationFrame(animationId);
+            });
+
+            resetBtn.addEventListener('click', () => {
+                isRunning = false; startBtn.textContent = "開始"; cancelAnimationFrame(animationId);
+                particles.forEach(p => p.remove()); particles = []; infoText.textContent = "點擊「開始」以啟動模擬。";
+            });
+
+            toggleLabelsBtn.addEventListener('click', () => {
+                showParticleLabels = !showParticleLabels;
+                toggleLabelsBtn.textContent = showParticleLabels ? '隱藏分子標籤' : '顯示分子標籤';
+                particles.forEach(p => p.labelElement.style.display = showParticleLabels ? 'block' : 'none');
+            });
+
+            hyperglycemiaBtn.addEventListener('click', () => { pathology.hyperglycemia = !pathology.hyperglycemia; hyperglycemiaBtn.classList.toggle('active'); updatePathologyInfo(); });
+            proteinuriaBtn.addEventListener('click', () => { pathology.proteinuria = !pathology.proteinuria; proteinuriaBtn.classList.toggle('active'); updatePathologyInfo(); });
+
+            toggleTooltipsBtn.addEventListener('click', () => {
+                alwaysShowTooltips = !alwaysShowTooltips;
+                toggleTooltipsBtn.textContent = alwaysShowTooltips ? '滑鼠顯示說明' : '總是顯示說明';
+                document.querySelectorAll('.interactive-region').forEach(el => {
+                    if (alwaysShowTooltips) { el._showTooltip(); el._tooltip.classList.add('always-show'); }
+                    else { el._tooltip.classList.remove('always-show', 'visible'); setTimeout(() => el._tooltip.style.display = 'none', 300); el.classList.remove('region-hover'); }
+                });
+            });
+
+            drawStructures();
+        });
+    </script>
+</body>
+</html>
