@@ -306,7 +306,7 @@
             const bowmanPathData = "M 110 120 A 45 45 0 1 1 110 180";
 
             const interactiveRegions = [
-                { id: 'glomerulus-region', shape: 'circle', cx: 145, cy: 150, r: 50, title: '腎小球', description: '血液在此進行過濾作用。小分子（水、葡萄糖、鹽類、尿素）可通過，大分子（蛋白質）被阻擋。' },
+                { id: 'glomerulus-region', shape: 'circle', cx: 145, cy: 150, r: 50, title: '腎絲球', description: '血液在此進行過濾作用。小分子（水、葡萄糖、鹽類、尿素）可通過，大分子（蛋白質）被阻擋。' },
                 { id: 'pct-region', shape: 'rect', x: 220, y: 120, width: 100, height: 200, title: '近曲小管', description: '主要的再吸收區域。葡萄糖被完全再吸收，大部分的水和鹽類也在此回收。' },
                 { id: 'loop-region', shape: 'rect', x: 250, y: 400, width: 150, height: 150, title: '亨利氏套', description: '下降支：水分再吸收。上升支：鹽類再吸收。此處建立滲透壓梯度，幫助尿液濃縮。' },
                 { id: 'dct-region', shape: 'rect', x: 430, y: 220, width: 150, height: 120, title: '遠曲小管', description: '精細調節水分和鹽類平衡，受荷爾蒙（如醛固酮、抗利尿激素）調控。' }
@@ -376,7 +376,7 @@
                     structureLayer.appendChild(element);
                 });
 
-                addLabel(100, 80, "鮑氏囊"); addLabel(100, 200, "腎絲球"); addLabel(280, 200, "近曲小管"); addLabel(330, 520, "亨利氏套"); addLabel(530, 250, "遠曲小管"); addLabel(610, 500, "集尿管"); addLabel(30, 130, "小動脈"); addLabel(700, 280, "腎靜脈");
+                addLabel(100, 80, "鮑氏囊"); addLabel(100, 200, "腎絲球"); addLabel(280, 200, "近曲小管"); addLabel(330, 520, "亨利氏套"); addLabel(530, 250, "遠曲小管"); addLabel(610, 500, "集尿管"); addLabel(30, 130, "入球小動脈"); addLabel(700, 280, "腎靜脈");
             }
 
             function addLabel(x, y, text) {
