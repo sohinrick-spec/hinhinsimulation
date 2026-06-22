@@ -10,38 +10,34 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f4f6f9; --panel:#ffffff; --border:#d4dbe6;
-    --txt-primary:#1a2332; --txt-secondary:#4a5a70; --txt-dim:#8a9ab0;
-    --fsh:#1976d2; --lh:#5e35b1; --estro:#e65100; --proge:#2e7d32; --hcg:#d81b60; --reset:#c62828;
+    --bg:#f4f6f9;--panel:#ffffff;--border:#d4dbe6;
+    --txt-primary:#1a2332;--txt-secondary:#4a5a70;--txt-dim:#8a9ab0;
+    --fsh:#1976d2;--lh:#5e35b1;--estro:#e65100;--proge:#2e7d32;--hcg:#d81b60;--reset:#c62828;
   }
   *{box-sizing:border-box;}
-  body{background:var(--bg); color:var(--txt-primary); font-family:'Inter','Noto Sans TC',sans-serif;}
+  body{background:var(--bg);color:var(--txt-primary);font-family:'Inter','Noto Sans TC',sans-serif;}
   .mono{font-family:'IBM Plex Mono',monospace;}
-  .panel{background:var(--panel); border:1px solid var(--border); border-radius:6px;}
-  .label-dim{color:var(--txt-dim); font-size:11px; letter-spacing:.04em;}
-  .txt-sec{color:var(--txt-secondary);}
-  ::-webkit-scrollbar{width:8px; height:8px;}
-  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
-  input[type=range]{-webkit-appearance:none; height:3px; background:var(--border); border-radius:2px; outline:none;}
-  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:14px; height:14px; border-radius:3px; background:var(--txt-primary); cursor:pointer; border:2px solid #fff; box-shadow:0 0 0 1px var(--border);}
-  .toggle{width:38px; height:20px; border-radius:4px; background:var(--border); position:relative; cursor:pointer; transition:.15s;}
-  .toggle::after{content:''; position:absolute; top:2px; left:2px; width:16px; height:16px; background:#fff; border-radius:3px; transition:.15s; box-shadow:0 1px 2px rgba(0,0,0,.3);}
+  .panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;}
+  .label-dim{color:var(--txt-dim);font-size:11px;letter-spacing:.04em;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+  input[type=range]{-webkit-appearance:none;height:3px;background:var(--border);border-radius:2px;outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:3px;background:var(--txt-primary);cursor:pointer;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);}
+  .toggle{width:38px;height:20px;border-radius:4px;background:var(--border);position:relative;cursor:pointer;transition:.15s;}
+  .toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;background:#fff;border-radius:3px;transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.3);}
   .toggle.on{background:var(--proge);}
   .toggle.on::after{left:20px;}
-  .flow-arrow{transition:stroke-width .25s ease, opacity .25s ease, filter .25s ease;}
-  .pulse-dot{animation:pulseDot 1.4s ease-in-out infinite;}
-  @keyframes pulseDot{0%,100%{opacity:.3;} 50%{opacity:1;}}
-  .btn{font-family:'Inter',sans-serif; font-size:12px; font-weight:600; padding:6px 10px; border-radius:4px; border:1px solid var(--border); background:#fff; color:var(--txt-primary); cursor:pointer; transition:.1s;}
+  .flow-arrow{transition:stroke-width .25s ease,opacity .25s ease,filter .25s ease;}
+  .btn{font-family:'Inter',sans-serif;font-size:12px;font-weight:600;padding:6px 10px;border-radius:4px;border:1px solid var(--border);background:#fff;color:var(--txt-primary);cursor:pointer;transition:.1s;}
   .btn:hover{background:#f0f3f7;}
-  .btn-primary{background:var(--txt-primary); color:#fff; border-color:var(--txt-primary);}
+  .btn-primary{background:var(--txt-primary);color:#fff;border-color:var(--txt-primary);}
   .btn-primary:hover{opacity:.85;}
-  .tag{font-size:10px; padding:1px 6px; border-radius:3px; font-weight:600;}
+  .tag{font-size:10px;padding:1px 6px;border-radius:3px;font-weight:600;}
   .term-log::-webkit-scrollbar{width:6px;}
-  .term-line{border-bottom:1px dashed #e8edf3; padding:4px 0;}
+  .term-line{border-bottom:1px dashed #e8edf3;padding:4px 0;}
 </style>
 </head>
 <body class="min-h-screen">
-
 <div class="max-w-[1600px] mx-auto p-3 md:p-5">
 
   <!-- HEADER -->
@@ -56,29 +52,29 @@
     </div>
   </div>
 
-  <!-- ZONE 1: TELEMETRY GRID -->
+  <!-- TELEMETRY GRID -->
   <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-    <div class="panel p-3" id="card-fsh">
+    <div class="panel p-3">
       <div class="flex justify-between items-center"><span class="label-dim">FSH 促卵泡激素</span><span class="w-2 h-2 rounded-sm" style="background:var(--fsh)"></span></div>
       <div class="mono text-2xl font-bold flex items-center gap-1" style="color:var(--fsh)"><span id="val-fsh">0.0</span><span id="trend-fsh" class="text-sm">▬</span></div>
       <div class="label-dim mono" id="fb-fsh">— 無反饋</div>
     </div>
-    <div class="panel p-3" id="card-lh">
+    <div class="panel p-3">
       <div class="flex justify-between items-center"><span class="label-dim">LH 促黃體激素</span><span class="w-2 h-2 rounded-sm" style="background:var(--lh)"></span></div>
       <div class="mono text-2xl font-bold flex items-center gap-1" style="color:var(--lh)"><span id="val-lh">0.0</span><span id="trend-lh" class="text-sm">▬</span></div>
       <div class="label-dim mono" id="fb-lh">— 無反饋</div>
     </div>
-    <div class="panel p-3" id="card-estro">
+    <div class="panel p-3">
       <div class="flex justify-between items-center"><span class="label-dim">雌激素 Oestrogen</span><span class="w-2 h-2 rounded-sm" style="background:var(--estro)"></span></div>
       <div class="mono text-2xl font-bold flex items-center gap-1" style="color:var(--estro)"><span id="val-estro">0.0</span><span id="trend-estro" class="text-sm">▬</span></div>
       <div class="label-dim mono" id="fb-estro">— 無反饋</div>
     </div>
-    <div class="panel p-3" id="card-proge">
+    <div class="panel p-3">
       <div class="flex justify-between items-center"><span class="label-dim">孕酮 Progesterone</span><span class="w-2 h-2 rounded-sm" style="background:var(--proge)"></span></div>
       <div class="mono text-2xl font-bold flex items-center gap-1" style="color:var(--proge)"><span id="val-proge">0.0</span><span id="trend-proge" class="text-sm">▬</span></div>
       <div class="label-dim mono" id="fb-proge">— 無反饋</div>
     </div>
-    <div class="panel p-3" id="card-hcg">
+    <div class="panel p-3">
       <div class="flex justify-between items-center"><span class="label-dim">HCG 絨毛膜促性腺激素</span><span class="w-2 h-2 rounded-sm" style="background:var(--hcg)"></span></div>
       <div class="mono text-2xl font-bold flex items-center gap-1" style="color:var(--hcg)"><span id="val-hcg">0.0</span><span id="trend-hcg" class="text-sm">▬</span></div>
       <div class="label-dim mono" id="fb-hcg">— 未懷孕</div>
@@ -86,28 +82,27 @@
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-    <!-- ZONE 2: ANATOMICAL MAP -->
+    <!-- ANATOMY -->
     <div class="panel p-3 flex flex-col">
       <div class="flex justify-between items-center mb-2">
         <h2 class="font-bold text-sm">解剖學視覺地圖 · 激素分泌路徑</h2>
         <span class="label-dim mono" id="phaseLabel">第 1 天 · 月經期</span>
       </div>
-      <svg id="anatomySvg" viewBox="0 0 480 460" class="w-full h-[420px]">
-      </svg>
+      <svg id="anatomySvg" viewBox="0 0 480 460" class="w-full h-[420px]"></svg>
       <div class="flex flex-wrap gap-3 justify-center mt-1 pt-2 border-t" style="border-color:var(--border)">
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--fsh)"></span>FSH</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--lh)"></span>LH</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--estro)"></span>雌激素</span>
-        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--proge)"></span>孕酮</span>
+        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:#2e7d32"></span>FSH</span>
+        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:#c62828"></span>LH</span>
+        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:#1565c0"></span>雌激素</span>
+        <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:#f9a825"></span>孕酮</span>
         <span class="label-dim flex items-center gap-1"><span class="inline-block w-4 h-0.5" style="background:var(--hcg)"></span>HCG</span>
       </div>
     </div>
 
-    <!-- ZONE 3: CHART -->
+    <!-- CHART — static 28-day projection; only the day-cursor moves -->
     <div class="panel p-3 flex flex-col">
       <div class="flex justify-between items-center mb-2">
-        <h2 class="font-bold text-sm">28天激素濃度同步圖表</h2>
-        <span class="label-dim mono">DUAL-AXIS PLOTTER</span>
+        <h2 class="font-bold text-sm">28天激素濃度預測曲線 <span class="label-dim">（靜態 · 游標隨播放移動）</span></h2>
+        <span class="label-dim mono">STATIC PROJECTION</span>
       </div>
       <div class="relative flex-1" style="min-height:380px;">
         <canvas id="hormoneChart"></canvas>
@@ -115,11 +110,11 @@
     </div>
   </div>
 
-  <!-- ZONE 4: CONTROL BOARD -->
+  <!-- CONTROL BOARD -->
   <div class="panel p-4 mb-4">
     <div class="flex flex-wrap items-center gap-4 mb-3">
       <button id="playBtn" class="btn btn-primary">▶ 開始</button>
-      <button id="resetBtn" class="btn">⟲ 重設</button>
+      <button id="resetBtn" class="btn">⟲ 完整重設</button>
       <div class="flex items-center gap-2">
         <span class="label-dim mono">速度</span>
         <input type="range" id="speedSlider" min="1" max="10" value="4" class="w-24">
@@ -156,14 +151,15 @@
       <!-- IVF -->
       <div>
         <div class="flex items-center justify-between mb-1">
-          <span class="font-semibold text-sm">不育與IVF模組</span>
+          <span class="font-semibold text-sm">不育與IVF模組 <span class="label-dim">(依醫療時機)</span></span>
         </div>
         <div class="flex flex-wrap gap-1 mb-1">
-          <button class="btn" id="inj-fsh" style="border-color:var(--fsh); color:var(--fsh);">注射 FSH</button>
-          <button class="btn" id="inj-lh" style="border-color:var(--lh); color:var(--lh);">注射 LH</button>
-          <button class="btn" id="inj-proge" style="border-color:var(--proge); color:var(--proge);">注射孕酮</button>
+          <button class="btn" id="inj-fsh" style="border-color:var(--fsh);color:var(--fsh);" title="最佳: 第1-7天">💉 FSH刺激</button>
+          <button class="btn" id="inj-lh"  style="border-color:var(--lh);color:var(--lh);"  title="最佳: 卵泡成熟後(雌激素>60)">💉 LH/hCG觸發</button>
+          <button class="btn" id="inj-proge" style="border-color:var(--proge);color:var(--proge);" title="最佳: 排卵後第14天起">💉 孕酮支持</button>
         </div>
-        <label class="flex items-center gap-1 label-dim"><input type="checkbox" id="disorderToggle"> 排卵機能不全 (FSH/LH 反應低下)</label>
+        <div class="label-dim text-xs mt-1 mono" id="injStatusLabel">— 無活躍注射療程</div>
+        <label class="flex items-center gap-1 label-dim mt-1 cursor-pointer"><input type="checkbox" id="disorderToggle"> 排卵機能不全 (FSH/LH 反應低下)</label>
       </div>
     </div>
   </div>
@@ -178,7 +174,9 @@
 </div>
 
 <script>
-// ============================ STATE ============================
+// ══════════════════════════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════════════════════════
 const state = {
   day: 1,
   playing: false,
@@ -187,473 +185,620 @@ const state = {
   pregWeek: 0,
   contraception: 'none',
   disorder: false,
-  manualInject: {fsh:0, lh:0, proge:0},
-  history: [], // {day, fsh, lh, estro, proge, hcg, endo}
-  corpusLuteumRescued: false,
+  // Medical injection protocol — each records the DAY the shot was given (null = not used)
+  injections: {
+    fsh:   null,   // Ovarian stimulation (best: day 1-7)
+    lh:    null,   // hCG / LH trigger    (best: follicle mature, estro > 60)
+    proge: null,   // Luteal phase support (best: day 14+)
+  },
 };
 
-const COLORS = {fsh:'#1976d2', lh:'#5e35b1', estro:'#e65100', proge:'#2e7d32', hcg:'#d81b60', reset:'#c62828'};
+const COLORS = {
+  fsh:'#1976d2', lh:'#5e35b1', estro:'#e65100',
+  proge:'#2e7d32', hcg:'#d81b60', reset:'#c62828',
+};
+const CHART_COLORS = {
+  fsh:'#2e7d32', lh:'#c62828', estro:'#1565c0',
+  proge:'#f9a825', endo:'#ad1457',
+};
 
-// ============================ HORMONE ENGINE ============================
-// Returns levels (0-100) and endometrium thickness (mm) for a given day (1-28, float)
-function computeLevels(day){
+// ══════════════════════════════════════════════════════════════════════
+//  HORMONE ENGINE
+//  Returns levels 0-100 and endometrium thickness (mm) for a given day.
+//  Medical injections modify the projected curve from their injection day
+//  onward — so recomputeChart() reshapes the entire 28-day trace.
+// ══════════════════════════════════════════════════════════════════════
+function computeLevels(day) {
   let fsh=5, lh=5, estro=5, proge=5, hcg=0, endo=1;
-  let fbFsh='— 無顯著反饋', fbLh='— 無顯著反饋', fbEstro='— 無顯著反饋', fbProge='— 未懷孕';
+  let fbFsh='— 無顯著反饋', fbLh='— 無顯著反饋',
+      fbEstro='— 無顯著反饋', fbProge='— 未懷孕';
 
   const d = day;
 
-  if(d <= 5){ // menstruation
-    estro = 8 - d*0.8;
-    proge = 4 - d*0.6;
-    if(estro<3) estro=3; if(proge<2) proge=2;
-    fsh = 15 + d*4; // pituitary starts rising as estrogen low
-    lh = 8 + d*1.5;
-    endo = Math.max(1, 5 - d*0.9);
-    fbFsh = '正反饋抑制解除：雌激素低 → 垂體增加FSH分泌';
-    fbEstro = '子宮內膜崩解、月經來潮';
-  } else if(d <= 11.5){ // pre-ovulatory, follicle dev (FSH-driven growth, estrogen rising)
+  // ── Baseline 28-day cycle ──────────────────────────────────────────
+  if (d <= 5) {                                         // Menstruation
+    estro = Math.max(3, 8 - d*0.8);
+    proge = Math.max(2, 4 - d*0.6);
+    fsh   = 15 + d*4;
+    lh    = 8  + d*1.5;
+    endo  = Math.max(1, 5 - d*0.9);
+    fbFsh  = '正反饋抑制解除：雌激素低 → 垂體增加FSH分泌';
+    fbEstro= '子宮內膜崩解、月經來潮';
+
+  } else if (d <= 11.5) {                              // Follicular
     const t = (d-5)/6.5;
-    fsh = 35 - t*10 + Math.sin(t*3)*2;
-    estro = 10 + Math.pow(t,2.0)*55;
-    lh = 10 + t*8;
+    fsh   = 35 - t*10 + Math.sin(t*3)*2;
+    estro = 10 + Math.pow(t,2)*55;
+    lh    = 10 + t*8;
     proge = 2;
-    endo = 1 + t*5.5;
-    fbFsh = '負反饋：雌激素上升 → 抑制垂體FSH（確保單一卵泡成熟）';
-    fbEstro = '卵泡發育分泌雌激素 → 子宮內膜增厚修復';
-  } else if(d <= 16){ // peri-ovulatory window: estrogen peaks ~day13, LH/FSH surge centered exactly on day 14 (排卵)
-    const tt = d - 14; // signed offset from ovulation day
-    // Estrogen: rises to a peak just before day14 then falls sharply as LH surge begins
-    const estroPeakOffset = -0.8; // peak at day 13.2
-    estro = 60 + 40*Math.exp(-Math.pow((tt-estroPeakOffset)/1.6,2)) - (tt>0 ? tt*9 : 0);
-    estro = Math.max(20, estro);
-    // LH surge: sharp gaussian centered exactly at day 14
-    lh = 12 + 78*Math.exp(-Math.pow(tt/0.85,2));
-    // FSH: smaller co-incident surge, also centered at day 14
-    fsh = 18 + 32*Math.exp(-Math.pow(tt/0.9,2));
+    endo  = 1 + t*5.5;
+    fbFsh  = '負反饋：雌激素上升 → 抑制垂體FSH（確保單一卵泡成熟）';
+    fbEstro= '卵泡發育分泌雌激素 → 子宮內膜增厚修復';
+
+  } else if (d <= 16) {                                // Peri-ovulatory
+    const tt = d - 14;
+    estro = Math.max(20, 60 + 40*Math.exp(-Math.pow((tt+0.8)/1.6,2)) - (tt>0 ? tt*9 : 0));
+    lh    = 12 + 78*Math.exp(-Math.pow(tt/0.85,2));
+    fsh   = 18 + 32*Math.exp(-Math.pow(tt/0.9,2));
     proge = 4 + Math.max(0, tt+1)*4;
-    endo = 7.2 + Math.max(0, tt)*0.3;
-    fbFsh = '正反饋：雌激素峰值 → 垂體觸發LH/FSH激增';
-    fbLh = tt<=0 ? '正反饋：雌激素峰值觸發垂體LH激增' : '正反饋：LH激增峰值已對齊第14天 → 誘發排卵';
-    fbEstro = '雌激素達峰值 (>85%) 觸發正反饋';
-  } else { // luteal
+    endo  = 7.2 + Math.max(0, tt)*0.3;
+    fbFsh  = '正反饋：雌激素峰值 → 垂體觸發LH/FSH激增';
+    fbLh   = tt<=0 ? '正反饋：雌激素峰值觸發垂體LH激增' : 'LH激增峰值 → 誘發排卵';
+    fbEstro= '雌激素達峰值 (>85%) 觸發正反饋';
+
+  } else {                                             // Luteal
     const t = (d-16)/12;
-    const luteumActive = state.pregnancy ? true : t < 0.85;
-    if(luteumActive || state.pregnancy){
-      proge = 20 + Math.sin(t*Math.PI*0.95)*60;
-      if(proge<15) proge=15;
+    const alive = state.pregnancy || t < 0.85;
+    if (alive) {
+      proge = Math.max(15, 20 + Math.sin(t*Math.PI*0.95)*60);
       estro = 30 + Math.sin(t*Math.PI*0.9)*35;
-      endo = 8 + Math.sin(t*Math.PI*0.95)*1.5;
+      endo  = 8  + Math.sin(t*Math.PI*0.95)*1.5;
     } else {
-      // luteolysis - crash
-      const crashT = (t-0.85)/0.15;
-      proge = Math.max(2, 60*(1-crashT));
-      estro = Math.max(3, 40*(1-crashT));
-      endo = Math.max(1, 9*(1-crashT*0.6));
+      const ct = (t-0.85)/0.15;
+      proge = Math.max(2, 60*(1-ct));
+      estro = Math.max(3, 40*(1-ct));
+      endo  = Math.max(1,  9*(1-ct*0.6));
     }
-    fsh = state.pregnancy ? 3 : (8 + Math.max(0, t-0.85)*100);
-    lh = state.pregnancy ? 3 : (5 + Math.max(0, t-0.85)*60);
-    fbProge = '負反饋：黃體分泌孕酮 → 強烈抑制垂體FSH/LH';
-    fbFsh = '受孕酮負反饋強烈抑制';
-    fbLh = '受孕酮負反饋強烈抑制';
+    fsh = state.pregnancy ? 3 : (8  + Math.max(0, t-0.85)*100);
+    lh  = state.pregnancy ? 3 : (5  + Math.max(0, t-0.85)*60);
+    fbProge= '負反饋：黃體分泌孕酮 → 強烈抑制垂體FSH/LH';
+    fbFsh  = '受孕酮負反饋強烈抑制';
+    fbLh   = '受孕酮負反饋強烈抑制';
 
-    if(state.pregnancy){
-      const weekEquiv = state.pregWeek;
-      hcg = weekEquiv < 16 ? Math.min(95, 20 + weekEquiv*8) : Math.max(10, 95 - (weekEquiv-16)*4);
-      fbProge = weekEquiv < 16 ? 'HCG 維持黃體分泌孕酮（防止黃體退化）' : '胎盤接管孕酮/雌激素分泌';
-      if(weekEquiv >= 16){ proge = 70 + Math.sin(weekEquiv*0.1)*10; estro = 75 + Math.sin(weekEquiv*0.1)*10; }
+    if (state.pregnancy) {
+      const wk = state.pregWeek;
+      hcg = wk < 16 ? Math.min(95, 20+wk*8) : Math.max(10, 95-(wk-16)*4);
+      fbProge = wk < 16 ? 'HCG 維持黃體分泌孕酮（防止黃體退化）' : '胎盤接管孕酮/雌激素分泌';
+      if (wk >= 16) { proge = 70+Math.sin(wk*0.1)*10; estro = 75+Math.sin(wk*0.1)*10; }
     }
   }
 
-  // Contraception overrides
-  if(state.contraception === 'combined'){
+  // ── Medical injection protocol effects ────────────────────────────
+  // Effects are baked into computeLevels so recomputeChart() reshapes
+  // the full 28-day projection the moment an injection is recorded.
+
+  // 1) FSH Ovarian Stimulation (optimal window: day 1-7)
+  if (state.injections.fsh !== null) {
+    const dt = d - state.injections.fsh;
+    if (dt >= 0 && dt < 10) {
+      // Exogenous FSH: peak serum ~day 2-3 post-injection, decays over 7 days
+      fsh = Math.min(100, fsh + 32*Math.exp(-dt*0.22));
+      // Granulosa cells respond with rising estrogen (delayed ~1 day)
+      if (dt > 0.8) {
+        estro = Math.min(100, estro + Math.min(40, 10*(dt-0.8)*Math.exp(-(dt-0.8)*0.26)));
+      }
+      fbFsh = `[IVF-FSH] 外源卵巢刺激 (+${dt.toFixed(1)}d)：多卵泡同步生長`;
+    }
+  }
+
+  // 2) LH / hCG Trigger Shot (optimal: mature follicles, estro > 60)
+  if (state.injections.lh !== null) {
+    const dt = d - state.injections.lh;
+    // Acute LH surge window: injection day ± ~1 day
+    if (dt >= -0.3 && dt < 1.3) {
+      lh  = Math.min(100, Math.max(lh, 72*Math.exp(-Math.pow((dt-0.2)/0.55,2))));
+      fsh = Math.min(100, fsh + 20*Math.exp(-Math.pow(dt/0.75,2)));
+      fbLh = '[IVF-hCG] 觸發注射：人工LH激增，誘發最終卵母細胞成熟';
+    }
+    // Ovulation occurs ~36 h (1.5 days) after trigger; corpus luteum forms
+    if (dt >= 1.5 && dt < 15) {
+      const lutDt = dt - 1.5;
+      const ca = Math.sin((lutDt/12)*Math.PI*0.9); // corpus luteum activity
+      if (ca > 0) {
+        proge = Math.min(100, proge + 52*ca);
+        estro = Math.min(100, estro + 30*ca);
+        endo  = Math.min(10,  endo  + 1.8*ca);
+      }
+      lh = Math.min(lh, 12); // LH returns to baseline post-surge
+      fbProge = `[IVF-hCG] 觸發後D${lutDt.toFixed(1)}：黃體活躍，孕酮高位維持`;
+    }
+  }
+
+  // 3) Progesterone Luteal Phase Support (optimal: day 14+)
+  if (state.injections.proge !== null) {
+    const dt = d - state.injections.proge;
+    if (dt >= 0 && dt < 14) {
+      proge = Math.min(100, proge + 40*Math.exp(-dt*0.06));
+      endo  = Math.min(10,  endo  + 1.5*Math.exp(-dt*0.1));
+      fbProge = `[IVF-P4] 黃體期孕酮支持 (D${Math.floor(dt)})：維持子宮內膜容受性`;
+    }
+  }
+
+  // ── Mode overrides ────────────────────────────────────────────────
+  if (state.contraception === 'combined') {
     estro = 55; proge = 55; fsh = 3; lh = 3; endo = Math.min(endo, 4);
-    fbFsh = '垂體被外源激素完全抑制（避孕丸）';
-    fbLh = '垂體被外源激素完全抑制（避孕丸）';
-    fbEstro = '外源固定劑量雌激素'; fbProge = '外源固定劑量孕酮';
+    fbFsh = fbLh = '垂體被外源激素完全抑制（避孕丸）';
+    fbEstro = '外源固定劑量雌激素';
+    fbProge = '外源固定劑量孕酮';
   }
+  if (state.disorder) { fsh *= 0.45; lh *= 0.45; }
 
-  // disorder
-  if(state.disorder){ fsh*=0.45; lh*=0.45; }
+  fsh   = clamp(fsh);  lh    = clamp(lh);
+  estro = clamp(estro); proge = clamp(proge); hcg = clamp(hcg);
+  endo  = Math.max(0.5, Math.min(10, endo));
 
-  // manual injections (decay pulses handled externally by adding directly)
-  fsh += state.manualInject.fsh; lh += state.manualInject.lh; proge += state.manualInject.proge;
-
-  fsh = clamp(fsh); lh=clamp(lh); estro=clamp(estro); proge=clamp(proge); hcg=clamp(hcg);
-  endo = Math.max(0.5, Math.min(10, endo));
-
-  return {fsh,lh,estro,proge,hcg,endo,fbFsh,fbLh,fbEstro,fbProge};
+  return { fsh, lh, estro, proge, hcg, endo, fbFsh, fbLh, fbEstro, fbProge };
 }
-function clamp(v){ return Math.max(0, Math.min(100, v)); }
 
-function phaseOf(day){
-  if(state.pregnancy) return '懷孕中 · 妊娠維持期';
-  if(day<=5) return '月經期 Menstruation';
-  if(day<=11.5) return '排卵前期 Follicular';
-  if(day<=16) return '排卵期 Ovulation';
+function clamp(v) { return Math.max(0, Math.min(100, v)); }
+
+function phaseOf(day) {
+  if (state.pregnancy)   return '懷孕中 · 妊娠維持期';
+  if (day <= 5)          return '月經期 Menstruation';
+  if (day <= 11.5)       return '排卵前期 Follicular';
+  if (day <= 16)         return '排卵期 Ovulation';
   return '排卵後期 Luteal';
 }
 
-// ============================ CHART ============================
-const CHART_COLORS = { fsh:'#2e7d32', lh:'#c62828', estro:'#1565c0', proge:'#f9a825', endo:'#ad1457' };
-
+// ══════════════════════════════════════════════════════════════════════
+//  CHART  — static 28-day projection; only day-cursor is animated
+// ══════════════════════════════════════════════════════════════════════
 const currentDayLinePlugin = {
-  id:'currentDayLine',
-  afterDraw(chartInstance){
+  id: 'currentDayLine',
+  afterDraw(chartInstance) {
     const xScale = chartInstance.scales.x;
-    const {top, bottom} = chartInstance.chartArea;
+    const { top, bottom } = chartInstance.chartArea;
     const xPos = xScale.getPixelForValue(state.day - 1);
     const c = chartInstance.ctx;
     c.save();
-    c.beginPath();
-    c.moveTo(xPos, top);
-    c.lineTo(xPos, bottom);
-    c.lineWidth = 1.5;
-    c.strokeStyle = '#1a2332';
-    c.setLineDash([5,3]);
-    c.stroke();
-    c.font = "10px 'IBM Plex Mono'";
-    c.fillStyle = '#1a2332';
-    c.setLineDash([]);
-    c.fillText('Day '+Math.floor(state.day), xPos+4, top+12);
+    c.beginPath(); c.moveTo(xPos, top); c.lineTo(xPos, bottom);
+    c.lineWidth = 2; c.strokeStyle = '#1a2332'; c.setLineDash([5,3]); c.stroke();
+    c.font = "10px 'IBM Plex Mono'"; c.fillStyle = '#1a2332'; c.setLineDash([]);
+    c.fillText('Day ' + Math.floor(state.day), xPos + 4, top + 12);
     c.restore();
   }
 };
 
-const ctx = document.getElementById('hormoneChart').getContext('2d');
-const labels = Array.from({length:28},(_,i)=>i+1);
-const chart = new Chart(ctx, {
-  type:'line',
-  data:{
-    labels,
-    datasets:[
-      {label:'FSH', data:[], borderColor:CHART_COLORS.fsh, yAxisID:'y', tension:.3, pointRadius:0, borderWidth:2},
-      {label:'LH', data:[], borderColor:CHART_COLORS.lh, yAxisID:'y', tension:.3, pointRadius:0, borderWidth:2},
-      {label:'雌激素', data:[], borderColor:CHART_COLORS.estro, yAxisID:'y', tension:.3, pointRadius:0, borderWidth:2},
-      {label:'孕酮', data:[], borderColor:CHART_COLORS.proge, yAxisID:'y', tension:.3, pointRadius:0, borderWidth:2},
-      {label:'內膜厚度(mm)', data:[], borderColor:CHART_COLORS.endo, borderDash:[4,3], yAxisID:'y1', tension:.3, pointRadius:0, borderWidth:1.5},
+const chartCtx = document.getElementById('hormoneChart').getContext('2d');
+const chart = new Chart(chartCtx, {
+  type: 'line',
+  data: {
+    labels: Array.from({length:28}, (_,i) => i+1),
+    datasets: [
+      { label:'FSH',        data:[], borderColor:CHART_COLORS.fsh,   yAxisID:'y',  tension:.3, pointRadius:0, borderWidth:2 },
+      { label:'LH',         data:[], borderColor:CHART_COLORS.lh,    yAxisID:'y',  tension:.3, pointRadius:0, borderWidth:2 },
+      { label:'雌激素',      data:[], borderColor:CHART_COLORS.estro, yAxisID:'y',  tension:.3, pointRadius:0, borderWidth:2 },
+      { label:'孕酮',        data:[], borderColor:CHART_COLORS.proge, yAxisID:'y',  tension:.3, pointRadius:0, borderWidth:2 },
+      { label:'內膜厚度(mm)', data:[], borderColor:CHART_COLORS.endo, borderDash:[4,3], yAxisID:'y1', tension:.3, pointRadius:0, borderWidth:1.5 },
     ]
   },
-  options:{
-    animation:false,
-    responsive:true, maintainAspectRatio:false,
-    interaction:{mode:'index', intersect:false},
-    plugins:{legend:{labels:{font:{family:'IBM Plex Mono', size:10}, color:'#4a5a70'}}},
-    scales:{
-      x:{ticks:{font:{family:'IBM Plex Mono', size:10}, color:'#8a9ab0'}, grid:{color:'#eef1f5'}},
-      y:{min:0, max:100, position:'left', ticks:{font:{family:'IBM Plex Mono',size:10},color:'#8a9ab0'}, grid:{color:'#eef1f5'}},
-      y1:{min:0, max:10, position:'right', ticks:{font:{family:'IBM Plex Mono',size:10},color:'#8a9ab0'}, grid:{display:false}},
+  options: {
+    animation: false,
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins: { legend: { labels: { font:{ family:'IBM Plex Mono', size:10 }, color:'#4a5a70' } } },
+    scales: {
+      x:  { ticks:{ font:{family:'IBM Plex Mono',size:10}, color:'#8a9ab0' }, grid:{color:'#eef1f5'} },
+      y:  { min:0, max:100, position:'left',  ticks:{font:{family:'IBM Plex Mono',size:10},color:'#8a9ab0'}, grid:{color:'#eef1f5'} },
+      y1: { min:0, max:10,  position:'right', ticks:{font:{family:'IBM Plex Mono',size:10},color:'#8a9ab0'}, grid:{display:false} },
     }
   },
-  plugins:[currentDayLinePlugin]
+  plugins: [currentDayLinePlugin]
 });
 
-function precomputeBaseline(){
-  // for chart preview (ignoring pregnancy/contraception toggles for static plot baseline)
-  for(let d=1; d<=28; d++){
+// Recompute the FULL 28-day curve and update chart.
+// Called on mode/injection changes only — not during playback.
+function recomputeChart() {
+  for (let d = 1; d <= 28; d++) {
     const lv = computeLevels(d);
-    chart.data.datasets[0].data[d-1]=lv.fsh;
-    chart.data.datasets[1].data[d-1]=lv.lh;
-    chart.data.datasets[2].data[d-1]=lv.estro;
-    chart.data.datasets[3].data[d-1]=lv.proge;
-    chart.data.datasets[4].data[d-1]=lv.endo;
+    chart.data.datasets[0].data[d-1] = lv.fsh;
+    chart.data.datasets[1].data[d-1] = lv.lh;
+    chart.data.datasets[2].data[d-1] = lv.estro;
+    chart.data.datasets[3].data[d-1] = lv.proge;
+    chart.data.datasets[4].data[d-1] = lv.endo;
   }
-  chart.update();
+  chart.update();   // full redraw of data + day line
 }
 
-
-
-// ============================ ANATOMY SVG ============================
-const svgNS = "http://www.w3.org/2000/svg";
+// ══════════════════════════════════════════════════════════════════════
+//  ANATOMY SVG
+// ══════════════════════════════════════════════════════════════════════
 const svg = document.getElementById('anatomySvg');
 
-function buildStaticAnatomy(){
+function buildStaticAnatomy() {
   svg.innerHTML = `
-  <!-- Pituitary -->
   <g id="pituitaryGroup">
     <ellipse cx="240" cy="55" rx="60" ry="34" fill="#eef3fb" stroke="#9fb6d8"/>
     <text x="240" y="50" text-anchor="middle" font-size="13" font-weight="700" fill="#1a2332" font-family="Noto Sans TC">垂體</text>
     <text x="240" y="65" text-anchor="middle" font-size="9" fill="#4a5a70" font-family="Noto Sans TC">Pituitary Gland</text>
   </g>
-  <rect id="pitBadge" x="180" y="92" width="120" height="20" rx="3" fill="#1976d2" opacity="0.12"/>
-  <text id="pitBadgeText" x="240" y="106" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#1976d2" font-weight="700">釋放：FSH, LH</text>
-
-  <!-- Hormone flow paths Pituitary -> Ovary -->
+  <rect id="pitBadge" x="178" y="92" width="124" height="20" rx="3" fill="#1976d2" opacity="0.12"/>
+  <text id="pitBadgeText" x="240" y="106" text-anchor="middle" font-size="10" font-family="IBM Plex Mono" fill="#1976d2" font-weight="700">持續釋放：FSH, LH</text>
   <defs>
-    <marker id="arrow-fsh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.fsh}"/></marker>
-    <marker id="arrow-lh" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.lh}"/></marker>
-    <marker id="arrow-estro" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.estro}"/></marker>
-    <marker id="arrow-proge" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.proge}"/></marker>
-    <marker id="arrow-hcg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${COLORS.hcg}"/></marker>
+    <marker id="arr-fsh"   viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.fsh}"/></marker>
+    <marker id="arr-lh"    viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.lh}"/></marker>
+    <marker id="arr-estro" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.estro}"/></marker>
+    <marker id="arr-proge" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${CHART_COLORS.proge}"/></marker>
+    <marker id="arr-hcg"   viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 Z" fill="${COLORS.hcg}"/></marker>
   </defs>
-
-  <!-- Uterus (drawn before flow arrows/ovaries so endometrium sits beneath arrow lines, arrowheads stay on top) -->
-  <g>
-    <path d="M170,360 Q240,330 310,360 L310,420 Q240,450 170,420 Z" fill="#fdeef0" stroke="#e89aab"/>
-    <path id="endoLining" d="M185,368 Q240,348 295,368 L295,412 Q240,432 185,412 Z" fill="#f9c4cf" stroke="#d81b60" opacity="0.6"/>
-  </g>
+  <!-- Uterus -->
+  <path d="M170,360 Q240,330 310,360 L310,420 Q240,450 170,420 Z" fill="#fdeef0" stroke="#e89aab"/>
+  <path id="endoLining" d="M185,368 Q240,348 295,368 L295,412 Q240,432 185,412 Z" fill="#f9c4cf" stroke="#d81b60" opacity="0.6"/>
   <text x="240" y="443" text-anchor="middle" font-size="10" font-family="Noto Sans TC" fill="#4a5a70">子宮 (內膜)</text>
   <text id="endoThickLabel" x="240" y="395" text-anchor="middle" font-size="9" font-family="IBM Plex Mono" fill="#c62828" font-weight="700"></text>
-
-  <!-- Hormone flow paths: ALWAYS rendered (hormones are secreted continuously), each pair kept parallel & non-overlapping -->
-  <!-- Pituitary -> Left Ovary: FSH outer curve, LH inner curve -->
-  <path id="path-fsh" d="M196,98 C145,128 102,175 96,242" fill="none" stroke="${CHART_COLORS.fsh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-fsh)" class="flow-arrow"/>
-  <path id="path-lh-l" d="M218,104 C188,145 152,195 130,246" fill="none" stroke="${CHART_COLORS.lh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-lh)" class="flow-arrow"/>
-  <!-- Pituitary -> Right Ovary: FSH outer curve, LH inner curve -->
-  <path id="path-fsh-r" d="M284,98 C335,128 378,175 384,242" fill="none" stroke="${CHART_COLORS.fsh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-fsh)" class="flow-arrow"/>
-  <path id="path-lh" d="M262,104 C292,145 328,195 350,246" fill="none" stroke="${CHART_COLORS.lh}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-lh)" class="flow-arrow"/>
-  <!-- BOTH ovaries secrete estrogen & progesterone -> Endometrium. Four separate lanes land across the top of the uterus, evenly spaced, no crossing. -->
-  <path id="path-estro" d="M352,300 C345,330 320,345 285,358" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-estro)" class="flow-arrow"/>
-  <path id="path-proge" d="M335,308 C310,332 275,340 255,356" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-proge)" class="flow-arrow"/>
-  <path id="path-estro-l" d="M128,300 C135,330 160,345 195,358" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-estro)" class="flow-arrow"/>
-  <path id="path-proge-l" d="M145,308 C170,332 205,340 225,356" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="3" opacity="1" stroke-linecap="round" marker-end="url(#arrow-proge)" class="flow-arrow"/>
-  <path id="path-hcg" d="M240,400 C240,388 240,376 240,368" fill="none" stroke="${COLORS.hcg}" stroke-width="3" opacity="0" stroke-linecap="round" marker-end="url(#arrow-hcg)" class="flow-arrow"/>
-
-  <!-- Ovaries (drawn after flow paths so glands sit on top of where lines originate) -->
-  <g id="ovaryL">
-    <ellipse cx="120" cy="280" rx="42" ry="32" fill="#fff7ef" stroke="#e8b98a"/>
-    <circle id="follicleL" cx="120" cy="280" r="10" fill="#ffd9a0" stroke="#e65100"/>
-  </g>
-  <g id="ovaryR">
-    <ellipse cx="360" cy="280" rx="42" ry="32" fill="#fff7ef" stroke="#e8b98a"/>
-    <circle id="follicleR" cx="360" cy="280" r="10" fill="#ffd9a0" stroke="#e65100"/>
-  </g>
+  <!-- Flow arrows: Pit → Ovaries -->
+  <path id="p-fsh-l"   d="M196,98 C145,128 102,175 96,242"  fill="none" stroke="${CHART_COLORS.fsh}"   stroke-width="3" stroke-linecap="round" marker-end="url(#arr-fsh)"   class="flow-arrow"/>
+  <path id="p-lh-l"    d="M218,104 C188,145 152,195 130,246" fill="none" stroke="${CHART_COLORS.lh}"    stroke-width="3" stroke-linecap="round" marker-end="url(#arr-lh)"    class="flow-arrow"/>
+  <path id="p-fsh-r"   d="M284,98 C335,128 378,175 384,242"  fill="none" stroke="${CHART_COLORS.fsh}"   stroke-width="3" stroke-linecap="round" marker-end="url(#arr-fsh)"   class="flow-arrow"/>
+  <path id="p-lh-r"    d="M262,104 C292,145 328,195 350,246" fill="none" stroke="${CHART_COLORS.lh}"    stroke-width="3" stroke-linecap="round" marker-end="url(#arr-lh)"    class="flow-arrow"/>
+  <!-- Flow arrows: Ovaries → Uterus -->
+  <path id="p-estro-r" d="M352,300 C345,330 320,345 285,358" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="3" stroke-linecap="round" marker-end="url(#arr-estro)" class="flow-arrow"/>
+  <path id="p-proge-r" d="M335,308 C310,332 275,340 255,356" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="3" stroke-linecap="round" marker-end="url(#arr-proge)" class="flow-arrow"/>
+  <path id="p-estro-l" d="M128,300 C135,330 160,345 195,358" fill="none" stroke="${CHART_COLORS.estro}" stroke-width="3" stroke-linecap="round" marker-end="url(#arr-estro)" class="flow-arrow"/>
+  <path id="p-proge-l" d="M145,308 C170,332 205,340 225,356" fill="none" stroke="${CHART_COLORS.proge}" stroke-width="3" stroke-linecap="round" marker-end="url(#arr-proge)" class="flow-arrow"/>
+  <!-- HCG (pregnancy only) -->
+  <path id="p-hcg"     d="M240,400 C240,385 240,375 240,368"  fill="none" stroke="${COLORS.hcg}"        stroke-width="3" stroke-linecap="round" marker-end="url(#arr-hcg)"   class="flow-arrow" opacity="0"/>
+  <!-- Ovaries -->
+  <g id="ovaryL"><ellipse cx="120" cy="280" rx="42" ry="32" fill="#fff7ef" stroke="#e8b98a"/>
+    <circle id="follicleL" cx="120" cy="280" r="10" fill="#ffd9a0" stroke="#e65100"/></g>
+  <g id="ovaryR"><ellipse cx="360" cy="280" rx="42" ry="32" fill="#fff7ef" stroke="#e8b98a"/>
+    <circle id="follicleR" cx="360" cy="280" r="10" fill="#ffd9a0" stroke="#e65100"/></g>
   <text x="120" y="322" text-anchor="middle" font-size="10" font-family="Noto Sans TC" fill="#4a5a70">卵巢 (左)</text>
   <text x="360" y="322" text-anchor="middle" font-size="10" font-family="Noto Sans TC" fill="#4a5a70">卵巢 (右)</text>
   <text id="ovaryStateL" x="120" y="334" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#8a9ab0"></text>
   <text id="ovaryStateR" x="360" y="334" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#8a9ab0"></text>
-
-  <!-- Badges -->
-  <text id="badgeFollL" x="120" y="265" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#e65100"></text>
-  <text id="badgeFollR" x="360" y="265" text-anchor="middle" font-size="8" font-family="IBM Plex Mono" fill="#e65100"></text>
-
-  <!-- Placenta marker (pregnancy) -->
+  <!-- Placenta -->
   <g id="placentaMark" opacity="0">
     <circle cx="240" cy="390" r="14" fill="#fce4ec" stroke="${COLORS.hcg}"/>
     <text x="240" y="394" text-anchor="middle" font-size="7" font-family="Noto Sans TC" fill="${COLORS.hcg}">胎盤</text>
-  </g>
-  `;
+  </g>`;
 }
 buildStaticAnatomy();
 
-function updateAnatomy(lv, day, prevLv){
-  // Pituitary badge — FSH and LH are ALWAYS being released; only the RATE changes (driving concentration up/down)
-  document.getElementById('pitBadgeText').textContent = '持續釋放：FSH, LH';
+function setFlow(id, active, width, glow) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.opacity = active ? 1 : 0;
+  el.setAttribute('stroke-width', active ? width : 1);
+  el.style.filter  = active ? (glow || 'none') : 'none';
+}
+
+function updateAnatomy(lv, day) {
   document.getElementById('pitBadge').style.opacity = state.contraception==='combined' ? 0.05 : 0.16;
 
-  // Hormone secretion is continuous. Concentration (lv.xxx) reflects the current secretion rate.
-  // Arrows stay solid and fully opaque, but width now swings DRAMATICALLY (2px -> 18px) and a
-  // colored glow intensifies at high levels, so a rising hormone is unmistakable at a glance.
-  const widthFor = (level)=> 2 + Math.pow(level/100, 1.3)*16;
-  const glowFor = (level, color)=>{
-    const intensity = Math.pow(level/100, 1.5);
-    if(intensity < 0.12) return 'none';
-    const blur = 2 + intensity*10;
-    return `drop-shadow(0 0 ${blur.toFixed(1)}px ${color})`;
+  const w = v => 2 + Math.pow(v/100, 1.3)*16;
+  const g = (v, col) => {
+    const i = Math.pow(v/100, 1.5);
+    return i < 0.12 ? 'none' : `drop-shadow(0 0 ${(2+i*10).toFixed(1)}px ${col})`;
   };
 
-  // flow paths: pituitary sends both FSH and LH continuously to BOTH ovaries
-  setFlow('path-fsh', true, widthFor(lv.fsh), glowFor(lv.fsh, CHART_COLORS.fsh));
-  setFlow('path-fsh-r', true, widthFor(lv.fsh), glowFor(lv.fsh, CHART_COLORS.fsh));
-  setFlow('path-lh', true, widthFor(lv.lh), glowFor(lv.lh, CHART_COLORS.lh));
-  setFlow('path-lh-l', true, widthFor(lv.lh), glowFor(lv.lh, CHART_COLORS.lh));
-  setFlow('path-estro', true, widthFor(lv.estro), glowFor(lv.estro, CHART_COLORS.estro));
-  setFlow('path-proge', true, widthFor(lv.proge), glowFor(lv.proge, CHART_COLORS.proge));
-  setFlow('path-estro-l', true, widthFor(lv.estro), glowFor(lv.estro, CHART_COLORS.estro));
-  setFlow('path-proge-l', true, widthFor(lv.proge), glowFor(lv.proge, CHART_COLORS.proge));
-  // HCG is the one hormone that is genuinely OFF (not secreted) unless pregnant
-  setFlow('path-hcg', state.pregnancy, widthFor(lv.hcg), glowFor(lv.hcg, COLORS.hcg));
+  setFlow('p-fsh-l',   true,             w(lv.fsh),   g(lv.fsh,   CHART_COLORS.fsh));
+  setFlow('p-fsh-r',   true,             w(lv.fsh),   g(lv.fsh,   CHART_COLORS.fsh));
+  setFlow('p-lh-l',    true,             w(lv.lh),    g(lv.lh,    CHART_COLORS.lh));
+  setFlow('p-lh-r',    true,             w(lv.lh),    g(lv.lh,    CHART_COLORS.lh));
+  setFlow('p-estro-r', true,             w(lv.estro), g(lv.estro, CHART_COLORS.estro));
+  setFlow('p-proge-r', true,             w(lv.proge), g(lv.proge, CHART_COLORS.proge));
+  setFlow('p-estro-l', true,             w(lv.estro), g(lv.estro, CHART_COLORS.estro));
+  setFlow('p-proge-l', true,             w(lv.proge), g(lv.proge, CHART_COLORS.proge));
+  setFlow('p-hcg',     state.pregnancy, w(lv.hcg),   g(lv.hcg,   COLORS.hcg));
 
-  // follicle / corpus luteum sizing
-  let follR = 8, follColor = '#ffd9a0', follLabel='靜止濾泡';
-  if(day<=5){ follR=8; follColor='#ffd9a0'; follLabel='退化中'; }
-  else if(day<=11.5){ follR = 10 + (day-5)*1.6; follColor='#ffb347'; follLabel='發育中卵泡'; }
-  else if(day<=16){ follR = day<14 ? 16+(day-11.5)*2.4 : Math.max(10, 22-(day-14)*5); follColor='#ff8a00'; follLabel = day<14 ? '成熟濾泡→接近排卵' : (day<14.3?'排卵 Ovulation':'黃體形成中'); }
-  else {
-    const t=(day-16)/12;
-    if(state.pregnancy || t<0.85){ follR = 18 - t*4; follColor='#ffd54f'; follLabel='黃體 (分泌中)'; }
-    else { follR = 8; follColor='#cfd8dc'; follLabel='黃體退化'; }
+  // Follicle / corpus luteum
+  let fR = 8, fC = '#ffd9a0', fL = '靜止濾泡';
+  if (day <= 5)    { fR=8;  fC='#ffd9a0'; fL='退化中'; }
+  else if (day<=11.5) { fR=10+(day-5)*1.6; fC='#ffb347'; fL='發育中卵泡'; }
+  else if (day<=16) {
+    fR = day<14 ? 16+(day-11.5)*2.4 : Math.max(10,22-(day-14)*5);
+    fC='#ff8a00';
+    fL = day<14 ? '成熟濾泡→接近排卵' : (day<14.3 ? '排卵 Ovulation' : '黃體形成中');
+  } else {
+    const t = (day-16)/12;
+    if (state.pregnancy || t<0.85) { fR=18-t*4; fC='#ffd54f'; fL='黃體 (分泌中)'; }
+    else { fR=8; fC='#cfd8dc'; fL='黃體退化'; }
   }
-  document.getElementById('follicleR').setAttribute('r', follR);
-  document.getElementById('follicleR').setAttribute('fill', follColor);
-  document.getElementById('ovaryStateR').textContent = follLabel;
+  // IVF trigger overrides follicle state
+  if (state.injections.lh !== null) {
+    const dt = day - state.injections.lh;
+    if (dt >= 1.5 && dt < 14) { fR=Math.max(8,18-dt*1.2); fC='#ffd54f'; fL='黃體(IVF)'; }
+  }
+
+  document.getElementById('follicleR').setAttribute('r',    Math.max(5, fR));
+  document.getElementById('follicleR').setAttribute('fill', fC);
+  document.getElementById('ovaryStateR').textContent = fL;
   document.getElementById('follicleL').setAttribute('r', 9);
   document.getElementById('ovaryStateL').textContent = '同步分泌中';
 
-  // endometrium
-  const scale = lv.endo/10; // 0-1
   document.getElementById('endoThickLabel').textContent = '內膜厚度: '+lv.endo.toFixed(1)+'mm';
-  const lining = document.getElementById('endoLining');
-  const op = day<=5 ? 0.25+scale*0.3 : 0.35+scale*0.5;
-  lining.style.opacity = op;
-  lining.setAttribute('fill', day<=5 ? '#c62828' : '#f9c4cf');
-
+  const ln = document.getElementById('endoLining');
+  ln.style.opacity = day<=5 ? 0.25+(lv.endo/10)*0.3 : 0.35+(lv.endo/10)*0.5;
+  ln.setAttribute('fill', day<=5 ? '#c62828' : '#f9c4cf');
   document.getElementById('placentaMark').style.opacity = (state.pregnancy && state.pregWeek>=16) ? 1 : 0;
   document.getElementById('phaseLabel').textContent = `第 ${Math.floor(day)} 天 · ${phaseOf(day)}`;
 }
-function setFlow(id, active, width, glow){
-  const el = document.getElementById(id);
-  el.style.opacity = active ? 1 : 0;
-  el.setAttribute('stroke-width', active ? width : 1);
-  el.style.filter = active ? (glow || 'none') : 'none';
+
+// ══════════════════════════════════════════════════════════════════════
+//  TELEMETRY
+// ══════════════════════════════════════════════════════════════════════
+let prevLevels = null;
+
+function trendArrow(cur, prev) {
+  if (prev === null) return { sym:'▬', col:'#8a9ab0' };
+  const d = cur - prev;
+  if (d >  0.15) return { sym:'▲', col:'#2e7d32' };
+  if (d < -0.15) return { sym:'▼', col:'#c62828' };
+  return { sym:'▬', col:'#8a9ab0' };
 }
 
-// ============================ UI UPDATE ============================
-let prevLevels = null;
-function trendArrow(curr, prev){
-  if(prev===null) return {sym:'▬', color:'#8a9ab0'};
-  const diff = curr - prev;
-  if(diff > 0.15) return {sym:'▲', color:'#2e7d32'};
-  if(diff < -0.15) return {sym:'▼', color:'#c62828'};
-  return {sym:'▬', color:'#8a9ab0'};
-}
-function setTrend(key, curr, prev){
-  const t = trendArrow(curr, prev);
-  const el = document.getElementById('trend-'+key);
-  el.textContent = t.sym;
-  el.style.color = t.color;
-}
-function updateTelemetry(lv){
-  document.getElementById('val-fsh').textContent = lv.fsh.toFixed(1);
-  document.getElementById('val-lh').textContent = lv.lh.toFixed(1);
-  document.getElementById('val-estro').textContent = lv.estro.toFixed(1);
-  document.getElementById('val-proge').textContent = lv.proge.toFixed(1);
-  document.getElementById('val-hcg').textContent = lv.hcg.toFixed(1);
-  document.getElementById('fb-fsh').textContent = lv.fbFsh;
-  document.getElementById('fb-lh').textContent = lv.fbLh;
+function updateTelemetry(lv) {
+  const keys = ['fsh','lh','estro','proge','hcg'];
+  const vals  = [lv.fsh, lv.lh, lv.estro, lv.proge, lv.hcg];
+  keys.forEach((k, i) => {
+    document.getElementById('val-'+k).textContent = vals[i].toFixed(1);
+    const ta = trendArrow(vals[i], prevLevels ? prevLevels[k] : null);
+    const el = document.getElementById('trend-'+k);
+    el.textContent = ta.sym; el.style.color = ta.col;
+  });
+  document.getElementById('fb-fsh').textContent   = lv.fbFsh;
+  document.getElementById('fb-lh').textContent    = lv.fbLh;
   document.getElementById('fb-estro').textContent = lv.fbEstro;
   document.getElementById('fb-proge').textContent = lv.fbProge;
-
-  setTrend('fsh', lv.fsh, prevLevels && prevLevels.fsh);
-  setTrend('lh', lv.lh, prevLevels && prevLevels.lh);
-  setTrend('estro', lv.estro, prevLevels && prevLevels.estro);
-  setTrend('proge', lv.proge, prevLevels && prevLevels.proge);
-  setTrend('hcg', lv.hcg, prevLevels && prevLevels.hcg);
-  prevLevels = {fsh:lv.fsh, lh:lv.lh, estro:lv.estro, proge:lv.proge, hcg:lv.hcg};
+  document.getElementById('fb-hcg').textContent   = state.pregnancy
+    ? (state.pregWeek < 16 ? `HCG ↑ (${lv.hcg.toFixed(0)}) · 維持黃體` : '胎盤接管 · HCG下降')
+    : '— 未懷孕 (HCG=0)';
+  prevLevels = { fsh:lv.fsh, lh:lv.lh, estro:lv.estro, proge:lv.proge, hcg:lv.hcg };
 }
 
-function logLine(text, color){
+function updateInjStatus() {
+  const parts = [];
+  if (state.injections.fsh   !== null) parts.push(`FSH刺激 D${Math.floor(state.injections.fsh)}`);
+  if (state.injections.lh    !== null) parts.push(`hCG觸發 D${Math.floor(state.injections.lh)}`);
+  if (state.injections.proge !== null) parts.push(`孕酮支持 D${Math.floor(state.injections.proge)}`);
+  document.getElementById('injStatusLabel').textContent =
+    parts.length ? '活躍療程: ' + parts.join(' | ') : '— 無活躍注射療程';
+}
+
+// ══════════════════════════════════════════════════════════════════════
+//  LOG
+// ══════════════════════════════════════════════════════════════════════
+function logLine(text, color) {
   const log = document.getElementById('termLog');
   const div = document.createElement('div');
-  div.className='term-line';
-  div.innerHTML = `<span style="color:${color||'#4a5a70'}">[D${Math.floor(state.day)}]</span> ${text}`;
+  div.className = 'term-line';
+  div.innerHTML = `<span style="color:${color||'#4a5a70'}">[D${String(Math.floor(state.day)).padStart(2,'0')}]</span> ${text}`;
   log.prepend(div);
-  while(log.children.length>60) log.removeChild(log.lastChild);
+  while (log.children.length > 80) log.removeChild(log.lastChild);
 }
 
 let lastLoggedDay = -1;
-function maybeLog(day, lv){
+function maybeLog(day) {
   const fd = Math.floor(day);
-  if(fd === lastLoggedDay) return;
+  if (fd === lastLoggedDay) return;
   lastLoggedDay = fd;
-  if(fd===1) logLine('月經來潮開始，子宮內膜崩解脫落，雌激素/孕酮降至最低。', COLORS.reset);
-  if(fd===6) logLine('FSH 上升刺激卵巢內濾泡發育，雌激素開始回升。', COLORS.fsh);
-  if(fd===13) logLine('雌激素接近峰值，垂體準備觸發正反饋。', COLORS.estro);
-  if(fd===14) logLine('LH 激增 (LH Surge) 誘發排卵，卵子自濾泡釋出。', COLORS.lh);
-  if(fd===15) logLine('黃體形成，開始大量分泌孕酮與雌激素，維持子宮內膜厚度。', COLORS.proge);
-  if(fd===26 && !state.pregnancy) logLine('黃體退化，孕酮驟降，垂體抑制解除。', COLORS.reset);
-  if(state.pregnancy && fd===16) logLine('胎盤形成完全接管雌激素/孕酮分泌職責。', COLORS.hcg);
+  if (fd===1)  logLine('月經來潮：子宮內膜崩解脫落，雌激素/孕酮降至最低。', COLORS.reset);
+  if (fd===6)  logLine('FSH 上升刺激卵巢濾泡發育，雌激素開始回升。', COLORS.fsh);
+  if (fd===13) logLine('雌激素接近峰值，垂體準備觸發正反饋。', COLORS.estro);
+  if (fd===14) logLine('LH 激增 (LH Surge) 誘發排卵，卵子自濾泡釋出。', COLORS.lh);
+  if (fd===15) logLine('黃體形成，大量分泌孕酮與雌激素，維持子宮內膜。', COLORS.proge);
+  if (fd===26 && !state.pregnancy) logLine('黃體退化，孕酮驟降，垂體抑制解除。', COLORS.reset);
+  if (state.pregnancy && fd===16)  logLine('胎盤形成，接管雌激素/孕酮分泌職責。', COLORS.hcg);
 }
 
-// ============================ MAIN TICK ============================
-function tick(d){
+// ══════════════════════════════════════════════════════════════════════
+//  MAIN TICK — updates telemetry, anatomy, day cursor ONLY
+//  Chart data is NOT modified here (static projection)
+// ══════════════════════════════════════════════════════════════════════
+function tick(d) {
   const lv = computeLevels(d);
-  const prevSnapshot = prevLevels; // capture before updateTelemetry overwrites it
   updateTelemetry(lv);
-  updateAnatomy(lv, d, prevSnapshot);
-  maybeLog(d, lv);
+  updateAnatomy(lv, d);
+  maybeLog(d);
+
   document.getElementById('dayDisplay').textContent = Math.floor(d);
   document.getElementById('daySlider').value = d;
-  if(state.pregnancy){
-    document.getElementById('pregWeek').style.display='block';
-    document.getElementById('pregWeekVal').textContent = state.pregWeek;
-  } else {
-    document.getElementById('pregWeek').style.display='none';
-  }
-  // decay manual injections
-  state.manualInject.fsh *= 0.85;
-  state.manualInject.lh *= 0.85;
-  state.manualInject.proge *= 0.85;
-  if(state.manualInject.fsh<0.5) state.manualInject.fsh=0;
-  if(state.manualInject.lh<0.5) state.manualInject.lh=0;
-  if(state.manualInject.proge<0.5) state.manualInject.proge=0;
-
   document.getElementById('statusBadge').textContent = state.playing ? '運行中 RUNNING' : '暫停 PAUSED';
-  document.getElementById('statusBadge').style.color = state.playing ? COLORS.proge : COLORS.fsh;
+  document.getElementById('statusBadge').style.color  = state.playing ? COLORS.proge : COLORS.fsh;
 
+  if (state.pregnancy) {
+    document.getElementById('pregWeek').style.display = 'block';
+    document.getElementById('pregWeekVal').textContent = state.pregWeek.toFixed(1);
+  } else {
+    document.getElementById('pregWeek').style.display = 'none';
+  }
+
+  // Only redraw the day-cursor line; chart data stays fixed
   chart.update('none');
 }
 
-let rafTimer = null, lastTime=0;
-function loop(ts){
-  if(!state.playing) return;
-  if(!lastTime) lastTime = ts;
-  const dt = (ts-lastTime)/1000;
+// ══════════════════════════════════════════════════════════════════════
+//  ANIMATION LOOP
+// ══════════════════════════════════════════════════════════════════════
+let rafTimer = null, lastTime = 0;
+
+function loop(ts) {
+  if (!state.playing) return;
+  if (!lastTime) lastTime = ts;
+  const dt = (ts - lastTime) / 1000;
   lastTime = ts;
-  const daysPerSec = state.speed * 0.12;
-  state.day += dt*daysPerSec;
-  if(state.pregnancy){
-    state.pregWeek += dt*daysPerSec*(40/280); // rough scaling: 280 days pregnancy -> but cycle loop ignores, simplistic accumulate
-  }
-  if(state.day > 28){
-    if(state.pregnancy){ state.day = 28; } // lock at day 28 equivalent while pregnant
-    else { state.day = 1; logLine('新週期開始 (Day 28 → Day 1)，系統重設。', COLORS.reset); }
+  state.day += dt * state.speed * 0.12;
+  if (state.pregnancy) state.pregWeek += dt * state.speed * 0.12 * (40/280);
+
+  if (state.day > 28) {
+    if (state.pregnancy) {
+      state.day = 28;
+    } else {
+      state.day = 1;
+      state.injections = { fsh:null, lh:null, proge:null };
+      recomputeChart();
+      updateInjStatus();
+      lastLoggedDay = -1;
+      logLine('新週期開始 (Day 28 → Day 1)，注射療程已清除。', COLORS.reset);
+    }
   }
   tick(state.day);
   rafTimer = requestAnimationFrame(loop);
 }
 
-// ============================ EVENTS ============================
-document.getElementById('playBtn').addEventListener('click', ()=>{
+// ══════════════════════════════════════════════════════════════════════
+//  EVENT HANDLERS
+// ══════════════════════════════════════════════════════════════════════
+document.getElementById('playBtn').addEventListener('click', () => {
   state.playing = !state.playing;
   document.getElementById('playBtn').textContent = state.playing ? '⏸ 暫停' : '▶ 開始';
-  if(state.playing){ lastTime=0; rafTimer = requestAnimationFrame(loop); }
+  if (state.playing) { lastTime = 0; rafTimer = requestAnimationFrame(loop); }
 });
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  state.day=1; state.playing=false; state.pregnancy=false; state.pregWeek=0;
-  state.contraception='none'; state.disorder=false;
-  document.getElementById('contraSelect').value='none';
-  document.getElementById('disorderToggle').checked=false;
+
+// ── Full Reset ────────────────────────────────────────────────────────
+document.getElementById('resetBtn').addEventListener('click', () => {
+  // Stop loop
+  if (rafTimer) { cancelAnimationFrame(rafTimer); rafTimer = null; }
+
+  // Reset all state
+  state.day           = 1;
+  state.playing       = false;
+  state.pregnancy     = false;
+  state.pregWeek      = 0;
+  state.contraception = 'none';
+  state.disorder      = false;
+  state.injections    = { fsh:null, lh:null, proge:null };
+  prevLevels          = null;
+  lastLoggedDay       = -1;
+  lastTime            = 0;
+
+  // Reset UI controls
+  document.getElementById('playBtn').textContent             = '▶ 開始';
+  document.getElementById('contraSelect').value              = 'none';
+  document.getElementById('disorderToggle').checked          = false;
   document.getElementById('toggle-pregnancy').classList.remove('on');
-  document.getElementById('playBtn').textContent='▶ 開始';
-  document.getElementById('termLog').innerHTML='';
-  lastLoggedDay=-1;
+  document.getElementById('statusBadge').textContent         = '待命 STANDBY';
+  document.getElementById('statusBadge').style.color         = COLORS.fsh;
+  document.getElementById('termLog').innerHTML               = '';
+
+  updateInjStatus();
+  recomputeChart();
   tick(1);
-  logLine('系統已重設至第 1 天。', COLORS.reset);
+  logLine('✦ 系統已完全重設至第 1 天。所有注射療程、模式及記錄已清除。', COLORS.reset);
 });
-document.getElementById('speedSlider').addEventListener('input', e=>{
+
+document.getElementById('speedSlider').addEventListener('input', e => {
   state.speed = +e.target.value;
-  document.getElementById('speedVal').textContent = state.speed+'x';
+  document.getElementById('speedVal').textContent = state.speed + 'x';
 });
-document.getElementById('daySlider').addEventListener('input', e=>{
+
+document.getElementById('daySlider').addEventListener('input', e => {
   state.day = +e.target.value;
   tick(state.day);
 });
-document.getElementById('toggle-pregnancy').addEventListener('click', function(){
-  if(state.day < 16){ logLine('需排卵後 (第16天起) 方可啟動懷孕模式。', COLORS.reset); return; }
+
+document.getElementById('toggle-pregnancy').addEventListener('click', function () {
+  if (state.day < 16) {
+    logLine('⚠ 需排卵後 (第16天起) 方可啟動懷孕模式。', COLORS.reset);
+    return;
+  }
   state.pregnancy = !state.pregnancy;
   this.classList.toggle('on', state.pregnancy);
-  if(state.pregnancy){ state.pregWeek=0; logLine('懷孕模式啟動：胚胎著床，開始分泌 HCG。', COLORS.hcg); }
-  else { logLine('懷孕模式關閉。', COLORS.reset); }
-  tick(state.day);
+  if (state.pregnancy) {
+    state.pregWeek = 0;
+    logLine('懷孕模式啟動：胚胎著床，開始分泌 HCG。黃體受HCG維持，孕酮持續高位。', COLORS.hcg);
+  } else {
+    logLine('懷孕模式關閉。', COLORS.reset);
+  }
+  recomputeChart(); tick(state.day);
 });
-document.getElementById('contraSelect').addEventListener('change', function(){
+
+document.getElementById('contraSelect').addEventListener('change', function () {
   state.contraception = this.value;
   logLine('避孕模式切換為: ' + this.options[this.selectedIndex].text, COLORS.fsh);
-  tick(state.day);
+  recomputeChart(); tick(state.day);
 });
-document.getElementById('disorderToggle').addEventListener('change', function(){
-  state.disorder = this.checked;
-  logLine(state.disorder?'啟用排卵機能不全模擬。':'解除排卵機能不全模擬。', COLORS.reset);
-  tick(state.day);
-});
-document.getElementById('inj-fsh').addEventListener('click', ()=>{ state.manualInject.fsh += 40; logLine('臨床注射合成 FSH。', COLORS.fsh); tick(state.day); });
-document.getElementById('inj-lh').addEventListener('click', ()=>{ state.manualInject.lh += 40; logLine('臨床注射合成 LH。', COLORS.lh); tick(state.day); });
-document.getElementById('inj-proge').addEventListener('click', ()=>{ state.manualInject.proge += 40; logLine('臨床注射合成孕酮。', COLORS.proge); tick(state.day); });
 
-// ============================ INIT ============================
-precomputeBaseline();
+document.getElementById('disorderToggle').addEventListener('change', function () {
+  state.disorder = this.checked;
+  logLine(state.disorder
+    ? '啟用排卵機能不全模擬：FSH/LH 垂體反應低下 (×0.45)。'
+    : '解除排卵機能不全模擬。', COLORS.reset);
+  recomputeChart(); tick(state.day);
+});
+
+// ── IVF / Medical Injection Protocol ─────────────────────────────────
+document.getElementById('inj-fsh').addEventListener('click', () => {
+  const day = state.day;
+  if (state.injections.fsh !== null) {
+    logLine(`ℹ FSH刺激療程已於第${Math.floor(state.injections.fsh)}天啟動，療程進行中。`, COLORS.fsh);
+    return;
+  }
+  if (day > 10) {
+    logLine(`⚠ [FSH刺激] 目前第${Math.floor(day)}天，濾泡期已過。最佳注射窗口：月經來潮第1-2天起(第1-7天)，以刺激多卵泡同步生長。`, COLORS.reset);
+    return;
+  }
+  state.injections.fsh = day;
+  updateInjStatus();
+  recomputeChart();
+  tick(state.day);
+  logLine(
+    `[IVF-卵巢刺激] 第${Math.floor(day)}天：FSH促排卵注射啟動。` +
+    `機制：↑FSH → 卵巢顆粒細胞增殖 → 多卵泡同步生長 → ↑雌激素。` +
+    `預期第${Math.floor(day)+4}–${Math.floor(day)+8}天雌激素顯著上升，` +
+    `達峰後施打LH/hCG觸發以誘發排卵。`, COLORS.fsh);
+});
+
+document.getElementById('inj-lh').addEventListener('click', () => {
+  const day = state.day;
+  if (state.injections.lh !== null) {
+    logLine(`ℹ LH/hCG觸發已於第${Math.floor(state.injections.lh)}天施打。預期排卵：第${(state.injections.lh+1.5).toFixed(1)}天。`, COLORS.lh);
+    return;
+  }
+  const lv = computeLevels(day);
+  if (day < 9 || lv.estro < 40) {
+    logLine(
+      `⚠ [hCG觸發] 目前第${Math.floor(day)}天，雌激素=${lv.estro.toFixed(0)}，卵泡尚未成熟。` +
+      `過早觸發→空濾泡症。建議等待雌激素>60（卵泡直徑≥18mm）再注射。`, COLORS.reset);
+    return;
+  }
+  state.injections.lh = day;
+  const ovDay = (day + 1.5).toFixed(1);
+  updateInjStatus();
+  recomputeChart();
+  tick(state.day);
+  logLine(
+    `[IVF-觸發] 第${Math.floor(day)}天：hCG觸發注射施打。` +
+    `機制：hCG模擬LH激增 → 卵母細胞完成減數分裂II → 第${ovDay}天排卵。` +
+    `觸發後第2–14天：黃體大量分泌孕酮+雌激素，` +
+    `形成著床窗口(WOI)。圖表曲線已更新。`, COLORS.lh);
+});
+
+document.getElementById('inj-proge').addEventListener('click', () => {
+  const day = state.day;
+  if (state.injections.proge !== null) {
+    logLine(`ℹ 孕酮黃體支持已於第${Math.floor(state.injections.proge)}天啟動，持續中。`, COLORS.proge);
+    return;
+  }
+  state.injections.proge = day;
+  const note = day < 14 ? ' ⚠(排卵前使用：支持效果有限，但可改善內膜容受性)' : '';
+  updateInjStatus();
+  recomputeChart();
+  tick(state.day);
+  logLine(
+    `[IVF-黃體支持] 第${Math.floor(day)}天：孕酮補充啟動${note}。` +
+    `機制：外源孕酮→維持子宮內膜分泌期轉化→抑制子宮收縮→` +
+    `建立WOI(著床容受性窗口)。療程持續至第${Math.min(28,Math.floor(day)+14)}天。`, COLORS.proge);
+});
+
+// ══════════════════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════════════════
+recomputeChart();
 tick(1);
-logLine('模擬器初始化完成。28天荷爾蒙週期引擎就緒。', COLORS.proge);
+logLine('✦ 模擬器初始化完成。圖表為完整28天靜態預測曲線，游標隨播放移動。', COLORS.proge);
+logLine('IVF注射協議已啟用：按醫療時機注射 → 曲線即時重塑。', COLORS.fsh);
 </script>
 </body>
 </html>
