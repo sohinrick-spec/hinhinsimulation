@@ -306,13 +306,12 @@ kbd {
 
     <!-- 物鏡 -->
     <div>
-      <div class="slbl">總放大倍率</div>
+      <div class="slbl">物鏡</div>
       <div id="obj-grp">
         <button class="btn on" data-m="40"  onclick="setMag(40)">40X</button>
         <button class="btn"    data-m="100" onclick="setMag(100)">100X</button>
         <button class="btn"    data-m="400" onclick="setMag(400)">400X</button>
       </div>
-      <div class="inote">總放大倍率 = 物鏡 × 接目鏡<br>接目鏡固定 10×，物鏡分別為 4×／10×／40×</div>
     </div>
 
     <div class="dv"></div>
@@ -354,7 +353,6 @@ kbd {
                disabled style="opacity:.55;cursor:default">
         <span class="sval" id="ap-v" style="color:var(--amber)">7</span>
       </div>
-      <div class="inote">倍率越高，視野越暗、景深越淺（對焦更難）— 這是真實顯微鏡的特性</div>
     </div>
 
   </div>
@@ -386,13 +384,6 @@ kbd {
         <div class="fd" id="fd"></div>
         <span class="ft" id="ft">● 對焦中…</span>
       </div>
-    </div>
-
-    <!-- Reference Diagram (static — does not move with the stage) -->
-    <div class="mv-card" style="max-width:230px">
-      <div class="slbl" style="border:none;padding-bottom:3px">教科書參考圖（固定）</div>
-      <svg id="ref-svg" viewBox="0 0 200 130" style="width:100%;display:block;background:#fdfcf8;border:1px solid var(--border);border-radius:3px"></svg>
-      <div style="text-align:center;font-size:.62rem;color:var(--muted);margin-top:5px" id="ref-caption">洋蔥表皮細胞</div>
     </div>
 
   </div>
@@ -485,72 +476,43 @@ function rng(s) {
   return x - Math.floor(x);
 }
 
-function getBlur() {
-  const a = Math.abs(focusVal);
-  // Depth of field shrinks sharply at higher total magnification — the same
-  // knob deviation that's tolerable at 40X causes visible blur at 400X.
-  // tolerance: 4 @40X → ~2.5 @100X → ~1.3 @400X
-  const tolerance = 4 / Math.sqrt(mag / 40);
-  return a <= tolerance ? 0 : (a - tolerance) * 0.4;
-}
-function getBright() {
-  // Real microscopes dim noticeably at higher power: the same light is
-  // spread over a more magnified image, so illumination must be increased
-  // (via diaphragm/lamp) to compensate. Brightness = diaphragm level × 1/√(mag).
-  const apFactor  = 0.18 + (apVal / 10) * 0.82;  // 0.18–1.0, diaphragm control
-  const magFactor = Math.sqrt(40 / mag);         // 1 @40X, 0.63 @100X, 0.32 @400X
-  return Math.max(0.05, apFactor * magFactor);
-}
-// Scale bar length ∝ 1/(total magnification) — derived from a single
-// reference (100 µm at 40X) so it stays mathematically consistent at any mag.
-function scaleBar()  { return Math.round(4000 / mag) + ' µm'; }
+function getBlur()   { const a = Math.abs(focusVal); return a <= 4 ? 0 : (a - 4) * 0.4; }
+function getBright() { return 0.18 + (apVal / 10) * 0.82; }
+function scaleBar()  { return {40:'100 µm', 100:'50 µm', 400:'10 µm'}[mag] || '100 µm'; }
 
 /* ================================================================
    SPECIMEN: ONION EPIDERMAL CELLS (microscope view)
 ================================================================ */
 function drawOnion(ctx, W, H, sc, ox, oy) {
   const cw = 65 * sc, ch = 29 * sc;
-  const cols = Math.ceil(W / cw) + 6, rows = Math.ceil(H / ch) + 5;
+  const cols = Math.ceil(W / cw) + 5, rows = Math.ceil(H / ch) + 5;
   // microscope: pattern shifts LEFT when ox increases
   const sx = -(mod(ox * sc, cw) + cw * 2);
   const sy = -(mod(oy * sc, ch) + ch * 2);
 
   for (let r = 0; r < rows; r++) {
-    // real onion epidermis tiles like brickwork — alternate rows are offset
-    // by half a cell width, not perfectly aligned in a plain grid
-    const rowOffset = (r % 2) * (cw / 2);
     for (let c = 0; c < cols; c++) {
-      const x = sx + c * cw + rowOffset, y = sy + r * ch;
-      const rad = Math.min(cw, ch) * 0.09; // slightly rounded cell corners
-      ctx.beginPath();
-      ctx.roundRect ? ctx.roundRect(x + 0.4, y + 0.4, cw - 1.2, ch - 1.2, rad)
-                     : ctx.rect(x + 0.4, y + 0.4, cw - 1.2, ch - 1.2);
-      ctx.fillStyle = 'rgba(205, 180, 105, 0.06)'; // near-empty — mostly one large vacuole
-      ctx.fill();
+      const x = sx + c * cw, y = sy + r * ch;
+      ctx.fillStyle = 'rgba(205, 180, 105, 0.07)';
+      ctx.fillRect(x, y, cw - 0.8, ch - 0.8);
       ctx.strokeStyle = 'rgba(45, 28, 10, 0.9)';
       ctx.lineWidth = 1.5;
-      ctx.stroke();
-      // thin cytoplasm lining just inside the wall (vacuole occupies the rest)
-      ctx.strokeStyle = 'rgba(45, 28, 10, 0.25)';
+      ctx.strokeRect(x + 0.4, y + 0.4, cw - 1.2, ch - 1.2);
+      // cell wall inner detail
+      ctx.strokeStyle = 'rgba(45, 28, 10, 0.3)';
       ctx.lineWidth = 0.5;
-      ctx.strokeRect(x + cw*0.06, y + ch*0.1, cw*0.88, ch*0.8);
-
-      // Nucleus: pressed against one wall (often a corner), embedded in the
-      // thin cytoplasm layer — NOT floating in the middle of the vacuole.
+      ctx.strokeRect(x + cw*0.06, y + ch*0.08, cw*0.88, ch*0.84);
+      // nucleus
       const s = r * 97 + c + 700;
-      const wall = Math.floor(rng(s) * 4); // which wall it's pressed against
-      let nx, ny;
-      if (wall === 0)      { nx = x + cw*(0.18+rng(s+1)*0.25); ny = y + ch*0.22; }
-      else if (wall === 1)  { nx = x + cw*(0.75+rng(s+1)*0.18); ny = y + ch*(0.25+rng(s+2)*0.5); }
-      else if (wall === 2)  { nx = x + cw*(0.18+rng(s+1)*0.25); ny = y + ch*0.78; }
-      else                   { nx = x + cw*(0.07+rng(s+1)*0.18); ny = y + ch*(0.25+rng(s+2)*0.5); }
+      const nx = x + cw * (0.27 + rng(s) * 0.46);
+      const ny = y + ch * (0.22 + rng(s+1) * 0.56);
       ctx.beginPath();
-      ctx.ellipse(nx, ny, cw * 0.09, ch * 0.24, rng(s+2) * 0.5, 0, Math.PI*2);
+      ctx.ellipse(nx, ny, cw * 0.063, ch * 0.2, rng(s+2) * 0.7, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(40, 22, 6, 0.85)';
       ctx.fill();
       // nucleolus
       ctx.beginPath();
-      ctx.arc(nx + cw*0.01, ny - ch*0.02, cw*0.02, 0, Math.PI*2);
+      ctx.arc(nx + cw*0.01, ny - ch*0.03, cw*0.018, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(20, 10, 2, 0.7)';
       ctx.fill();
     }
@@ -571,40 +533,19 @@ function drawOral(ctx, W, H, sc, ox, oy) {
       const s  = r * 109 + c + 2000;
       const cx = sx + c * sp + rng(s)   * sp * 0.38;
       const cy = sy + r * sp + rng(s+1) * sp * 0.38;
-      const baseR = (13 + rng(s+2)*7) * sc;
-      const rot   = rng(s+4) * Math.PI * 2;
-
-      // Squamous epithelial cells are flat, irregular polygons — not neat
-      // ellipses. Build a ragged outline from randomised radial points.
-      const pts = 9;
+      const rx = (15 + rng(s+2)*9) * sc;
+      const ry = (10 + rng(s+3)*7) * sc;
+      const rot = rng(s+4) * Math.PI;
+      // cell membrane
       ctx.beginPath();
-      for (let k = 0; k <= pts; k++) {
-        const a = rot + (k % pts) * (Math.PI*2/pts);
-        const rr = baseR * (0.78 + rng(s + 10 + k) * 0.44);
-        const px = cx + Math.cos(a) * rr;
-        const py = cy + Math.sin(a) * rr * 0.72; // slightly flattened, elongated cell
-        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-      ctx.fillStyle = 'rgba(175, 115, 105, 0.09)';
+      ctx.ellipse(cx, cy, rx, ry, rot, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(175, 115, 105, 0.08)';
       ctx.fill();
-      ctx.strokeStyle = 'rgba(105, 50, 40, 0.8)';
-      ctx.lineWidth = 1.1; ctx.stroke();
-
-      // granular cytoplasm (fine stippling, typical of stained cheek smears)
-      for (let g = 0; g < 6; g++) {
-        const gs = s + 30 + g;
-        const gx = cx + (rng(gs)-0.5) * baseR * 1.3;
-        const gy = cy + (rng(gs+1)-0.5) * baseR * 0.9;
-        ctx.beginPath();
-        ctx.arc(gx, gy, 0.6*sc, 0, Math.PI*2);
-        ctx.fillStyle = 'rgba(105, 50, 40, 0.25)';
-        ctx.fill();
-      }
-
-      // nucleus: round and fairly central (not elongated with the cell body)
+      ctx.strokeStyle = 'rgba(105, 50, 40, 0.85)';
+      ctx.lineWidth = 1.3; ctx.stroke();
+      // nucleus
       ctx.beginPath();
-      ctx.ellipse(cx, cy, baseR*0.26, baseR*0.24, 0, 0, Math.PI*2);
+      ctx.ellipse(cx, cy, rx*0.23, ry*0.28, rot+0.4, 0, Math.PI*2);
       ctx.fillStyle = 'rgba(75, 28, 22, 0.88)';
       ctx.fill();
       ctx.strokeStyle = 'rgba(55, 18, 12, 0.6)';
@@ -633,44 +574,26 @@ function drawSpirogyra(ctx, W, H, sc, ox, oy) {
     // lumen fill
     ctx.fillStyle = 'rgba(50, 120, 50, 0.04)';
     ctx.fillRect(x - tw/2, 0, tw, H);
-    // spiral chloroplast (ribbon-shaped, winds around the cylindrical cell)
+    // spiral chloroplast
     const period = 52 * sc;
     const amp    = tw * 0.43;
     const offY2  = mod(oy * sc, period);
     ctx.beginPath();
     ctx.strokeStyle = 'rgba(15, 75, 15, 0.92)';
-    ctx.lineWidth = Math.max(1.4, 2.1 * sc);
+    ctx.lineWidth = Math.max(1.2, 1.8 * sc);
     let first = true;
-    const pathPts = [];
     for (let y = -period*2; y <= H + period; y += 1.5) {
       const px = x + Math.sin(((y - offY2) / period) * Math.PI * 2) * amp;
-      pathPts.push([px, y]);
       if (first) { ctx.moveTo(px, y); first = false; }
       else ctx.lineTo(px, y);
     }
     ctx.stroke();
-    // pyrenoids: small starch-storing bodies studding the chloroplast ribbon
-    // at fairly regular intervals along its length
-    const pyStep = Math.max(6, Math.round(pathPts.length / (H / (14*sc))));
-    for (let k = 0; k < pathPts.length; k += pyStep) {
-      const [ppx, ppy] = pathPts[k];
-      ctx.beginPath();
-      ctx.arc(ppx, ppy, Math.max(1, 1.7*sc), 0, Math.PI*2);
-      ctx.fillStyle = 'rgba(230, 245, 210, 0.85)';
-      ctx.fill();
-      ctx.strokeStyle = 'rgba(15, 75, 15, 0.6)';
-      ctx.lineWidth = 0.6; ctx.stroke();
-    }
-    // crosswalls (septa between adjoining cells) — drawn as a close double
-    // line, since two cell walls meet back-to-back at each partition
+    // crosswalls (cell divisions)
     ctx.strokeStyle = 'rgba(25, 85, 25, 0.55)';
     ctx.lineWidth = 1;
     for (let y = -(mod(offY2, period)); y < H + period; y += period) {
       ctx.beginPath();
-      ctx.moveTo(x - tw/2, y - 1); ctx.lineTo(x + tw/2, y - 1);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x - tw/2, y + 1); ctx.lineTo(x + tw/2, y + 1);
+      ctx.moveTo(x - tw/2, y); ctx.lineTo(x + tw/2, y);
       ctx.stroke();
     }
   }
@@ -749,12 +672,9 @@ function drawMacroContent(ctx, W, H) {
     ctx.fillStyle = 'rgba(115, 68, 58, 0.22)';
     for (let i = 0; i < 42; i++) {
       const s = i * 19 + 400;
-      // Each cell wraps on its own phase (rng(s)*W as base, mod'd with ox)
-      // so cells re-enter the view at different times instead of every dot
-      // snapping back in sync — that synced jump was the "opposite" motion
-      // glitch: it looked like the whole slide teleported.
-      const cx2 = mod(rng(s)*W   + ox, W);
-      const cy2 = mod(rng(s+1)*H + oy, H);
+      // rightward position: add offset
+      const cx2 = rng(s)*W   + mod(ox, W);
+      const cy2 = rng(s+1)*H + mod(oy, H);
       ctx.beginPath();
       ctx.ellipse(cx2, cy2, 6+rng(s+2)*4, 4+rng(s+3)*3, rng(s+4)*Math.PI, 0, Math.PI*2);
       ctx.fill();
@@ -918,85 +838,10 @@ function updateUI() {
 function render() { renderMicroscope(); renderMacro(); updateUI(); }
 
 /* ================================================================
-   REFERENCE DIAGRAM — static, does not move with stage/focus/mag.
-   Drawn as a clean vector illustration (not a hotlinked photo — avoids
-   copyright/broken-link issues in a standalone offline file) styled to
-   match real textbook depictions of each specimen.
-================================================================ */
-function renderRef(spec) {
-  const svg = document.getElementById('ref-svg');
-  const cap = document.getElementById('ref-caption');
-  let g = '';
-
-  if (spec === 'onion') {
-    cap.textContent = '洋蔥表皮細胞（磚形排列，細胞核貼壁）';
-    g += `<rect width="200" height="130" fill="#fdf8ec"/>`;
-    for (let r = 0; r < 4; r++) {
-      const rowOff = (r % 2) * 33;
-      for (let c = -1; c < 4; c++) {
-        const x = c*66 + rowOff, y = r*32 + 3;
-        const s = r*13 + c + 5;
-        const wall = Math.floor(rng(s)*4);
-        let nx = x+33, ny = y+15;
-        if (wall===0) { nx = x+14+rng(s+1)*14; ny = y+7; }
-        else if (wall===1) { nx = x+50+rng(s+1)*10; ny = y+8+rng(s+2)*14; }
-        else if (wall===2) { nx = x+14+rng(s+1)*14; ny = y+23; }
-        else { nx = x+4+rng(s+1)*8; ny = y+8+rng(s+2)*14; }
-        g += `<rect x="${x}" y="${y}" width="62" height="27" rx="2" fill="none" stroke="#2d1c0a" stroke-width="1.3"/>
-              <ellipse cx="${nx}" cy="${ny}" rx="6" ry="7.5" fill="#2d1c0a" opacity="0.85"/>
-              <circle cx="${nx+0.8}" cy="${ny-1}" r="1.3" fill="#0f0a02"/>`;
-      }
-    }
-  } else if (spec === 'oral') {
-    cap.textContent = '口腔黏膜細胞（扁平不規則、核圓居中）';
-    g += `<rect width="200" height="130" fill="#fdf6f4"/>`;
-    for (let i = 0; i < 7; i++) {
-      const s = i*23 + 40;
-      const cx = 18 + rng(s)*164, cy = 15 + rng(s+1)*100;
-      const baseR = 16 + rng(s+2)*8;
-      let pts = '';
-      for (let k = 0; k <= 9; k++) {
-        const a = (k%9) * (Math.PI*2/9);
-        const rr = baseR * (0.75 + rng(s+10+k)*0.5);
-        pts += `${cx+Math.cos(a)*rr},${cy+Math.sin(a)*rr*0.72} `;
-      }
-      g += `<polygon points="${pts}" fill="rgba(175,115,105,0.14)" stroke="#69322a" stroke-width="1"/>
-            <circle cx="${cx}" cy="${cy}" r="${baseR*0.26}" fill="#4b1c16"/>`;
-    }
-  } else if (spec === 'spiro') {
-    cap.textContent = '水綿 Spirogyra（螺旋葉綠體、澤性體）';
-    g += `<rect width="200" height="130" fill="#f4faf1"/>`;
-    for (let i = 0; i < 4; i++) {
-      const x = 8 + i*48;
-      g += `<line x1="${x-15}" y1="4" x2="${x-15}" y2="126" stroke="#1f5a1f" stroke-width="1.3"/>
-            <line x1="${x+15}" y1="4" x2="${x+15}" y2="126" stroke="#1f5a1f" stroke-width="1.3"/>`;
-      let d = `M ${x} 0`;
-      const pyre = [];
-      for (let y = 0; y <= 130; y += 2) {
-        const px = x + Math.sin((y/26)*Math.PI*2 + i) * 12;
-        d += ` L ${px.toFixed(1)} ${y}`;
-        if (y % 18 === (i*4)%18) pyre.push([px,y]);
-      }
-      g += `<path d="${d}" fill="none" stroke="#0f4b0f" stroke-width="2.4"/>`;
-      pyre.forEach(([px,py]) => { g += `<circle cx="${px.toFixed(1)}" cy="${py}" r="1.8" fill="#e6f5d2" stroke="#0f4b0f" stroke-width="0.6"/>`; });
-      for (let y = 6; y < 130; y += 26) {
-        g += `<line x1="${x-15}" y1="${y-1}" x2="${x+15}" y2="${y-1}" stroke="#1f5a1f" stroke-width="0.8"/>
-              <line x1="${x-15}" y1="${y+1}" x2="${x+15}" y2="${y+1}" stroke="#1f5a1f" stroke-width="0.8"/>`;
-      }
-    }
-  } else if (spec === 'letterp') {
-    cap.textContent = '字母 p（示範標本，非生物樣本）';
-    g += `<rect width="200" height="130" fill="#ffffff"/>
-          <text x="100" y="88" font-size="66" font-family="'IBM Plex Mono', monospace" font-weight="bold" text-anchor="middle" fill="#1c4191">p</text>`;
-  }
-  svg.innerHTML = g;
-}
-
-/* ================================================================
    CONTROL FUNCTIONS
 ================================================================ */
 function setMag(m)       { mag = m;   render(); }
-function setSpecimen(v)  { specimen = v; renderRef(v); render(); }
+function setSpecimen(v)  { specimen = v; render(); }
 function setFocus(v)     { focusVal = v; document.getElementById('focus-r').value = v; render(); }
 function adjAp(d)        { apVal = Math.max(1, Math.min(10, apVal + d)); document.getElementById('ap-r').value = apVal; render(); }
 function mvStage(dx, dy) { sX += dx * 14; sY += dy * 14; render(); }
@@ -1051,7 +896,6 @@ window.addEventListener('touchend', () => { drag = false; });
 /* ================================================================
    INIT
 ================================================================ */
-renderRef(specimen);
 render();
 </script>
 </body>
