@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>食物測試實驗模擬器 | Food Test Experiment Simulator</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-app:#f4f6f9;
+    --bg-panel:#ffffff;
+    --border:#d4dbe6;
+    --text-primary:#1a2332;
+    --text-secondary:#4a5a70;
+    --text-dim:#8a9ab0;
+    --cyan:#1976d2;
+    --cyan-dark:#0d47a1;
+    --rose:#c62828;
+    --green:#2e7d32;
+    --amber:#e65100;
+    --violet:#5e35b1;
+  }
+  *{box-sizing:border-box;}
+  html, body{ height:100%; }
+  body{
+    background:var(--bg-app);
+    color:var(--text-primary);
+    font-family:'IBM Plex Sans','Noto Sans TC',system-ui,sans-serif;
+    margin:0;
+  }
+  .font-mono{font-family:'IBM Plex Mono',monospace;}
+  .font-tc{font-family:'Noto Sans TC','IBM Plex Sans',sans-serif;}
+
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+  }
+  .btn{
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:8px 12px;
+    font-size:13px;
+    font-weight:500;
+    background:#fff;
+    color:var(--text-primary);
+    transition:all .15s ease;
+    cursor:pointer;
+  }
+  .btn:hover{ border-color:var(--cyan); color:var(--cyan-dark); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn-primary{ background:var(--cyan); border-color:var(--cyan); color:#fff; }
+  .btn-primary:hover{ background:var(--cyan-dark); border-color:var(--cyan-dark); color:#fff; }
+  .btn-danger{ background:var(--rose); border-color:var(--rose); color:#fff; }
+  .btn-danger:hover{ background:#8e1c1c; border-color:#8e1c1c; color:#fff; }
+  .btn-amber{ background:var(--amber); border-color:var(--amber); color:#fff; }
+  .btn-amber:hover{ background:#b23a00; border-color:#b23a00; color:#fff; }
+  .btn-violet{ background:var(--violet); border-color:var(--violet); color:#fff; }
+  .btn-violet:hover{ background:#472a8c; border-color:#472a8c; color:#fff; }
+
+  .test-tab{
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:8px 10px;
+    cursor:pointer;
+    background:#fff;
+    transition:all .15s ease;
+  }
+  .test-tab:hover{ border-color:var(--cyan); }
+  .test-tab.active{
+    border-color:var(--cyan);
+    background:#e8f1fb;
+    box-shadow:inset 3px 0 0 var(--cyan);
+  }
+  .test-tab.active .test-tab-title{ color:var(--cyan-dark); }
+
+  .sample-chip{
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:6px 8px;
+    font-size:12px;
+    text-align:center;
+    cursor:pointer;
+    background:#fff;
+    transition:all .15s ease;
+  }
+  .sample-chip:hover{ border-color:var(--cyan); }
+  .sample-chip.active{
+    border-color:var(--violet);
+    background:#f1ecfa;
+    color:var(--violet);
+    font-weight:600;
+  }
+
+  .stat-box{
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:8px 10px;
+    background:#fbfcfe;
+  }
+  .stat-label{
+    font-size:10px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    font-weight:600;
+  }
+  .stat-value{
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:18px;
+    color:var(--text-primary);
+    margin-top:2px;
+  }
+
+  .status-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    padding:4px 10px;
+    border-radius:4px;
+    font-family:'IBM Plex Mono',monospace;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:.04em;
+  }
+  .status-idle{ background:#eef1f6; color:var(--text-secondary); }
+  .status-progress{ background:#fff3e0; color:var(--amber); }
+  .status-positive{ background:#e6f4ea; color:var(--green); }
+  .status-negative{ background:#fdecea; color:var(--rose); }
+
+  /* Log terminal: base fixed size on small screens, flexible+bounded on lg (iPad landscape+) */
+  .log-terminal{
+    background:#0f1720;
+    border-radius:4px;
+    padding:10px;
+    height:220px;
+    max-height:220px;
+    overflow-y:auto;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    line-height:1.6;
+  }
+  @media (min-width:1024px){
+    .log-terminal{
+      height:auto;
+      max-height:none; /* let flex box + min-h-0 control the bound instead */
+    }
+  }
+  .log-line{ white-space:pre-wrap; word-break:break-word; }
+  .log-sys{ color:#7fb3ff; }
+  .log-ok{ color:#5fd583; }
+  .log-warn{ color:#ffbd5c; }
+  .log-err{ color:#ff7f7f; }
+  .log-dim{ color:#6b7a8f; }
+
+  input[type="range"]{
+    -webkit-appearance:none;
+    width:100%;
+    height:3px;
+    background:var(--border);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:12px;height:12px;
+    border-radius:50%;
+    background:var(--cyan);
+    cursor:pointer;
+    transition:transform .15s ease;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover{ transform:scale(1.3); }
+
+  select{
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:6px 8px;
+    font-size:13px;
+    background:#fff;
+    color:var(--text-primary);
+  }
+
+  .bench-card{
+    background:linear-gradient(180deg,#fafcff 0%, #f3f7fb 100%);
+    border:1px solid var(--border);
+    border-radius:6px;
+    min-height:340px;
+  }
+
+  .liquid-transition{ transition: fill 0.9s ease, opacity .6s ease; }
+  .fade-in{ animation: fadeIn .4s ease; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+
+  .bubble{
+    position:absolute;
+    border-radius:50%;
+    background:rgba(255,255,255,.55);
+    animation: rise 1.6s linear infinite;
+  }
+  @keyframes rise{
+    0%{ transform:translateY(0) scale(.6); opacity:0; }
+    20%{ opacity:.8; }
+    100%{ transform:translateY(-70px) scale(1); opacity:0; }
+  }
+
+  /* --- Authentic lab-action animations --- */
+  .dropper{ transform-origin:center top; }
+  .dropper.squeeze{ animation: dropperSqueeze .55s ease; }
+  @keyframes dropperSqueeze{
+    0%,100%{ transform:scaleY(1); }
+    35%{ transform:scaleY(.8); }
+    55%{ transform:scaleY(1.08); }
+    75%{ transform:scaleY(.96); }
+  }
+  .drop-fall{ animation: dropFall .55s cubic-bezier(.55,0,.85,.35) forwards; }
+  @keyframes dropFall{
+    0%{ transform:translateY(0); opacity:1; }
+    80%{ opacity:1; }
+    100%{ transform:translateY(86px); opacity:0; }
+  }
+  .ripple{ transform-origin:center; animation: rippleAnim .6s ease-out forwards; }
+  @keyframes rippleAnim{
+    0%{ transform:scale(.25); opacity:.9; }
+    100%{ transform:scale(2.8); opacity:0; }
+  }
+  .flame{ transform-origin:center bottom; animation: flicker 1s ease-in-out infinite; }
+  @keyframes flicker{
+    0%,100%{ transform:scale(1,1); opacity:1; }
+    50%{ transform:scale(.88,1.1); opacity:.8; }
+  }
+  .steam{ animation: steamRise 1.8s ease-in infinite; }
+  @keyframes steamRise{
+    0%{ transform:translateY(0) scale(.7); opacity:0; }
+    25%{ opacity:.55; }
+    100%{ transform:translateY(-46px) scale(1.3); opacity:0; }
+  }
+  .air-line{ animation: airFlow 1.1s ease-in-out infinite; }
+  @keyframes airFlow{
+    0%,100%{ opacity:.15; transform:translateX(-4px); }
+    50%{ opacity:.65; transform:translateX(4px); }
+  }
+  .strip-dip{ animation: stripDipAnim .9s ease-in-out; }
+  @keyframes stripDipAnim{
+    0%{ transform:translateY(0); }
+    45%{ transform:translateY(46px); }
+    60%{ transform:translateY(46px); }
+    100%{ transform:translateY(0); }
+  }
+  .pour-tilt{ transform-origin:10% 90%; animation: pourTiltAnim 1s ease-in-out; }
+  @keyframes pourTiltAnim{
+    0%{ transform:rotate(0deg); }
+    40%{ transform:rotate(-55deg); }
+    70%{ transform:rotate(-55deg); }
+    100%{ transform:rotate(0deg); }
+  }
+
+  .progress-track{
+    width:100%; height:6px; border-radius:3px;
+    background:#e3e8f0; overflow:hidden; border:1px solid var(--border);
+  }
+  .progress-fill{
+    height:100%; background:var(--amber); width:0%;
+    transition:width .1s linear;
+  }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-thumb{ background:#33404f; border-radius:4px; }
+  ::-webkit-scrollbar-track{ background:#0f1720; }
+</style>
+</head>
+<body class="min-h-screen lg:h-screen lg:overflow-hidden lg:flex lg:flex-col">
+
+<!-- HEADER -->
+<header class="border-b lg:shrink-0" style="background:#ffffff;border-color:var(--border);">
+  <div class="max-w-[1440px] mx-auto px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-[4px] flex items-center justify-center" style="background:var(--cyan);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 2v6.5L4.5 17a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L15 8.5V2"/>
+          <path d="M9 2h6"/>
+          <path d="M7 14h10"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-[16px] font-bold font-tc leading-tight">食物測試實驗模擬器</h1>
+        <p class="text-[11px] font-mono" style="color:var(--text-dim);">FOOD TEST EXPERIMENT SIMULATOR · HKDSE BIO LAB TERMINAL</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="status-badge" id="stationStatusBadge"><span id="stationStatusDot">●</span> <span id="stationStatusText">SYSTEM READY</span></span>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-[1440px] mx-auto p-4 w-full lg:flex-1 lg:min-h-0 lg:flex lg:flex-col lg:overflow-hidden">
+  <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr_300px] gap-4 lg:flex-1 lg:min-h-0">
+
+    <!-- LEFT PANEL: CONTROL CONSOLE -->
+    <section class="panel p-4 flex flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-y-auto">
+      <div>
+        <p class="stat-label mb-2">測試選擇 TEST SELECT</p>
+        <div id="testTabs" class="flex flex-col gap-1.5"></div>
+      </div>
+
+      <div class="border-t pt-3" style="border-color:var(--border);">
+        <p class="stat-label mb-2">樣本選擇 SAMPLE SELECT</p>
+        <div id="sampleGrid" class="grid grid-cols-2 gap-1.5"></div>
+      </div>
+
+      <div class="border-t pt-3" style="border-color:var(--border);">
+        <p class="stat-label mb-2">操作 ACTIONS</p>
+        <div id="actionButtons" class="flex flex-col gap-2"></div>
+      </div>
+
+      <div class="border-t pt-3 mt-auto" style="border-color:var(--border);">
+        <button id="resetBtn" class="btn btn-danger w-full font-mono text-[12px] tracking-wide">⟲ RESET STATION 重設站台</button>
+      </div>
+    </section>
+
+    <!-- CENTER PANEL: LAB BENCH -->
+    <section class="panel p-4 lg:h-full lg:min-h-0 lg:overflow-hidden flex flex-col">
+      <div class="flex items-center justify-between mb-3 shrink-0">
+        <h2 class="font-tc font-semibold text-[14px]" id="benchTitle">實驗台 LAB BENCH</h2>
+        <span class="text-[11px] font-mono" style="color:var(--text-dim);" id="benchSubtitle"></span>
+      </div>
+      <div class="bench-card relative flex items-center justify-center p-6 lg:flex-1 lg:min-h-0 overflow-y-auto" id="benchArea"></div>
+      <div class="mt-3 shrink-0">
+        <p class="stat-label mb-1">步驟指引 STEP GUIDE</p>
+        <p class="text-[13px] font-tc leading-relaxed" id="stepGuide" style="color:var(--text-secondary);"></p>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: PRECISION MONITOR -->
+    <section class="panel p-4 flex flex-col gap-4 lg:h-full lg:min-h-0 lg:overflow-hidden">
+      <div class="shrink-0">
+        <p class="stat-label mb-2">狀態 STATUS</p>
+        <div id="statusBadgeBox"></div>
+      </div>
+
+      <div class="shrink-0">
+        <p class="stat-label mb-2">數據監控 METRICS</p>
+        <div class="grid grid-cols-2 gap-2" id="metricsGrid"></div>
+      </div>
+
+      <div class="border-t pt-3 flex-1 flex flex-col lg:min-h-0" style="border-color:var(--border);">
+        <p class="stat-label mb-2 shrink-0">系統日誌 STATUS LOG</p>
+        <div class="log-terminal flex-1 lg:min-h-0" id="logTerminal"></div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     DATA MODEL
+  ============================================================ */
+
+  // NOTE: "glucose" = tests positive on a glucose-specific enzymatic strip.
+  //       "reducingSugar" = tests positive on Benedict's Test (any reducing sugar,
+  //       e.g. glucose, lactose, fructose — NOT sucrose, which is non-reducing).
+  //       "color" = the sample's own natural appearance (before any reagent is added).
+  const SAMPLES = {
+    water:   { id:'water',   nameTC:'蒸餾水 (對照)',       nameEN:'Distilled Water (Control)',      glucose:false, reducingSugar:false, starch:false, protein:false, oil:false, vitaminC:'none',    color:'#eaf3fb' },
+    glucose: { id:'glucose', nameTC:'葡萄糖溶液',           nameEN:'Glucose Solution',               glucose:true,  reducingSugar:true,  starch:false, protein:false, oil:false, vitaminC:'none',    color:'#fdf6d8' },
+    sucrose: { id:'sucrose', nameTC:'蔗糖溶液 (非還原糖)',  nameEN:'Sucrose Solution (Non-Reducing)',glucose:false, reducingSugar:false, starch:false, protein:false, oil:false, vitaminC:'none',    color:'#fdf8ea' },
+    starch:  { id:'starch',  nameTC:'澱粉溶液',             nameEN:'Starch Solution',                glucose:false, reducingSugar:false, starch:true,  protein:false, oil:false, vitaminC:'none',    color:'#f4f1e6' },
+    albumen: { id:'albumen', nameTC:'蛋白溶液',             nameEN:'Egg Albumen Solution',           glucose:false, reducingSugar:false, starch:false, protein:true,  oil:false, vitaminC:'none',    color:'#f6f7f1' },
+    milk:    { id:'milk',    nameTC:'牛奶',                 nameEN:'Milk',                           glucose:false, reducingSugar:true,  starch:false, protein:true,  oil:true,  vitaminC:'none',    color:'#fffdf6' },
+    oil:     { id:'oil',     nameTC:'食油',                 nameEN:'Cooking Oil',                    glucose:false, reducingSugar:false, starch:false, protein:false, oil:true,  vitaminC:'none',    color:'#f2df9c' },
+    vitc:    { id:'vitc',    nameTC:'維他命C溶液 (新鮮)',   nameEN:'Vitamin C (Fresh)',              glucose:false, reducingSugar:false, starch:false, protein:false, oil:false, vitaminC:'fresh',   color:'#eef7d8' },
+    orangeJuice:{ id:'orangeJuice', nameTC:'橙汁',          nameEN:'Orange Juice',                   glucose:true,  reducingSugar:true,  starch:false, protein:false, oil:false, vitaminC:'dilute1', color:'#f5a83c' },
+    lemonJuice: { id:'lemonJuice',  nameTC:'檸檬汁',        nameEN:'Lemon Juice',                    glucose:true,  reducingSugar:true,  starch:false, protein:false, oil:false, vitaminC:'dilute2', color:'#f2ec8f' },
+    vitcHeated:{ id:'vitcHeated', nameTC:'維他命C溶液 (已加熱)', nameEN:'Vitamin C (Heated/Destroyed)', glucose:false, reducingSugar:false, starch:false, protein:false, oil:false, vitaminC:'heated', color:'#eef7d8' }
+  };
+
+  const TESTS = {
+    glucoseStrip: { id:'glucoseStrip', nameTC:'尿糖試紙測試', nameEN:'Glucose Test Strip', icon:'📏' },
+    benedict:     { id:'benedict',     nameTC:"本立德試驗",   nameEN:"Benedict's Test",    icon:'🧪' },
+    iodine:       { id:'iodine',       nameTC:'碘液試驗',     nameEN:'Iodine Test',        icon:'🧫' },
+    grease:       { id:'grease',       nameTC:'油漬試驗',     nameEN:'Grease Spot Test',   icon:'📄' },
+    proteinStrip: { id:'proteinStrip', nameTC:'尿蛋白試紙測試', nameEN:'Protein Test Strip', icon:'📏' },
+    dcpip:        { id:'dcpip',        nameTC:'DCPIP 溶液測試', nameEN:'DCPIP Test',       icon:'💧' }
+  };
+
+  const state = {
+    currentTest: 'glucoseStrip',
+    selectedSample: 'water',
+    temperature: 25.0,
+    timeElapsed: 0,      // simulated seconds
+    dropsAdded: 0,
+    reagentVolume: 0,    // mL
+    isHeated: false,
+    testStatus: 'idle',  // idle | progress | positive | negative
+    // per-test transient flags
+    stripDipped: false,
+    stripDipping: false,
+    heatBathRunning: false,
+    heatBathDone: false,
+    paperDropped: false,
+    paperDried: false,
+    paperDrying: false,
+    solventAdded: false,
+    dcpipThreshold: null,
+    // animation-only transient flags
+    ioDropAnim: false,
+    reagentDropAnim: false,
+    greaseDropAnim: false,
+    solventAnim: false,
+    dcpipDropAnim: false,
+    timerHandle: null
+  };
+
+  /* ============================================================
+     LOGGING
+  ============================================================ */
+
+  function log(msg, type){
+    type = type || 'sys';
+    const term = document.getElementById('logTerminal');
+    const line = document.createElement('div');
+    line.className = 'log-line log-' + type;
+    const t = new Date();
+    const stamp = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0') + ':' + String(t.getSeconds()).padStart(2,'0');
+    const tagMap = { sys:'[SYS]', ok:'[OK]', warn:'[WARN]', err:'[ALERT]', dim:'[LOG]' };
+    line.textContent = '[' + stamp + '] ' + (tagMap[type]||'[SYS]') + ' ' + msg;
+    term.appendChild(line);
+    term.scrollTop = term.scrollHeight;
+  }
+
+  function clearLog(){
+    document.getElementById('logTerminal').innerHTML = '';
+  }
+
+  /* ============================================================
+     SHARED LAB-EQUIPMENT SVG HELPERS
+  ============================================================ */
+
+  function dropperGraphic(x, y, liquidColor, animating){
+    return (
+      '<g transform="translate('+x+','+y+')">' +
+        '<g class="dropper'+(animating?' squeeze':'')+'">' +
+          '<ellipse cx="0" cy="6" rx="8" ry="11" fill="#e3766b" stroke="#a4453c" stroke-width="1.4"/>' +
+          '<rect x="-3" y="15" width="6" height="30" fill="#d9dee6" stroke="#9aa7ba" stroke-width="1"/>' +
+          '<rect x="-1.6" y="45" width="3.2" height="8" fill="#c7d0dc"/>' +
+        '</g>' +
+        (animating ? '<circle class="drop-fall" cx="0" cy="55" r="3.2" fill="'+liquidColor+'"/>' : '') +
+      '</g>'
+    );
+  }
+
+  function rippleGraphic(cx, cy){
+    return '<circle class="ripple" cx="'+cx+'" cy="'+cy+'" r="9" fill="none" stroke="#ffffff" stroke-width="2"/>';
+  }
+
+  /* ============================================================
+     RENDER: LEFT PANEL - TEST TABS
+  ============================================================ */
+
+  function renderTestTabs(){
+    const box = document.getElementById('testTabs');
+    box.innerHTML = '';
+    Object.values(TESTS).forEach(function(t){
+      const div = document.createElement('div');
+      div.className = 'test-tab' + (state.currentTest === t.id ? ' active' : '');
+      div.innerHTML =
+        '<div class="flex items-center gap-2">' +
+          '<span class="text-[15px]">'+t.icon+'</span>' +
+          '<div>' +
+            '<p class="test-tab-title font-tc font-semibold text-[12.5px] leading-tight" style="color:var(--text-primary);">'+t.nameTC+'</p>' +
+            '<p class="font-mono text-[10px]" style="color:var(--text-dim);">'+t.nameEN+'</p>' +
+          '</div>' +
+        '</div>';
+      div.addEventListener('click', function(){ switchTest(t.id); });
+      box.appendChild(div);
+    });
+  }
+
+  /* ============================================================
+     RENDER: LEFT PANEL - SAMPLE GRID
+  ============================================================ */
+
+  function renderSampleGrid(){
+    const box = document.getElementById('sampleGrid');
+    box.innerHTML = '';
+    Object.values(SAMPLES).forEach(function(s){
+      const div = document.createElement('div');
+      div.className = 'sample-chip' + (state.selectedSample === s.id ? ' active' : '');
+      div.innerHTML = '<p class="font-tc leading-tight">'+s.nameTC+'</p>';
+      div.title = s.nameEN;
+      div.addEventListener('click', function(){ switchSample(s.id); });
+      box.appendChild(div);
+    });
+  }
+
+  /* ============================================================
+     SWITCHING
+  ============================================================ */
+
+  function switchTest(testId){
+    if (state.timerHandle) { clearInterval(state.timerHandle); state.timerHandle = null; }
+    state.currentTest = testId;
+    resetTransientFlags();
+    state.testStatus = 'idle';
+    state.timeElapsed = 0;
+    state.dropsAdded = 0;
+    state.reagentVolume = 0;
+    state.temperature = 25.0;
+    renderTestTabs();
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    renderStatusBadge();
+    log('已切換至 ' + TESTS[testId].nameTC + ' (' + TESTS[testId].nameEN + ')', 'sys');
+  }
+
+  function switchSample(sampleId){
+    if (state.timerHandle) { clearInterval(state.timerHandle); state.timerHandle = null; }
+    state.selectedSample = sampleId;
+    resetTransientFlags();
+    state.testStatus = 'idle';
+    state.timeElapsed = 0;
+    state.dropsAdded = 0;
+    state.reagentVolume = 0;
+    state.temperature = 25.0;
+    renderSampleGrid();
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    renderStatusBadge();
+    log('已選取樣本: ' + SAMPLES[sampleId].nameTC + ' (' + SAMPLES[sampleId].nameEN + ')', 'sys');
+  }
+
+  function resetTransientFlags(){
+    state.stripDipped = false;
+    state.stripDipping = false;
+    state.heatBathRunning = false;
+    state.heatBathDone = false;
+    state.paperDropped = false;
+    state.paperDried = false;
+    state.paperDrying = false;
+    state.solventAdded = false;
+    state.dcpipThreshold = null;
+    state.ioDropAnim = false;
+    state.reagentDropAnim = false;
+    state.greaseDropAnim = false;
+    state.solventAnim = false;
+    state.dcpipDropAnim = false;
+  }
+
+  function resetStation(){
+    if (state.timerHandle) { clearInterval(state.timerHandle); state.timerHandle = null; }
+    state.currentTest = 'glucoseStrip';
+    state.selectedSample = 'water';
+    state.temperature = 25.0;
+    state.timeElapsed = 0;
+    state.dropsAdded = 0;
+    state.reagentVolume = 0;
+    state.isHeated = false;
+    state.testStatus = 'idle';
+    resetTransientFlags();
+    clearLog();
+    renderAll();
+    log('站台已重設。等待指令。', 'sys');
+  }
+
+  /* ============================================================
+     RENDER: STATUS BADGE
+  ============================================================ */
+
+  function renderStatusBadge(){
+    const box = document.getElementById('statusBadgeBox');
+    const map = {
+      idle:     { cls:'status-idle',     label:'IDLE 待命' },
+      progress: { cls:'status-progress', label:'IN PROGRESS 進行中' },
+      positive: { cls:'status-positive', label:'POSITIVE 陽性' },
+      negative: { cls:'status-negative', label:'NEGATIVE 陰性' }
+    };
+    const s = map[state.testStatus];
+    box.innerHTML = '<span class="status-badge ' + s.cls + '">● ' + s.label + '</span>';
+
+    const headerText = document.getElementById('stationStatusText');
+    if (state.testStatus === 'idle') { headerText.textContent = 'SYSTEM READY'; }
+    else if (state.testStatus === 'progress') { headerText.textContent = 'TEST RUNNING'; }
+    else { headerText.textContent = 'RESULT: ' + state.testStatus.toUpperCase(); }
+  }
+
+  /* ============================================================
+     RENDER: METRICS
+  ============================================================ */
+
+  function fmtTime(sec){
+    const m = Math.floor(sec/60);
+    const s = Math.floor(sec%60);
+    return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+  }
+
+  function renderMetrics(){
+    const box = document.getElementById('metricsGrid');
+    const test = state.currentTest;
+    const items = [];
+
+    items.push({ label:'TEMPERATURE', value: state.temperature.toFixed(1)+'°C', color:'var(--amber)' });
+    items.push({ label:'TIME ELAPSED', value: fmtTime(state.timeElapsed), color:'var(--text-primary)' });
+
+    if (test === 'dcpip') {
+      items.push({ label:'DROPS ADDED', value: state.dropsAdded, color:'var(--violet)' });
+      items.push({ label:'SOLUTION', value: state.testStatus==='positive' ? 'COLORLESS' : 'BLUE', color:'var(--cyan)' });
+    } else if (test === 'benedict') {
+      items.push({ label:'REAGENT VOL.', value: state.reagentVolume.toFixed(1)+' mL', color:'var(--violet)' });
+      items.push({ label:'HEAT BATH', value: state.heatBathRunning ? 'ACTIVE' : (state.heatBathDone ? 'DONE' : 'OFF'), color:'var(--amber)' });
+    } else if (test === 'grease') {
+      items.push({ label:'DRYING', value: state.paperDrying ? 'IN PROGRESS' : (state.paperDried ? 'DRY' : '—'), color:'var(--amber)' });
+      items.push({ label:'SOLVENT', value: state.solventAdded ? 'ADDED' : 'NOT ADDED', color:'var(--violet)' });
+    } else if (test === 'glucoseStrip' || test === 'proteinStrip') {
+      items.push({ label:'STRIP STATE', value: state.stripDipped ? 'DIPPED' : 'DRY', color:'var(--violet)' });
+      items.push({ label:'RESULT', value: state.testStatus==='idle' ? '—' : state.testStatus.toUpperCase(), color:'var(--cyan)' });
+    } else if (test === 'iodine') {
+      items.push({ label:'DROPS ADDED', value: state.dropsAdded, color:'var(--violet)' });
+      items.push({ label:'RESULT', value: state.testStatus==='idle' ? '—' : state.testStatus.toUpperCase(), color:'var(--cyan)' });
+    }
+
+    box.innerHTML = items.map(function(it){
+      return '<div class="stat-box"><p class="stat-label">'+it.label+'</p><p class="stat-value" style="color:'+it.color+';">'+it.value+'</p></div>';
+    }).join('');
+  }
+
+  /* ============================================================
+     BENCH RENDERING PER TEST
+  ============================================================ */
+
+  function renderBench(){
+    const bench = document.getElementById('benchArea');
+    const guide = document.getElementById('stepGuide');
+    const title = document.getElementById('benchTitle');
+    const subtitle = document.getElementById('benchSubtitle');
+    const t = TESTS[state.currentTest];
+    title.textContent = '實驗台 · ' + t.nameTC;
+    subtitle.textContent = t.nameEN.toUpperCase();
+
+    const renderers = {
+      glucoseStrip: renderGlucoseStripBench,
+      proteinStrip: renderProteinStripBench,
+      benedict: renderBenedictBench,
+      iodine: renderIodineBench,
+      grease: renderGreaseBench,
+      dcpip: renderDcpipBench
+    };
+    renderers[state.currentTest]();
+
+    const guides = {
+      glucoseStrip: '步驟：選擇樣本後按「浸入試紙」。試紙會浸入樣本試管中。只有含游離葡萄糖的樣本（如葡萄糖溶液、橙汁、檸檬汁）會由綠轉棕；蔗糖及乳糖(牛奶)不會令此試紙變色。',
+      proteinStrip: '步驟：選擇樣本後按「浸入試紙」。若樣本含蛋白質(蛋白溶液、牛奶)，試紙將由黃色轉為顯色；其他樣本保持黃色。',
+      benedict: '步驟：按「加入本立德試劑」(藍色試劑滴入樣本試管)，再按「開始水浴加熱」(模擬5分鐘)。含還原糖(葡萄糖、乳糖-牛奶)的樣本會出現磚紅色沉澱；蔗糖屬非還原糖，即使受熱仍保持藍色。',
+      iodine: '步驟：按「滴加碘液」，觀察碘液(棕色)滴入樣本試管後的變化。若樣本含澱粉，顏色會立即由棕色變為藍黑色；否則保持碘液本身的棕色。',
+      grease: '步驟：按「滴在濾紙上」(樣本以滴管滴下)，再按「開始風乾」(模擬5分鐘，可見氣流線)。觀察是否出現半透明油漬點，再按「加入有機溶劑」(傾倒沖洗) 觀察油漬點是否溶解消失。',
+      dcpip: '步驟：按「加一滴」，將樣本逐滴滴入藍色DCPIP溶液中使其褪色。新鮮維他命C溶液只需最少滴數即可完全褪色；橙汁次之；檸檬汁的維他命C較稀薄，需要更多滴數；已加熱破壞的維他命C樣本則需要非常多滴數；其他樣本難以完全褪色。'
+    };
+    guide.textContent = guides[state.currentTest];
+  }
+
+  function benchWrap(inner){
+    return '<div class="w-full flex items-center justify-center fade-in">' + inner + '</div>';
+  }
+
+  // --- Glucose / Protein test strip bench: strip dips into a tube of the sample ---
+  function stripBenchSVG(kind){
+    const sample = SAMPLES[state.selectedSample];
+    const dipped = state.stripDipped;
+    const dipping = state.stripDipping;
+    let padColor, label;
+    if (kind === 'glucose') {
+      const positive = sample.glucose;
+      padColor = !dipped ? '#7cb342' : (positive ? '#6d4c26' : '#7cb342');
+      label = !dipped ? '未浸入 (綠色)' : (positive ? '陽性: 棕色' : '陰性: 綠色不變');
+    } else {
+      const positive = sample.protein;
+      padColor = !dipped ? '#f4d941' : (positive ? '#2e8b6f' : '#f4d941');
+      label = !dipped ? '未浸入 (黃色)' : (positive ? '陽性: 顯色 (藍綠)' : '陰性: 黃色不變');
+    }
+    return benchWrap(
+      '<div class="flex flex-col items-center gap-4">' +
+        '<svg width="220" height="280" viewBox="0 0 220 280">' +
+          '<rect x="70" y="110" width="60" height="140" rx="8" fill="#fafcff" stroke="#d4dbe6" stroke-width="2"/>' +
+          '<rect x="76" y="150" width="48" height="96" rx="4" fill="'+sample.color+'"/>' +
+          '<text x="100" y="268" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#4a5a70">SAMPLE TUBE</text>' +
+          '<g class="'+(dipping?'strip-dip':'')+'">' +
+            '<rect x="90" y="0" width="20" height="150" rx="4" fill="#eef1f6" stroke="#d4dbe6" stroke-width="2"/>' +
+            '<rect x="93" y="110" width="14" height="34" rx="2" class="liquid-transition" fill="'+padColor+'"/>' +
+          '</g>' +
+          (dipping ? rippleGraphic(100,150) : '') +
+        '</svg>' +
+        '<div class="stat-box text-center px-4">' +
+          '<p class="stat-label">STRIP READOUT</p>' +
+          '<p class="font-tc text-[13px] font-semibold mt-1" style="color:var(--text-primary);">'+label+'</p>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+  function renderGlucoseStripBench(){ document.getElementById('benchArea').innerHTML = stripBenchSVG('glucose'); }
+  function renderProteinStripBench(){ document.getElementById('benchArea').innerHTML = stripBenchSVG('protein'); }
+
+  // --- Benedict's Test bench: dropper adds reagent, water bath w/ tripod + flame + steam ---
+  function renderBenedictBench(){
+    const sample = SAMPLES[state.selectedSample];
+    const positive = sample.reducingSugar;
+    let liquidColor = sample.color;
+    let precipitate = '';
+    let label = '未加入試劑：樣本原色';
+
+    if (state.reagentVolume > 0) {
+      liquidColor = '#1e6fd9';
+      label = '已加入本立德試劑，等待加熱';
+    }
+    if (state.heatBathRunning) {
+      label = '水浴加熱中…';
+    }
+    if (state.heatBathDone) {
+      if (positive) {
+        liquidColor = '#b23a1e';
+        precipitate = '<rect x="106" y="195" width="28" height="16" rx="3" fill="#8c2a12" opacity="0.9"/>';
+        label = '陽性：磚紅色沉澱物';
+      } else {
+        liquidColor = '#1e6fd9';
+        label = '陰性：保持藍色';
+      }
+    }
+
+    const bubbles = state.heatBathRunning ? [0,1,2,3].map(function(i){
+      const left = 60 + i*30;
+      const delay = (i*0.35).toFixed(2);
+      return '<div class="bubble" style="width:6px;height:6px;left:'+left+'px;bottom:10px;animation-delay:'+delay+'s;"></div>';
+    }).join('') : '';
+
+    const steam = state.heatBathRunning ? [0,1].map(function(i){
+      const cx = 112 + i*16;
+      const delay = (i*0.5).toFixed(2);
+      return '<ellipse class="steam" cx="'+cx+'" cy="45" rx="5" ry="8" fill="#ffffff" style="animation-delay:'+delay+'s;"/>';
+    }).join('') : '';
+
+    const flame = state.heatBathRunning ?
+      '<g class="flame">' +
+        '<path d="M120 242 q-7 -16 0 -24 q7 8 0 24 z" fill="#ff9800"/>' +
+        '<path d="M120 242 q-3 -9 0 -14 q3 5 0 14 z" fill="#ffe082"/>' +
+      '</g>' : '';
+
+    const reagentDropper = state.reagentDropAnim ? dropperGraphic(122,0,'#1e6fd9', true) : '';
+    const reagentRipple = state.reagentDropAnim ? rippleGraphic(120,120) : '';
+
+    document.getElementById('benchArea').innerHTML = benchWrap(
+      '<div class="flex flex-col items-center gap-3">' +
+        '<div class="relative">' +
+          '<svg width="240" height="270" viewBox="0 0 240 270">' +
+            '<line x1="60" y1="250" x2="30" y2="266" stroke="#8a9ab0" stroke-width="3"/>' +
+            '<line x1="180" y1="250" x2="210" y2="266" stroke="#8a9ab0" stroke-width="3"/>' +
+            '<line x1="120" y1="250" x2="120" y2="266" stroke="#8a9ab0" stroke-width="3"/>' +
+            '<rect x="30" y="180" width="180" height="70" rx="6" fill="'+(state.heatBathRunning||state.heatBathDone?'#cfe4f7':'#eef1f6')+'" stroke="#d4dbe6" stroke-width="2"/>' +
+            '<text x="120" y="264" text-anchor="middle" font-family="IBM Plex Mono" font-size="9" fill="#4a5a70">WATER BATH</text>' +
+            flame +
+            '<rect x="100" y="40" width="40" height="150" rx="6" fill="#fafcff" stroke="#d4dbe6" stroke-width="2"/>' +
+            '<rect x="104" y="120" width="32" height="66" rx="3" class="liquid-transition" fill="'+liquidColor+'"/>' +
+            precipitate +
+            steam +
+            reagentDropper +
+            reagentRipple +
+          '</svg>' +
+          '<div class="absolute" style="left:88px; bottom:24px; width:64px; height:60px; overflow:hidden;">'+bubbles+'</div>' +
+        '</div>' +
+        '<div class="stat-box text-center px-4">' +
+          '<p class="stat-label">TUBE READOUT</p>' +
+          '<p class="font-tc text-[13px] font-semibold mt-1" style="color:var(--text-primary);">'+label+'</p>' +
+        '</div>' +
+        (state.heatBathRunning ? '<div class="w-56"><div class="progress-track"><div class="progress-fill" id="benedictProgress"></div></div></div>' : '') +
+      '</div>'
+    );
+  }
+
+  // --- Iodine test bench: dropper adds brown iodine reagent to the sample tube ---
+  function renderIodineBench(){
+    const sample = SAMPLES[state.selectedSample];
+    const positive = sample.starch;
+    const dropped = state.dropsAdded > 0;
+    const animating = state.ioDropAnim;
+    let color = sample.color;
+    let label = '樣本原色（未滴加碘液）';
+    if (dropped && !animating) {
+      color = positive ? '#1a1a2e' : '#7a5230';
+      label = positive ? '陽性：藍黑色' : '陰性：保持棕色 (碘液本身顏色)';
+    } else if (animating) {
+      label = '滴加中…';
+    }
+    document.getElementById('benchArea').innerHTML = benchWrap(
+      '<div class="flex flex-col items-center gap-4">' +
+        '<svg width="200" height="280" viewBox="0 0 200 280">' +
+          dropperGraphic(100,0,'#8a5a2b', animating) +
+          '<rect x="70" y="60" width="60" height="160" rx="8" fill="#fafcff" stroke="#d4dbe6" stroke-width="2"/>' +
+          '<rect x="76" y="130" width="48" height="84" rx="4" class="liquid-transition" fill="'+color+'"/>' +
+          (animating ? rippleGraphic(100,130) : '') +
+        '</svg>' +
+        '<div class="stat-box text-center px-4">' +
+          '<p class="stat-label">SOLUTION READOUT</p>' +
+          '<p class="font-tc text-[13px] font-semibold mt-1" style="color:var(--text-primary);">'+label+'</p>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  // --- Grease spot test bench: dropper deposits sample, air-dry lines, then solvent pour ---
+  function renderGreaseBench(){
+    const sample = SAMPLES[state.selectedSample];
+    const positive = sample.oil;
+    let spotOpacity = 0;
+    let label = '濾紙：乾淨';
+    const animating = state.greaseDropAnim;
+
+    if (state.paperDropped && !state.paperDried && !state.paperDrying) {
+      label = '樣本已滴下，等待風乾';
+      spotOpacity = positive ? 0.18 : 0.06;
+    } else if (state.paperDrying) {
+      label = '風乾中…';
+      spotOpacity = positive ? 0.32 : 0.08;
+    } else if (state.paperDried && !state.solventAdded) {
+      label = positive ? '陽性：出現半透明油漬點' : '陰性：沒有明顯油漬點';
+      spotOpacity = positive ? 0.55 : 0.05;
+    } else if (state.solventAdded) {
+      label = positive ? '陽性確認：溶劑洗滌後油漬點消失' : '陰性：本來就沒有油漬點';
+      spotOpacity = 0;
+    }
+
+    const airLines = state.paperDrying ? [0,1,2].map(function(i){
+      const y = 50 + i*36;
+      const delay = (i*0.2).toFixed(2);
+      return '<line class="air-line" x1="8" y1="'+y+'" x2="24" y2="'+y+'" stroke="#8a9ab0" stroke-width="2" style="animation-delay:'+delay+'s;"/>';
+    }).join('') : '';
+
+    const dropperPart = animating ? dropperGraphic(120,0,sample.color,true) : '';
+    const ripplePart = animating ? rippleGraphic(120,110) : '';
+    const wetDrop = (state.paperDropped && !state.paperDrying && !state.paperDried && !animating)
+      ? '<circle cx="120" cy="120" r="9" fill="'+sample.color+'" opacity="0.85"/>' : '';
+
+    const solventPour = (state.solventAdded && state.solventAnim)
+      ? '<g class="pour-tilt" transform="translate(190,20)">' +
+          '<path d="M0 0 L28 -8 L34 8 L6 18 Z" fill="#bcd8f5" stroke="#8fb8e6" stroke-width="1.5"/>' +
+        '</g>' : '';
+
+    document.getElementById('benchArea').innerHTML = benchWrap(
+      '<div class="flex flex-col items-center gap-4">' +
+        '<svg width="240" height="250" viewBox="0 0 240 250">' +
+          dropperPart +
+          '<rect x="40" y="20" width="160" height="190" rx="4" fill="#fdfdfb" stroke="#d4dbe6" stroke-width="2"/>' +
+          '<circle cx="120" cy="120" r="45" fill="#e8dcc0" opacity="'+spotOpacity+'" class="liquid-transition"/>' +
+          wetDrop +
+          ripplePart +
+          airLines +
+          solventPour +
+        '</svg>' +
+        '<div class="stat-box text-center px-4">' +
+          '<p class="stat-label">PAPER READOUT</p>' +
+          '<p class="font-tc text-[13px] font-semibold mt-1" style="color:var(--text-primary);">'+label+'</p>' +
+        '</div>' +
+        (state.paperDrying ? '<div class="w-56"><div class="progress-track"><div class="progress-fill" id="greaseProgress"></div></div></div>' : '') +
+      '</div>'
+    );
+  }
+
+  // --- DCPIP test bench: dropper adds sample dropwise into blue DCPIP solution ---
+  function renderDcpipBench(){
+    const sample = SAMPLES[state.selectedSample];
+    let threshold = null;
+    if (sample.vitaminC === 'fresh') threshold = 4;
+    else if (sample.vitaminC === 'dilute1') threshold = 9;
+    else if (sample.vitaminC === 'dilute2') threshold = 14;
+    else if (sample.vitaminC === 'heated') threshold = 18;
+    state.dcpipThreshold = threshold;
+
+    const maxDrops = 20;
+    let fadeRatio;
+    if (threshold === null) {
+      fadeRatio = Math.min(state.dropsAdded / (maxDrops*2), 0.35);
+    } else {
+      fadeRatio = Math.min(state.dropsAdded / threshold, 1);
+    }
+    const blue = [30, 60, 130];
+    const clear = [235, 242, 250];
+    const mix = blue.map(function(c,i){ return Math.round(c + (clear[i]-c)*fadeRatio); });
+    const liquidColor = 'rgb('+mix.join(',')+')';
+
+    let label = '深藍色 DCPIP 溶液';
+    if (fadeRatio >= 0.999 && threshold !== null) {
+      label = '陽性：完全褪色為無色 (共 ' + state.dropsAdded + ' 滴)';
+    } else if (state.dropsAdded >= maxDrops && threshold === null) {
+      label = '陰性：即使滴加 ' + maxDrops + ' 滴仍未完全褪色';
+    } else if (state.dropsAdded > 0) {
+      label = '褪色中… (' + state.dropsAdded + ' 滴)';
+    }
+
+    document.getElementById('benchArea').innerHTML = benchWrap(
+      '<div class="flex flex-col items-center gap-4">' +
+        '<svg width="200" height="280" viewBox="0 0 200 280">' +
+          dropperGraphic(100,0,sample.color, state.dcpipDropAnim) +
+          '<rect x="65" y="50" width="70" height="150" rx="8" fill="#fafcff" stroke="#d4dbe6" stroke-width="2"/>' +
+          '<rect x="71" y="110" width="58" height="86" rx="4" class="liquid-transition" fill="'+liquidColor+'"/>' +
+          (state.dcpipDropAnim ? rippleGraphic(100,110) : '') +
+        '</svg>' +
+        '<div class="stat-box text-center px-4">' +
+          '<p class="stat-label">SOLUTION READOUT</p>' +
+          '<p class="font-tc text-[13px] font-semibold mt-1" style="color:var(--text-primary);">'+label+'</p>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  /* ============================================================
+     ACTION BUTTONS PER TEST
+  ============================================================ */
+
+  function renderActionButtons(){
+    const box = document.getElementById('actionButtons');
+    box.innerHTML = '';
+    const test = state.currentTest;
+
+    function addBtn(label, cls, handler, disabled){
+      const b = document.createElement('button');
+      b.className = 'btn ' + (cls||'') + ' font-tc text-[13px]';
+      b.textContent = label;
+      b.disabled = !!disabled;
+      b.addEventListener('click', handler);
+      box.appendChild(b);
+      return b;
+    }
+
+    if (test === 'glucoseStrip' || test === 'proteinStrip') {
+      addBtn('浸入試紙 Dip Strip', 'btn-primary', function(){ dipStrip(test); }, state.stripDipped);
+    } else if (test === 'benedict') {
+      addBtn('加入本立德試劑 Add Reagent', 'btn-primary', function(){ addBenedictReagent(); }, state.reagentVolume > 0);
+      addBtn('開始水浴加熱 Start Heat Bath', 'btn-amber', function(){ startHeatBath(); }, state.reagentVolume <= 0 || state.heatBathRunning || state.heatBathDone);
+    } else if (test === 'iodine') {
+      addBtn('滴加碘液 Add Iodine Drop', 'btn-primary', function(){ addIodineDrop(); }, state.dropsAdded > 0);
+    } else if (test === 'grease') {
+      addBtn('滴在濾紙上 Drop on Paper', 'btn-primary', function(){ dropOnPaper(); }, state.paperDropped);
+      addBtn('開始風乾 Start Air-Dry', 'btn-amber', function(){ startDrying(); }, !state.paperDropped || state.paperDrying || state.paperDried);
+      addBtn('加入有機溶劑 Add Solvent', 'btn-violet', function(){ addSolvent(); }, !state.paperDried || state.solventAdded);
+    } else if (test === 'dcpip') {
+      addBtn('加一滴 Add Drop', 'btn-violet', function(){ addDcpipDrop(); }, state.testStatus === 'positive');
+    }
+  }
+
+  /* ============================================================
+     ACTIONS: STRIP TESTS
+  ============================================================ */
+
+  function dipStrip(test){
+    state.stripDipped = true;
+    state.stripDipping = true;
+    state.testStatus = 'progress';
+    log((test==='glucoseStrip'?'尿糖':'尿蛋白') + '試紙正浸入樣本試管中…', 'sys');
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    renderStatusBadge();
+    setTimeout(function(){
+      state.stripDipping = false;
+      const sample = SAMPLES[state.selectedSample];
+      const positive = test === 'glucoseStrip' ? sample.glucose : sample.protein;
+      state.testStatus = positive ? 'positive' : 'negative';
+      log('試紙顏色反應完成：' + (positive ? '陽性 POSITIVE' : '陰性 NEGATIVE'), positive ? 'ok' : 'dim');
+      renderBench();
+      renderMetrics();
+      renderStatusBadge();
+    }, 900);
+  }
+
+  /* ============================================================
+     ACTIONS: BENEDICT'S TEST
+  ============================================================ */
+
+  function addBenedictReagent(){
+    state.reagentVolume = 2.0;
+    state.reagentDropAnim = true;
+    log('已加入本立德試劑 2.0 mL（藍色試劑等量混合樣本）。', 'sys');
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    setTimeout(function(){
+      state.reagentDropAnim = false;
+      renderBench();
+    }, 600);
+  }
+
+  function startHeatBath(){
+    state.heatBathRunning = true;
+    state.testStatus = 'progress';
+    state.temperature = 25;
+    log('開始水浴加熱（模擬5分鐘）…', 'warn');
+    renderBench();
+    renderActionButtons();
+    renderStatusBadge();
+
+    const totalSimSeconds = 300; // 5 simulated minutes
+    const realDurationMs = 5000; // accelerated to 5 real seconds
+    const stepMs = 100;
+    const steps = realDurationMs / stepMs;
+    let step = 0;
+
+    state.timerHandle = setInterval(function(){
+      step++;
+      state.timeElapsed = Math.min(totalSimSeconds, (step/steps) * totalSimSeconds);
+      state.temperature = Math.min(95, 25 + (step/steps) * 70);
+      const fillEl = document.getElementById('benedictProgress');
+      if (fillEl) fillEl.style.width = Math.min(100, (step/steps)*100) + '%';
+      renderMetrics();
+
+      if (step >= steps) {
+        clearInterval(state.timerHandle);
+        state.timerHandle = null;
+        state.heatBathRunning = false;
+        state.heatBathDone = true;
+        const sample = SAMPLES[state.selectedSample];
+        const positive = sample.reducingSugar;
+        state.testStatus = positive ? 'positive' : 'negative';
+        log('水浴加熱完成。' + (positive ? '溶液出現磚紅色沉澱物：陽性 POSITIVE' : '溶液保持藍色：陰性 NEGATIVE'), positive ? 'ok' : 'dim');
+        renderBench();
+        renderActionButtons();
+        renderMetrics();
+        renderStatusBadge();
+      }
+    }, stepMs);
+  }
+
+  /* ============================================================
+     ACTIONS: IODINE TEST
+  ============================================================ */
+
+  function addIodineDrop(){
+    state.dropsAdded = 1;
+    state.testStatus = 'progress';
+    state.ioDropAnim = true;
+    log('正在滴加碘液…', 'sys');
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    renderStatusBadge();
+    setTimeout(function(){
+      state.ioDropAnim = false;
+      const sample = SAMPLES[state.selectedSample];
+      const positive = sample.starch;
+      state.testStatus = positive ? 'positive' : 'negative';
+      log('已滴加1滴碘液。' + (positive ? '顏色即時轉為藍黑色：陽性 POSITIVE' : '顏色保持棕色：陰性 NEGATIVE'), positive ? 'ok' : 'dim');
+      renderBench();
+      renderMetrics();
+      renderStatusBadge();
+    }, 550);
+  }
+
+  /* ============================================================
+     ACTIONS: GREASE SPOT TEST
+  ============================================================ */
+
+  function dropOnPaper(){
+    state.paperDropped = true;
+    state.testStatus = 'progress';
+    state.greaseDropAnim = true;
+    log('正在將樣本滴在濾紙上…', 'sys');
+    renderBench();
+    renderActionButtons();
+    renderStatusBadge();
+    setTimeout(function(){
+      state.greaseDropAnim = false;
+      log('樣本已滴在濾紙上。', 'sys');
+      renderBench();
+    }, 550);
+  }
+
+  function startDrying(){
+    state.paperDrying = true;
+    log('開始風乾（模擬5分鐘）…', 'warn');
+    renderBench();
+    renderActionButtons();
+
+    const totalSimSeconds = 300;
+    const realDurationMs = 4000;
+    const stepMs = 100;
+    const steps = realDurationMs / stepMs;
+    let step = 0;
+
+    state.timerHandle = setInterval(function(){
+      step++;
+      state.timeElapsed = Math.min(totalSimSeconds, (step/steps) * totalSimSeconds);
+      const fillEl = document.getElementById('greaseProgress');
+      if (fillEl) fillEl.style.width = Math.min(100, (step/steps)*100) + '%';
+      renderMetrics();
+
+      if (step >= steps) {
+        clearInterval(state.timerHandle);
+        state.timerHandle = null;
+        state.paperDrying = false;
+        state.paperDried = true;
+        const sample = SAMPLES[state.selectedSample];
+        const positive = sample.oil;
+        log('風乾完成。' + (positive ? '濾紙出現半透明油漬點。' : '濾紙上沒有明顯油漬點。'), positive ? 'ok' : 'dim');
+        renderBench();
+        renderActionButtons();
+        renderMetrics();
+      }
+    }, stepMs);
+  }
+
+  function addSolvent(){
+    state.solventAdded = true;
+    state.solventAnim = true;
+    log('正在傾倒有機溶劑沖洗濾紙…', 'sys');
+    renderBench();
+    renderActionButtons();
+    setTimeout(function(){
+      state.solventAnim = false;
+      const sample = SAMPLES[state.selectedSample];
+      const positive = sample.oil;
+      state.testStatus = positive ? 'positive' : 'negative';
+      log('已加入有機溶劑。' + (positive ? '油漬點完全溶解消失：確認陽性 POSITIVE' : '沒有油漬點可被溶解：陰性 NEGATIVE'), positive ? 'ok' : 'dim');
+      renderBench();
+      renderActionButtons();
+      renderMetrics();
+      renderStatusBadge();
+    }, 700);
+  }
+
+  /* ============================================================
+     ACTIONS: DCPIP TEST
+  ============================================================ */
+
+  function addDcpipDrop(){
+    state.dropsAdded += 1;
+    state.testStatus = 'progress';
+    state.dcpipDropAnim = true;
+    const threshold = state.dcpipThreshold;
+    const maxDrops = 20;
+
+    if (threshold !== null && state.dropsAdded >= threshold) {
+      state.testStatus = 'positive';
+      log('已加入第 ' + state.dropsAdded + ' 滴。DCPIP溶液完全褪色為無色：陽性 POSITIVE（樣本含維他命C）。', 'ok');
+    } else if (threshold === null && state.dropsAdded >= maxDrops) {
+      state.testStatus = 'negative';
+      log('已加入第 ' + state.dropsAdded + ' 滴，DCPIP溶液仍未完全褪色：陰性 NEGATIVE（樣本不含足夠維他命C）。', 'dim');
+    } else {
+      log('已加入第 ' + state.dropsAdded + ' 滴樣本…', 'sys');
+    }
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    renderStatusBadge();
+    setTimeout(function(){
+      state.dcpipDropAnim = false;
+      renderBench();
+    }, 400);
+  }
+
+  /* ============================================================
+     INITIALISATION
+  ============================================================ */
+
+  function renderAll(){
+    renderTestTabs();
+    renderSampleGrid();
+    renderBench();
+    renderActionButtons();
+    renderMetrics();
+    renderStatusBadge();
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', resetStation);
+
+  renderAll();
+  log('食物測試實驗模擬器已啟動。請選擇測試項目及樣本。', 'sys');
+
+})();
+</script>
+</body>
+</html>

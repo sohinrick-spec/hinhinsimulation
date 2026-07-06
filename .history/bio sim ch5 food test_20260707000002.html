@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酶催化反應模擬器</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-global: #f4f6f9;
+            --bg-panel: #ffffff;
+            --bg-canvas: #0b111e;
+            --text-primary: #1a2332;
+            --text-secondary: #4a5a70;
+            --text-muted: #8a9ab0;
+            --border-color: #d4dbe6;
+            --accent-primary: #1976d2;
+            --accent-rose: #c62828;
+            --accent-green: #2e7d32;
+            --accent-amber: #e65100;
+            --accent-violet: #5e35b1;
+        }
+
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            letter-spacing: -0.01em;
+        }
+
+        .mono-metric {
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 700;
+        }
+
+        .mono-text {
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        canvas {
+            background-color: var(--bg-canvas);
+            border: 1px solid var(--text-primary);
+            border-radius: 4px;
+        }
+
+        /* 儀表板滑塊美化 */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #e2e8f0;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -5px;
+            background-color: var(--accent-primary);
+            height: 13px;
+            width: 13px;
+            border-radius: 50%;
+            border: 1px solid #ffffff;
+            transition: transform 0.1s ease;
+        }
+
+        input[type="range"]:hover::-webkit-slider-thumb {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen antialiased">
+
+    <header class="border-b border-gray-300 bg-white p-4 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div>
+                <h1 class="text-lg font-bold text-gray-900 flex items-center gap-2 tracking-tight">
+                    🧬 酶催化反應模擬器 - HinHin Biology
+                </h1>
+                <p class="text-xs text-gray-500 mt-0.5">動態模型 · 合成代謝與分解代謝</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <select id="reaction-mode" onchange="resetSimulation()" class="bg-white border border-gray-300 text-gray-800 rounded-sm px-3 py-1.5 text-xs font-medium focus:outline-none focus:border-blue-600">
+                    <option value="decomposition">✂️ 分解代謝 </option>     
+                    <option value="synthesis">🧩 合成代謝 </option>
+                </select>
+                <button onclick="resetSimulation()" class="bg-red-700 hover:bg-red-800 text-white font-medium py-1.5 px-4 rounded-sm transition text-xs tracking-wide">
+                    🔄 重置實驗
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        
+        <div class="lg:col-span-2 flex flex-col gap-4">
+            <div class="relative bg-white p-4 rounded-sm border border-gray-300">
+                
+                <div id="dynamic-legend" class="bg-gray-50 text-[10px] md:text-[11px] font-semibold text-gray-600 p-1.5 rounded-sm border border-gray-200 flex flex-wrap gap-3.5 mb-3 justify-center items-center">
+                </div>
+                
+                <div class="w-full flex justify-center">
+                    <canvas id="simCanvas" width="1500" height="920" style="width: 750px; height: 460px;" class="w-full max-w-full h-auto"></canvas>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-white p-3 rounded-sm border border-gray-300">
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">受質濃度</p>
+                    <p id="stat-substrate" class="text-2xl mono-metric text-purple-700 mt-1">0</p>
+                </div>
+                <div class="bg-white p-3 rounded-sm border border-gray-300">
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">已催化生成產物</p>
+                    <p id="stat-product" class="text-2xl mono-metric text-green-700 mt-1">0</p>
+                </div>
+                <div class="bg-white p-3 rounded-sm border border-gray-300">
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">實驗耗時</p>
+                    <p id="stat-timer" class="text-2xl mono-metric text-blue-700 mt-1">0.0 <span class="text-xs font-normal text-gray-400">s</span></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-sm border border-gray-300 flex flex-col gap-4">
+            <div>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-gray-900">🎛️ 變數控制台</h3>
+                <p class="text-xs text-gray-500 mt-0.5">調整影響反應速率的因素</p>
+            </div>
+
+            <hr class="border-gray-200">
+
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between text-xs">
+                    <label class="text-gray-700 font-medium">1. 酶的數量</label>
+                    <span id="val-enzyme" class="mono-text text-blue-700 font-bold">12</span>
+                </div>
+                <input type="range" id="slide-enzyme" min="4" max="25" value="12" class="w-full py-1">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between text-xs">
+                    <label id="lbl-substrate" class="text-gray-700 font-medium">2. 受質初始濃度</label>
+                    <span id="val-substrate" class="mono-text text-purple-700 font-bold">35</span>
+                </div>
+                <input type="range" id="slide-substrate" min="10" max="80" value="35" class="w-full py-1">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between text-xs">
+                    <label class="text-gray-700 font-medium">3. 環境溫度 </label>
+                    <span id="val-temp" class="mono-text text-orange-700 font-bold">37 °C</span>
+                </div>
+                <input type="range" id="slide-temp" min="5" max="75" value="37" class="w-full py-1">
+                <div class="flex justify-between text-[10px] text-gray-400 font-medium">
+                    <span>5°C (低動能)</span>
+                    <span class="text-orange-700 font-semibold">37°C 最適</span>
+                    <span>75°C (變性失活)</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <div class="flex justify-between text-xs">
+                    <label class="text-gray-700 font-medium">4. 溶液pH</label>
+                    <span id="val-ph" class="mono-text text-green-700 font-bold">7.0</span>
+                </div>
+                <input type="range" id="slide-ph" min="2" max="12" step="0.5" value="7.0" class="w-full py-1">
+            </div>
+
+            <div id="enzyme-status-box" class="mt-1 p-2.5 bg-gray-50 border border-gray-200 rounded-sm text-xs flex items-center gap-2.5">
+                <span id="status-indicator" class="w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0"></span>
+                <span id="status-text" class="text-gray-600 font-medium">酶結構：活性正常。</span>
+            </div>
+
+            <div class="border-t border-gray-200 pt-3 flex flex-col gap-2">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-gray-900 flex items-center gap-1">📊 代謝能量與活化能圖解</h4>
+                        <p id="energy-chart-title" class="text-[10px] text-gray-500 mt-0.5">當前：分解反應曲線 (放能)</p>
+                    </div>
+                    <div class="flex bg-gray-100 p-0.5 rounded border border-gray-200">
+                        <button id="btn-energy-play" class="hover:bg-white text-gray-700 font-semibold px-1.5 py-0.5 rounded text-[10px] transition-all flex items-center">▶</button>
+                        <button id="btn-energy-pause" class="hover:bg-white text-gray-700 font-semibold px-1.5 py-0.5 rounded text-[10px] transition-all flex items-center">❚❚</button>
+                        <button id="btn-energy-replay" class="hover:bg-white text-gray-700 font-semibold px-1.5 py-0.5 rounded text-[10px] transition-all flex items-center">🔄</button>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-50 p-1.5 rounded-sm border border-gray-200 flex justify-center">
+                    <canvas id="energyCanvas" width="620" height="350" style="width: 310px; height: 175px;" class="w-full h-auto bg-white border border-gray-200 rounded-sm"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        // 初始化主模擬畫面的雙倍高清縮放比例
+        ctx.scale(2, 2);
+
+        let enzymes = [];
+        let substrates = []; 
+        let products = [];
+
+        let productsCount = 0;
+        let startTime = Date.now();
+        let activeReaction = 'decomposition';
+        let globalDenatured = false;
+
+        // 幾何尺寸常數 (基於邏輯分辨率 750x460)
+        const R_ENZYME = 20;
+        const R_SUB_BIG = 10;
+        const R_SUB_SMALL = 6;
+
+        let energyProgress = 0;
+        let energyPlaying = true;
+
+        function drawHexagonPath(c, x, y, r) {
+            c.beginPath();
+            for (let i = 0; i < 6; i++) {
+                let angle = (Math.PI / 3) * i;
+                c.lineTo(x + r * Math.cos(angle), y + r * Math.sin(angle));
+            }
+            c.closePath();
+        }
+
+        class Enzyme {
+            constructor(x, y, vx, vy) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.status = 'free'; 
+                this.timer = 0;
+                this.boundTarget = null;
+                this.boundA = null;
+                this.boundB = null;
+            }
+
+            update(speedFactor, lockTime) {
+                this.x += this.vx * speedFactor;
+                this.y += this.vy * speedFactor;
+                this.bounceWalls();
+
+                if (globalDenatured) {
+                    this.status = 'free';
+                    this.timer = 0;
+                    if(this.boundTarget) { this.boundTarget.isBound = false; this.boundTarget = null; }
+                    if(this.boundA) { this.boundA.isBound = false; this.boundA = null; }
+                    if(this.boundB) { this.boundB.isBound = false; this.boundB = null; }
+                    return;
+                }
+
+                if (this.status === 'complex') {
+                    this.timer += 1;
+                    if (this.timer >= lockTime) {
+                        this.catalyze();
+                    }
+                }
+            }
+
+            bounceWalls() {
+                if (this.x - R_ENZYME < 0) { this.x = R_ENZYME; this.vx *= -1; }
+                if (this.x + R_ENZYME > 750) { this.x = 750 - R_ENZYME; this.vx *= -1; }
+                if (this.y - R_ENZYME < 0) { this.y = R_ENZYME; this.vy *= -1; }
+                if (this.y + R_ENZYME > 460) { this.y = 460 - R_ENZYME; this.vy *= -1; }
+            }
+
+            catalyze() {
+                if (activeReaction === 'decomposition') {
+                    if (this.boundTarget) {
+                        substrates = substrates.filter(s => s !== this.boundTarget);
+                        products.push(new Product(this.x, this.y, Math.random()*2-1, Math.random()*2-1, 'A'));
+                        products.push(new Product(this.x, this.y, Math.random()*2-1, Math.random()*2-1, 'B'));
+                        productsCount++;
+                    }
+                } else {
+                    if (this.boundA && this.boundB) {
+                        substrates = substrates.filter(s => s !== this.boundA && s !== this.boundB);
+                        products.push(new Product(this.x, this.y, Math.random()*2-1, Math.random()*2-1, 'AB'));
+                        productsCount++;
+                    }
+                }
+                this.status = 'free';
+                this.timer = 0;
+                this.boundTarget = null;
+                this.boundA = null;
+                this.boundB = null;
+            }
+
+            draw() {
+                drawHexagonPath(ctx, this.x, this.y, R_ENZYME);
+                if (globalDenatured) {
+                    ctx.fillStyle = '#64748b'; 
+                } else if (this.status === 'complex') {
+                    ctx.fillStyle = '#0d9488'; 
+                } else if (this.status === 'has_A' || this.status === 'has_B') {
+                    ctx.fillStyle = '#4f46e5'; 
+                } else {
+                    ctx.fillStyle = '#2563eb'; 
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                if (!globalDenatured && this.status === 'complex') {
+                    ctx.save();
+                    ctx.globalAlpha = 0.85;
+                    if (activeReaction === 'decomposition') {
+                        ctx.fillStyle = '#c084fc';
+                        ctx.beginPath();
+                        ctx.ellipse(this.x, this.y, 11, 6, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        ctx.fillStyle = '#4ade80';
+                        ctx.beginPath();
+                        ctx.moveTo(this.x - 5, this.y - 5);
+                        ctx.lineTo(this.x, this.y + 4);
+                        ctx.lineTo(this.x - 10, this.y + 4);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.fillStyle = '#facc15';
+                        ctx.fillRect(this.x + 2, this.y - 4, 7, 7);
+                    }
+                    ctx.restore();
+                } else if (!globalDenatured && this.status === 'has_A') {
+                    ctx.fillStyle = '#4ade80';
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y - 5);
+                    ctx.lineTo(this.x + 5, this.y + 5);
+                    ctx.lineTo(this.x - 5, this.y + 5);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (!globalDenatured && this.status === 'has_B') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillRect(this.x - 4, this.y - 4, 8, 8);
+                }
+            }
+        }
+
+        class Substrate {
+            constructor(x, y, vx, vy, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx;
+                this.vy = vy;
+                this.type = type; 
+                this.isBound = false;
+            }
+
+            update(speedFactor) {
+                if (!this.isBound) {
+                    this.x += this.vx * speedFactor;
+                    this.y += this.vy * speedFactor;
+                    
+                    let r = (this.type === 'S') ? R_SUB_BIG : R_SUB_SMALL;
+                    if (this.x - r < 0) { this.x = r; this.vx *= -1; }
+                    if (this.x + r > 750) { this.x = 750 - r; this.vx *= -1; }
+                    if (this.y - r < 0) { this.y = r; this.vy *= -1; }
+                    if (this.y + r > 460) { this.y = 460 - r; this.vy *= -1; }
+                }
+            }
+
+            draw() {
+                if (this.isBound) return; 
+
+                ctx.beginPath();
+                if (this.type === 'S') {
+                    ctx.fillStyle = '#c084fc';
+                    ctx.ellipse(this.x, this.y, 14, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.type === 'A') {
+                    ctx.fillStyle = '#4ade80';
+                    ctx.moveTo(this.x, this.y - R_SUB_SMALL - 3);
+                    ctx.lineTo(this.x + R_SUB_SMALL + 3, this.y + R_SUB_SMALL + 1);
+                    ctx.lineTo(this.x - R_SUB_SMALL - 3, this.y + R_SUB_SMALL + 1);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'B') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillRect(this.x - R_SUB_SMALL, this.y - R_SUB_SMALL, R_SUB_SMALL * 2, R_SUB_SMALL * 2);
+                }
+            }
+        }
+
+        class Product {
+            constructor(x, y, vx, vy, type) {
+                this.x = x;
+                this.y = y;
+                this.vx = vx || (Math.random() - 0.5) * 2;
+                this.vy = vy || (Math.random() - 0.5) * 2;
+                this.type = type; 
+            }
+
+            update(speedFactor) {
+                this.x += this.vx * speedFactor;
+                this.y += this.vy * speedFactor;
+
+                let r = (this.type === 'AB') ? R_SUB_BIG : R_SUB_SMALL;
+                if (this.x - r < 0) { this.x = r; this.vx *= -1; }
+                if (this.x + r > 750) { this.x = 750 - r; this.vx *= -1; }
+                if (this.y - r < 0) { this.y = r; this.vy *= -1; }
+                if (this.y + r > 460) { this.y = 460 - r; this.vy *= -1; }
+            }
+
+            draw() {
+                ctx.beginPath();
+                if (this.type === 'A') {
+                    ctx.fillStyle = '#4ade80';
+                    ctx.moveTo(this.x, this.y - R_SUB_SMALL - 3);
+                    ctx.lineTo(this.x + R_SUB_SMALL + 3, this.y + R_SUB_SMALL + 1);
+                    ctx.lineTo(this.x - R_SUB_SMALL - 3, this.y + R_SUB_SMALL + 1);
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'B') {
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillRect(this.x - R_SUB_SMALL, this.y - R_SUB_SMALL, R_SUB_SMALL * 2, R_SUB_SMALL * 2);
+                } else if (this.type === 'AB') {
+                    ctx.fillStyle = '#c084fc';
+                    ctx.ellipse(this.x, this.y, 14, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
+
+        function resetSimulation() {
+            enzymes = []; substrates = []; products = [];
+            productsCount = 0;
+            startTime = Date.now();
+
+            activeReaction = document.getElementById('reaction-mode').value;
+            const countEnzyme = parseInt(document.getElementById('slide-enzyme').value);
+            const countSubstrate = parseInt(document.getElementById('slide-substrate').value);
+
+            const legendDiv = document.getElementById('dynamic-legend');
+            const chartTitle = document.getElementById('energy-chart-title');
+
+            if (activeReaction === 'decomposition') {
+                document.getElementById('lbl-substrate').innerText = "2. 受質濃度 ";
+                if (chartTitle) chartTitle.innerText = "當前：分解反應曲線 (放能反應)";
+                // 精確還原 SVG 圖示形狀 (包含粗黑邊框與平頂平底的六角形)
+                legendDiv.innerHTML = `
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17"/>
+                        </svg> 酶 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-2.5 text-purple-400" viewBox="0 0 20 10" fill="currentColor">
+                            <ellipse cx="10" cy="5" rx="8" ry="4"/>
+                        </svg> 受質 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17" fill="#0d9488" stroke="#0f172a" stroke-width="1.5"/>
+                            <ellipse cx="10" cy="10" rx="4.5" ry="2.5" fill="#c084fc"/>
+                        </svg> 酶受質複合物 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3 h-3 text-green-400 inline mr-0.5" viewBox="0 0 10 10" fill="currentColor"><polygon points="5,1 10,9 0,9"/></svg>
+                        <svg class="w-2.5 h-2.5 text-yellow-400 inline" viewBox="0 0 10 10" fill="currentColor"><rect width="8" height="8" x="1" y="1"/></svg> 
+                        生成物 
+                    </span>
+                `;
+            } else {
+                document.getElementById('lbl-substrate').innerText = "2. 受質";
+                if (chartTitle) chartTitle.innerText = "當前：合成反應曲線 (吸能反應)";
+                // 精確還原 SVG 圖示形狀 (包含粗黑邊框與平頂平底的六角形，以及內部正方形與三角形)
+                legendDiv.innerHTML = `
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17"/>
+                        </svg> 游離酶 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-2.5 h-2.5 text-green-400" viewBox="0 0 10 10" fill="currentColor">
+                            <polygon points="5,1 10,9 0,9"/>
+                        </svg> 受質 A 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-2.5 h-2.5 text-yellow-400" viewBox="0 0 10 10" fill="currentColor">
+                            <rect width="8" height="8" x="1" y="1"/>
+                        </svg> 受質 B 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 20 20">
+                            <polygon points="2,10 6,3 14,3 18,10 14,17 6,17" fill="#0d9488" stroke="#0f172a" stroke-width="1.5"/>
+                            <polygon points="7,6 10,12 4,12" fill="#4ade80"/>
+                            <rect x="11" y="7" width="4.5" height="4.5" fill="#facc15"/>
+                        </svg> 酶受質複合物 
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <svg class="w-4 h-2.5 text-purple-400" viewBox="0 0 20 10" fill="currentColor">
+                            <ellipse cx="10" cy="5" rx="8" ry="4"/>
+                        </svg> 生成物
+                    </span>
+                `;
+            }
+
+            for (let i = 0; i < countEnzyme; i++) {
+                enzymes.push(new Enzyme(
+                    Math.random() * (750 - 50) + 25,
+                    Math.random() * (460 - 50) + 25,
+                    (Math.random() - 0.5) * 2.5,
+                    (Math.random() - 0.5) * 2.5
+                ));
+            }
+
+            if (activeReaction === 'decomposition') {
+                for (let i = 0; i < countSubstrate; i++) {
+                    substrates.push(new Substrate(
+                        Math.random() * (750 - 30) + 15,
+                        Math.random() * (460 - 30) + 15,
+                        (Math.random() - 0.5) * 3.5,
+                        (Math.random() - 0.5) * 3.5,
+                        'S'
+                    ));
+                }
+            } else {
+                for (let i = 0; i < countSubstrate; i++) {
+                    substrates.push(new Substrate(
+                        Math.random() * (750 - 30) + 15,
+                        Math.random() * (460 - 30) + 15,
+                        (Math.random() - 0.5) * 3.5,
+                        (Math.random() - 0.5) * 3.5,
+                        'A'
+                    ));
+                    substrates.push(new Substrate(
+                        Math.random() * (750 - 30) + 15,
+                        Math.random() * (460 - 30) + 15,
+                        (Math.random() - 0.5) * 3.5,
+                        (Math.random() - 0.5) * 3.5,
+                        'B'
+                    ));
+                }
+            }
+
+            updateUIValues();
+        }
+
+        function handleCollisions() {
+            for (let e of enzymes) {
+                if (e.status === 'complex') continue; 
+
+                for (let s of substrates) {
+                    if (s.isBound) continue;
+
+                    let dx = e.x - s.x;
+                    let dy = e.y - s.y;
+                    let dist = Math.sqrt(dx*dx + dy*dy);
+                    let triggerRange = R_ENZYME + ((s.type === 'S') ? R_SUB_BIG : R_SUB_SMALL);
+
+                    if (dist < triggerRange) {
+                        if (activeReaction === 'decomposition' && s.type === 'S') {
+                            e.status = 'complex';
+                            e.boundTarget = s;
+                            s.isBound = true;
+                            e.timer = 0;
+                            break; 
+                        } 
+                        else if (activeReaction === 'synthesis') {
+                            if (e.status === 'free') {
+                                if (s.type === 'A') { e.status = 'has_A'; e.boundA = s; s.isBound = true; }
+                                else if (s.type === 'B') { e.status = 'has_B'; e.boundB = s; s.isBound = true; }
+                            } else if (e.status === 'has_A' && s.type === 'B') {
+                                e.status = 'complex';
+                                e.boundB = s;
+                                s.isBound = true;
+                                e.timer = 0;
+                                break;
+                            } else if (e.status === 'has_B' && s.type === 'A') {
+                                e.status = 'complex';
+                                e.boundA = s;
+                                s.isBound = true;
+                                e.timer = 0;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function getEnergyY(x, mode) {
+            if (mode === 'decomposition') {
+                if (x < 0.2) return 0.55; 
+                else if (x < 0.45) {
+                    let t = (x - 0.2) / 0.25;
+                    return 0.55 + 0.38 * Math.sin(t * Math.PI / 2); 
+                } else if (x < 0.75) {
+                    let t = (x - 0.45) / 0.30;
+                    let factor = (1 - Math.cos(t * Math.PI)) / 2;
+                    return 0.93 - (0.93 - 0.20) * factor; 
+                } else {
+                    return 0.20; 
+                }
+            } else {
+                if (x < 0.2) return 0.35; 
+                else if (x < 0.45) {
+                    let t = (x - 0.2) / 0.25;
+                    return 0.35 + 0.55 * Math.sin(t * Math.PI / 2); 
+                } else if (x < 0.75) {
+                    let t = (x - 0.45) / 0.30;
+                    let factor = (1 - Math.cos(t * Math.PI)) / 2;
+                    return 0.90 - (0.90 - 0.65) * factor; 
+                } else {
+                    return 0.65; 
+                }
+            }
+        }
+
+        function drawArrowHead(eCtx, x, y, angle) {
+            eCtx.save();
+            eCtx.translate(x, y);
+            eCtx.rotate(angle);
+            eCtx.fillStyle = '#475569';
+            eCtx.beginPath();
+            eCtx.moveTo(0, 0);
+            eCtx.lineTo(-5, -3);
+            eCtx.lineTo(-5, 3);
+            eCtx.closePath();
+            eCtx.fill();
+            eCtx.restore();
+        }
+
+        function drawEnergyArrow(eCtx, fromX, fromY, toX, toY, width, color) {
+            eCtx.strokeStyle = color;
+            eCtx.lineWidth = width;
+            eCtx.beginPath();
+            eCtx.moveTo(fromX, fromY);
+            eCtx.lineTo(toX, toY);
+            eCtx.stroke();
+
+            let angle = Math.atan2(toY - fromY, toX - fromX);
+            eCtx.save();
+            eCtx.translate(toX, toY);
+            eCtx.rotate(angle);
+            eCtx.fillStyle = color;
+            eCtx.beginPath();
+            eCtx.moveTo(0, 0);
+            eCtx.lineTo(-6, -3.5);
+            eCtx.lineTo(-6, 3.5);
+            eCtx.closePath();
+            eCtx.fill();
+            eCtx.restore();
+        }
+
+        function updateAndDrawEnergyChart() {
+            const eCanvas = document.getElementById('energyCanvas');
+            if (!eCanvas) return;
+            const eCtx = eCanvas.getContext('2d');
+            const mode = document.getElementById('reaction-mode').value;
+
+            if (energyPlaying) {
+                energyProgress += 0.004;
+                if (energyProgress > 1.0) energyProgress = 0.0;
+            }
+
+            eCtx.clearRect(0, 0, eCanvas.width, eCanvas.height);
+
+            eCtx.save();
+            eCtx.scale(2, 2);
+
+            const padL = 45;
+            const padR = 25;
+            const padT = 25;
+            const padB = 32;
+            const graphW = 310 - padL - padR;
+            const graphH = 175 - padT - padB;
+
+            eCtx.strokeStyle = '#475569';
+            eCtx.lineWidth = 1.2;
+            eCtx.beginPath();
+            eCtx.moveTo(padL, 175 - padB);
+            eCtx.lineTo(padL, padT - 10);
+            eCtx.moveTo(padL, 175 - padB);
+            eCtx.lineTo(310 - padR + 10, 175 - padB);
+            eCtx.stroke();
+
+            drawArrowHead(eCtx, padL, padT - 12, -Math.PI / 2);
+            drawArrowHead(eCtx, 310 - padR + 12, 175 - padB, 0);
+
+            eCtx.fillStyle = '#1a2332';
+            eCtx.font = 'bold 9px system-ui, -apple-system, sans-serif';
+            eCtx.textAlign = 'center';
+            eCtx.fillText("能量水平", padL, padT - 15);
+            eCtx.textAlign = 'right';
+            eCtx.fillText("反應進度", padL + graphW + 15, 175 - padB + 16);
+            eCtx.textAlign = 'left';
+
+            eCtx.beginPath();
+            for (let i = 0; i <= 100; i++) {
+                let px = i / 100;
+                let py = getEnergyY(px, mode);
+                let cx = padL + px * graphW;
+                let cy = 175 - padB - py * graphH;
+                if (i === 0) eCtx.moveTo(cx, cy);
+                else eCtx.lineTo(cx, cy);
+            }
+            eCtx.strokeStyle = '#1976d2';
+            eCtx.lineWidth = 2;
+            eCtx.stroke();
+
+            let yReact = 175 - padB - getEnergyY(0.1, mode) * graphH;
+            let yProd = 175 - padB - getEnergyY(0.9, mode) * graphH;
+            let yPeak = 175 - padB - getEnergyY(0.45, mode) * graphH;
+
+            eCtx.setLineDash([3, 3]);
+            eCtx.strokeStyle = '#cbd5e1';
+            eCtx.lineWidth = 1;
+            eCtx.beginPath();
+            eCtx.moveTo(padL + 0.05 * graphW, yReact);
+            eCtx.lineTo(padL + 0.95 * graphW, yReact);
+            eCtx.stroke();
+            eCtx.setLineDash([]);
+
+            eCtx.font = 'bold 10px system-ui, sans-serif';
+            eCtx.textBaseline = 'middle';
+            
+            let rx = padL + 0.15 * graphW; 
+            eCtx.fillStyle = '#475569';
+            eCtx.textAlign = 'center';
+            eCtx.fillText("反應物", rx, yReact + 16);
+
+            let pxPos = padL + 0.8 * graphW; 
+            eCtx.fillStyle = '#475569';
+            eCtx.textAlign = 'center';
+            eCtx.fillText("生成物", pxPos, yProd + 16);
+
+            if (mode === 'decomposition') {
+                eCtx.fillStyle = '#c084fc';
+                eCtx.beginPath();
+                eCtx.ellipse(rx, yReact - 10, 10, 5, 0, 0, Math.PI * 2);
+                eCtx.fill();
+
+                eCtx.fillStyle = '#4ade80';
+                eCtx.beginPath();
+                eCtx.moveTo(pxPos - 10, yProd - 6);
+                eCtx.lineTo(pxPos - 4, yProd - 14);
+                eCtx.lineTo(pxPos + 2, yProd - 6);
+                eCtx.closePath();
+                eCtx.fill();
+
+                eCtx.fillStyle = '#facc15';
+                eCtx.fillRect(pxPos + 5, yProd - 13, 7, 7);
+
+                let arrowX = padL + 0.9 * graphW;
+                drawEnergyArrow(eCtx, arrowX, yReact, arrowX, yProd, 1.5, '#dc2626');
+                eCtx.fillStyle = '#dc2626';
+                eCtx.font = 'bold 8px system-ui';
+                eCtx.textAlign = 'left';
+                eCtx.fillText("釋出能量", arrowX + 5, (yReact + yProd) / 2 - 5);
+                eCtx.fillText("(ΔH < 0)", arrowX + 5, (yReact + yProd) / 2 + 7);
+            } 
+            else {
+                eCtx.fillStyle = '#4ade80';
+                eCtx.beginPath();
+                eCtx.moveTo(rx - 10, yReact - 6);
+                eCtx.lineTo(rx - 4, yReact - 14);
+                eCtx.lineTo(rx + 2, yReact - 6);
+                eCtx.closePath();
+                eCtx.fill();
+
+                eCtx.fillStyle = '#facc15';
+                eCtx.fillRect(rx + 5, yReact - 13, 7, 7);
+
+                eCtx.fillStyle = '#c084fc';
+                eCtx.beginPath();
+                eCtx.ellipse(pxPos, yProd - 10, 10, 5, 0, 0, Math.PI * 2);
+                eCtx.fill();
+
+                let arrowX = padL + 0.9 * graphW;
+                drawEnergyArrow(eCtx, arrowX, yReact, arrowX, yProd, 1.5, '#059669');
+                eCtx.fillStyle = '#059669';
+                eCtx.font = 'bold 8px system-ui';
+                eCtx.textAlign = 'left';
+                eCtx.fillText("吸收能量", arrowX + 5, (yReact + yProd) / 2 - 5);
+                eCtx.fillText("(ΔH > 0)", arrowX + 5, (yReact + yProd) / 2 + 7);
+            }
+
+            let eaX = padL + 0.45 * graphW;
+            drawEnergyArrow(eCtx, eaX, yReact, eaX, yPeak, 1.2, '#d97706');
+            eCtx.fillStyle = '#d97706';
+            eCtx.font = '600 8.5px system-ui, sans-serif';
+            eCtx.textAlign = 'right';
+            eCtx.fillText("活化能", eaX - 5, (yReact + yPeak) / 2);
+
+            let complexX = eaX;
+            let complexY = yPeak - 14;
+
+            // ① 繪製酶（藍綠色平頂六角形，配合粗邊框）
+            eCtx.save();
+            eCtx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                let angle = (Math.PI / 3) * i;
+                eCtx.lineTo(complexX + 9 * Math.cos(angle), complexY + 9 * Math.sin(angle));
+            }
+            eCtx.closePath();
+            eCtx.fillStyle = '#0d9488'; // 活性催化狀態顏色
+            eCtx.fill();
+            eCtx.strokeStyle = '#0f172a';
+            eCtx.lineWidth = 1.5; // 提升邊框厚度，完美還原圖片質感
+            eCtx.stroke();
+            eCtx.restore();
+
+            // ② 在酶內部繪製咬合的受質
+            if (mode === 'decomposition') {
+                eCtx.fillStyle = '#c084fc';
+                eCtx.beginPath();
+                eCtx.ellipse(complexX, complexY, 4.5, 2.5, 0, 0, Math.PI * 2);
+                eCtx.fill();
+            } else {
+                eCtx.fillStyle = '#4ade80';
+                eCtx.beginPath();
+                eCtx.moveTo(complexX - 3, complexY - 2);
+                eCtx.lineTo(complexX, complexY + 3);
+                eCtx.lineTo(complexX - 6, complexY + 3);
+                eCtx.closePath();
+                eCtx.fill();
+
+                eCtx.fillStyle = '#facc15';
+                eCtx.fillRect(complexX + 1, complexY - 2, 4, 4);
+            }
+            
+            eCtx.fillStyle = '#0f766e';
+            eCtx.font = 'bold 8.5px system-ui, sans-serif';
+            eCtx.textAlign = 'left';
+            eCtx.fillText("酶受質複合物", eaX + 12, yPeak - 14);
+
+            eCtx.textBaseline = 'alphabetic';
+            eCtx.textAlign = 'left';
+
+            let tx = energyProgress;
+            let ty = getEnergyY(tx, mode);
+            let tcx = padL + tx * graphW;
+            let tcy = 175 - padB - ty * graphH;
+
+            eCtx.fillStyle = '#e11d48';
+            eCtx.beginPath();
+            eCtx.arc(tcx, tcy, 4.5, 0, Math.PI * 2);
+            eCtx.fill();
+
+            eCtx.strokeStyle = 'rgba(225, 29, 72, 0.4)';
+            eCtx.lineWidth = 1.5;
+            eCtx.beginPath();
+            eCtx.arc(tcx, tcy, 6.5 + Math.sin(Date.now() / 100) * 1.5, 0, Math.PI * 2);
+            eCtx.stroke();
+
+            eCtx.restore();
+        }
+
+        function setupEnergyControls() {
+            document.getElementById('btn-energy-play').addEventListener('click', () => { energyPlaying = true; });
+            document.getElementById('btn-energy-pause').addEventListener('click', () => { energyPlaying = false; });
+            document.getElementById('btn-energy-replay').addEventListener('click', () => { energyProgress = 0; energyPlaying = true; });
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, 750, 460);
+
+            const temp = parseFloat(document.getElementById('slide-temp').value);
+            const ph = parseFloat(document.getElementById('slide-ph').value);
+
+            globalDenatured = (temp > 55 || ph < 4.0 || ph > 10.0);
+            let phErr = Math.abs(ph - 7.0);
+            let lockTime = Math.round(35 + (phErr * 30)); 
+            let speedFactor = (temp / 37) * 1.3;
+
+            const indicator = document.getElementById('status-indicator');
+            const statusTxt = document.getElementById('status-text');
+            if (globalDenatured) {
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-red-600 flex-shrink-0";
+                statusTxt.innerText = "❌ 警告：極端環境下酶結構完全變性，催化活性歸零！";
+                speedFactor = temp > 55 ? speedFactor * 1.2 : speedFactor * 0.4;
+            } else if (phErr > 1.5 || temp > 45) {
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-orange-600 flex-shrink-0";
+                statusTxt.innerText = "⚠️ 提示：當前 pH 或溫度偏離最佳值，催化速率減緩。";
+            } else {
+                indicator.className = "w-2.5 h-2.5 rounded-full bg-green-600 flex-shrink-0";
+                statusTxt.innerText = "酶結構：空間構象極佳，活性高度穩定。";
+            }
+
+            if (!globalDenatured) {
+                handleCollisions();
+            }
+
+            enzymes.forEach(e => { e.update(speedFactor, lockTime); e.draw(); });
+            substrates.forEach(s => { s.update(speedFactor); s.draw(); });
+            products.forEach(p => { p.update(speedFactor); p.draw(); });
+
+            if (substrates.filter(s => !s.isBound).length > 0) {
+                let currentSec = (Date.now() - startTime) / 1000;
+                document.getElementById('stat-timer').innerHTML = `${currentSec.toFixed(1)} <span class="text-xs font-normal text-gray-400">s</span>`;
+            }
+            document.getElementById('stat-substrate').innerText = substrates.filter(s => !s.isBound).length;
+            document.getElementById('stat-product').innerText = productsCount;
+
+            updateAndDrawEnergyChart();
+        }
+
+        function syncParams() {
+            const ids = ['enzyme', 'substrate', 'temp', 'ph'];
+            ids.forEach(id => {
+                document.getElementById(`slide-${id}`).addEventListener('input', () => {
+                    updateUIValues();
+                    if(id === 'enzyme' || id === 'substrate') {
+                        resetSimulation();
+                    }
+                });
+            });
+        }
+
+        function updateUIValues() {
+            document.getElementById('val-enzyme').innerText = document.getElementById('slide-enzyme').value;
+            document.getElementById('val-substrate').innerText = document.getElementById('slide-substrate').value;
+            document.getElementById('val-temp').innerText = document.getElementById('slide-temp').value + ' °C';
+            document.getElementById('val-ph').innerText = parseFloat(document.getElementById('slide-ph').value).toFixed(1);
+        }
+
+        window.onload = () => {
+            syncParams();
+            setupEnergyControls();
+            resetSimulation();
+            animate();
+        };
+    </script>
+</body>
+</html>
