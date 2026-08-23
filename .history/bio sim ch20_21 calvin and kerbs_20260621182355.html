@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光合作用與呼吸作用模擬器 — HinHin Biology</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0f4f8; }
+canvas#simCanvas { background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); touch-action: none; }
+.slider-container { margin-bottom: 10px; }
+.slider-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: #4a5568; margin-bottom: 3px; }
+.tab-btn { transition: all 0.3s; border-bottom: 3px solid transparent; }
+.tab-btn.active { border-bottom-color: #3182ce; color: #2b6cb0; font-weight: bold; }
+input[type=range] { width: 100%; cursor: pointer; }
+.badge { display:inline-block; font-size:10px; padding:1px 5px; border-radius:3px; font-weight:bold; }
+.badge-c1{background:#fef3c7;color:#92400e;}
+.badge-c2{background:#d1fae5;color:#065f46;}
+.badge-c3{background:#dbeafe;color:#1e40af;}
+.badge-c5{background:#ede9fe;color:#4c1d95;}
+.badge-c6{background:#fce7f3;color:#9d174d;}
+.conserve-ok{color:#16a34a;font-weight:bold;font-size:12px;}
+.conserve-warn{color:#dc2626;font-weight:bold;font-size:12px;}
+.inh-tag{font-size:10px;color:#9b2c2c;background:#fff5f5;border:1px solid #feb2b2;border-radius:3px;padding:1px 4px;margin-left:4px;}
+.mode-select{appearance:none;background:#f7fafc;border:1px solid #cbd5e0;border-radius:4px;padding:3px 8px;font-size:12px;cursor:pointer;}
+.chart-container{height:100px;position:relative;}
+#chartPanel { border-top: 1px solid #e2e8f0; padding: 8px 12px; background:#fafafa; }
+.adv-inh-item{display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 0;border-bottom:1px dashed #e2e8f0;}
+.adv-inh-item:last-child{border-bottom:none;}
+</style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden">
+
+<header class="bg-white shadow-sm z-10 flex-none">
+  <div class="max-w-7xl mx-auto px-4 py-2 flex justify-between items-center flex-wrap gap-2">
+    <h1 class="text-lg font-bold text-gray-800">🌿 光合作用與呼吸作用模擬器 v2.0</h1>
+    <div class="flex items-center gap-3">
+      <select id="teacherModeSelect" class="mode-select">
+        <option value="student">學生模式</option>
+        <option value="teacher">教師模式 (真實名稱)</option>
+      </select>
+      <button id="tab-photo" class="tab-btn active px-4 py-2">光合作用</button>
+      <button id="tab-resp" class="tab-btn px-4 py-2">呼吸作用</button>
+    </div>
+  </div>
+</header>
+
+<main class="flex-grow flex flex-col lg:flex-row h-full overflow-hidden">
+
+  <!-- Canvas Area -->
+  <div class="flex-grow relative bg-gray-100 p-3 flex flex-col justify-center items-center overflow-hidden gap-2">
+    <canvas id="simCanvas" width="800" height="520" class="max-w-full"></canvas>
+    <!-- Carbon conservation badge -->
+    <div id="carbonBadge" class="absolute top-5 left-1/2 -translate-x-1/2 bg-white/95 px-3 py-1 rounded-full shadow text-xs border pointer-events-none"></div>
+    <!-- Step info -->
+    <div id="stepInfo" class="absolute bottom-4 left-4 right-4 bg-white/92 p-3 rounded-lg shadow-lg border-l-4 border-blue-500 hidden pointer-events-none">
+      <h3 class="font-bold text-base text-blue-800 mb-0.5" id="stepTitle">步驟標題</h3>
+      <p class="text-gray-700 text-xs" id="stepDesc">步驟描述...</p>
+    </div>
+  </div>
+
+  <!-- Controls Sidebar -->
+  <aside class="w-full lg:w-96 bg-white border-l border-gray-200 flex flex-col flex-none overflow-y-auto z-20" style="max-height:100vh">
+    <div class="p-4">
+
+      <!-- Mode Controls -->
+      <div class="mb-4 border-b pb-3">
+        <h2 class="text-base font-bold mb-2 text-gray-800">模擬設定</h2>
+        <label class="flex items-center cursor-pointer mb-2">
+          <input type="checkbox" id="modeToggle" class="form-checkbox h-4 w-4 text-blue-600">
+          <span class="ml-2 text-gray-700 text-sm font-medium">同時進行所有反應</span>
+        </label>
+        <p class="text-xs text-gray-500 mb-2" id="modeDesc">目前模式：逐步演示 (適合初學流程)</p>
+        <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-1 rounded text-sm transition mb-1">重置模擬</button>
+        <label class="flex items-center cursor-pointer">
+          <input type="checkbox" id="chartToggle" class="form-checkbox h-4 w-4 text-blue-600">
+          <span class="ml-2 text-gray-700 text-sm">顯示限制因子圖表</span>
+        </label>
+      </div>
+
+      <!-- Photosynthesis Controls -->
+      <div id="controls-photo" class="control-group">
+        <h2 class="text-base font-bold mb-2 text-green-700">光合作用參數</h2>
+
+        <div class="slider-container">
+          <div class="slider-label"><span>CO₂ 濃度 <span class="badge badge-c1">C1</span></span><span id="val-co2">50%</span></div>
+          <input type="range" id="slider-co2" min="0" max="100" value="50" class="accent-green-600">
+        </div>
+        <div class="slider-container">
+          <div class="slider-label"><span>光強度</span><span id="val-light">60%</span></div>
+          <input type="range" id="slider-light" min="0" max="100" value="60" class="accent-yellow-500">
+        </div>
+        <div class="slider-container">
+          <div class="slider-label"><span>水分供應 (H₂O)</span><span id="val-water">80%</span></div>
+          <input type="range" id="slider-water" min="0" max="100" value="80" class="accent-blue-400">
+        </div>
+
+        <div class="bg-green-50 rounded p-2 mb-3 text-xs text-green-800">
+          <b>H₂O 庫存：</b><span id="water-pool">--</span> &nbsp;
+          <b>O₂ 釋出：</b><span id="o2-out">--</span> &nbsp;
+          <b>ATP:NADPH =</b> <span id="atp-nadph-ratio">9:6</span>
+        </div>
+
+        <!-- Inhibitor mode toggle -->
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-sm font-bold text-red-600">抑制劑模式：</span>
+          <select id="inhModeSelect" class="mode-select">
+            <option value="beginner">初學者模式</option>
+            <option value="advanced">進階模式</option>
+          </select>
+        </div>
+
+        <!-- Beginner inhibitors (photo) -->
+        <div id="inh-photo-beginner">
+          <div class="slider-container">
+            <div class="slider-label"><span>NADPH 抑制劑</span><span id="val-inh-nadph">0%</span></div>
+            <input type="range" id="slider-inh-nadph" min="0" max="100" value="0" class="accent-red-500">
+            <p class="text-xs text-gray-500">影響：三碳化合物還原</p>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label"><span>ATP 抑制劑</span><span id="val-inh-atp">0%</span></div>
+            <input type="range" id="slider-inh-atp" min="0" max="100" value="0" class="accent-red-500">
+            <p class="text-xs text-gray-500">影響：還原作用 & 受體再生</p>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label"><span>再生酶抑制劑</span><span id="val-inh-regen">0%</span></div>
+            <input type="range" id="slider-inh-regen" min="0" max="100" value="0" class="accent-red-500">
+            <p class="text-xs text-gray-500">影響：五碳受體再生</p>
+          </div>
+        </div>
+
+        <!-- Advanced inhibitors (photo) -->
+        <div id="inh-photo-advanced" class="hidden">
+          <div id="adv-photo-list" class="text-xs space-y-1"></div>
+        </div>
+      </div>
+
+      <!-- Respiration Controls -->
+      <div id="controls-resp" class="control-group hidden">
+        <h2 class="text-base font-bold mb-2 text-orange-700">呼吸作用參數</h2>
+
+        <div class="slider-container">
+          <div class="slider-label"><span>葡萄糖供應 <span class="badge badge-c6">C6</span></span><span id="val-glucose">50%</span></div>
+          <input type="range" id="slider-glucose" min="0" max="100" value="50" class="accent-orange-500">
+        </div>
+        <div class="slider-container">
+          <div class="slider-label"><span>O₂ 供應 (最終電子受體)</span><span id="val-o2">60%</span></div>
+          <input type="range" id="slider-o2" min="0" max="100" value="60" class="accent-blue-400">
+        </div>
+
+        <div class="bg-orange-50 rounded p-2 mb-3 text-xs text-orange-800">
+          <b>CO₂ 釋出：</b><span id="co2-out">--</span> &nbsp;
+          <b>H⁺ 梯度：</b><span id="h-gradient">--</span> &nbsp;
+          <b>NADH：</b><span id="nadh-pool">--</span>
+        </div>
+
+        <div class="flex items-center gap-2 mb-2">
+          <span class="text-sm font-bold text-red-600">抑制劑模式：</span>
+          <select id="inhModeSelectResp" class="mode-select">
+            <option value="beginner">初學者模式</option>
+            <option value="advanced">進階模式</option>
+          </select>
+        </div>
+
+        <!-- Beginner inhibitors (resp) -->
+        <div id="inh-resp-beginner">
+          <div class="slider-container">
+            <div class="slider-label"><span>糖酵解酶抑制劑</span><span id="val-inh-glyco">0%</span></div>
+            <input type="range" id="slider-inh-glyco" min="0" max="100" value="0" class="accent-red-500">
+          </div>
+          <div class="slider-container">
+            <div class="slider-label"><span>Krebs 循環酶抑制劑</span><span id="val-inh-krebs">0%</span></div>
+            <input type="range" id="slider-inh-krebs" min="0" max="100" value="0" class="accent-red-500">
+            <p class="text-xs text-gray-500">影響：六碳化合物氧化脫羧</p>
+          </div>
+          <div class="slider-container">
+            <div class="slider-label"><span>電子傳遞鏈／三磷酸腺苷合成酶抑制劑</span><span id="val-inh-etc">0%</span></div>
+            <input type="range" id="slider-inh-etc" min="0" max="100" value="0" class="accent-red-500">
+            <p class="text-xs text-gray-500">影響：化學滲透（H⁺梯度→三磷酸腺苷）</p>
+          </div>
+        </div>
+
+        <!-- Advanced inhibitors (resp) -->
+        <div id="inh-resp-advanced" class="hidden">
+          <div id="adv-resp-list" class="text-xs space-y-1"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Live Charts Panel -->
+    <div id="chartPanel" class="hidden">
+      <div class="flex items-center justify-between mb-1">
+        <p class="text-xs font-bold text-gray-600">限制因子即時分析</p>
+        <div class="flex gap-1">
+          <button id="chartViewTime" class="text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-medium">時序圖</button>
+          <button id="chartViewSat"  class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500">飽和曲線</button>
+        </div>
+      </div>
+      <!-- Time series chart -->
+      <div id="chartPanelTime" class="chart-container" style="height:110px"><canvas id="rateChart"></canvas></div>
+      <!-- Saturation curve + limiting factor panel -->
+      <div id="chartPanelSat" class="hidden">
+        <canvas id="satChart" style="height:110px;width:100%"></canvas>
+        <div id="limitingFactorBox" class="mt-1 p-2 rounded text-xs bg-yellow-50 border border-yellow-200"></div>
+      </div>
+      <!-- Real-time rate readout -->
+      <div id="rateReadout" class="mt-1 grid grid-cols-2 gap-1 text-xs"></div>
+    </div>
+
+    <!-- Carbon Conservation Panel (always visible when simultaneous) -->
+    <div id="carbonPanel" class="hidden border-t border-gray-200 p-3 bg-green-50">
+      <p class="text-xs font-bold text-green-700 mb-1">🔬 碳守恆計算</p>
+      <div id="carbonCalc" class="text-xs font-mono text-green-900 space-y-0.5"></div>
+    </div>
+  </aside>
+</main>
+
+<script>
+// ============================================================
+//  CONSTANTS & CONFIG
+// ============================================================
+const TEACHER_NAMES = {
+  c5: '核酮糖二磷酸 (C5)', c3: '三磷酸甘油酸 (C3)', tp: '甘油醛三磷酸 (C3)', glucose_out: '葡萄糖 (C6)',
+  pyruvate: '丙酮酸 (C3)', acetylCoA: '乙醯輔酶A (C2)',
+  citrate: '檸檬酸 (C6)', succinate: '四碳有機酸 (C4)',
+  nadh: 'NADH', fadh2: 'FADH₂', atp: '三磷酸腺苷平衡',
+  h_gradient: 'H⁺ 梯度'
+};
+const STUDENT_NAMES = {
+  c5: '五碳化合物', c3: '三碳化合物', tp: '丙糖磷酸',
+  glucose_out: '葡萄糖', pyruvate: '丙酮酸',
+  acetylCoA: '乙醯輔酶A', citrate: '檸檬酸',
+  succinate: '四碳有機酸', nadh: 'NADH', fadh2: 'FADH₂',
+  atp: '三磷酸腺苷', h_gradient: 'H⁺ 梯度'
+};
+
+// Carbon numbers per molecule (for conservation tracking)
+const CARBON_MAP = { c5:5, c3:3, tp:3, citrate:6, succinate:4, acetylCoA:2, pyruvate:3 };
+
+// Advanced inhibitors definition
+const ADV_INH_PHOTO = [
+  { id:'dcmu',    label:'DCMU',     site:'PSII Q_B 位點',          mechanism:'阻斷電子從PSII傳至PQ，抑制光反應' },
+  { id:'atrazine',label:'Atrazine', site:'PSII D1蛋白',            mechanism:'競爭Q_B結合，阻斷光合電子傳遞' },
+  { id:'paraquat',label:'Paraquat', site:'PSI (Fd 端)',            mechanism:'搶奪電子生成活性氧 (ROS)，破壞葉綠體' }
+];
+const ADV_INH_RESP = [
+  { id:'rotenone',   label:'魚藤酮',    site:'複合體一',      mechanism:'阻斷NADH→輔酶Q電子傳遞，H⁺梯度下降' },
+  { id:'antimycinA', label:'抗黴素A',   site:'複合體三',      mechanism:'阻斷QH₂→細胞色素c，停止電子傳遞' },
+  { id:'cyanide',    label:'氰化物',    site:'複合體四',      mechanism:'抑制細胞色素氧化酶，阻斷O₂還原' },
+  { id:'oligomycin', label:'寡黴素',    site:'三磷酸腺苷合成酶', mechanism:'堵塞F₀通道，H⁺無法回流，三磷酸腺苷合成停止' }
+];
+
+// ============================================================
+//  STATE MODEL
+// ============================================================
+const canvas = document.getElementById('simCanvas');
+const ctx = canvas.getContext('2d');
+let activeTab = 'photo';
+let isSimultaneous = false;
+let teacherMode = false;
+let showChart = false;
+let inhModePhoto = 'beginner';
+let inhModeResp = 'beginner';
+
+const state = {
+  photo: {
+    pools: { atp: 55, nadph: 45, h2o: 80, o2_out: 0, c5: 70, c3: 40, tp: 40, glucose_out: 0 },
+    rates: { lightRxn: 0, fixation: 0, reduction: 0, regen: 0 },
+    inputs: { co2: 0.5, light: 0.6, water: 0.8, inh_nadph:0, inh_atp:0, inh_regen:0,
+              dcmu:0, atrazine:0, paraquat:0 },
+    stepTimer: 0, currentStep: 0
+  },
+  resp: {
+    pools: { glucose: 70, pyruvate: 50, acetylCoA: 45, citrate: 40, succinate: 55,
+             nadh: 30, fadh2: 20, h_gradient: 40, atp: 55, co2_out: 0 },
+    rates: { glycolysis: 0, link: 0, krebsForm: 0, krebsOx: 0, oxidPhos: 0 },
+    inputs: { glucoseSupply: 0.5, o2: 0.6, inh_glyco:0, inh_krebs:0, inh_etc:0,
+              rotenone:0, antimycinA:0, cyanide:0, oligomycin:0 },
+    stepTimer: 0, currentStep: 0
+  }
+};
+
+// ============================================================
+//  MICHAELIS-MENTEN HELPER
+//  v = Vmax * [S] / (Km + [S])   (normalized: Km=0.3)
+// ============================================================
+function mm(s, km = 0.3) {
+  const c = Math.max(0, s);
+  return c / (km + c);
+}
+
+// ============================================================
+//  SIMULATION ENGINE
+// ============================================================
+function updateSimulation() {
+  if (activeTab === 'photo') updatePhoto();
+  else updateResp();
+}
+
+function updatePhoto() {
+  const ps = state.photo;
+  const i = ps.inputs;
+  const p = ps.pools;
+  const conc = v => Math.max(0, v) / 100;
+
+  // --- Advanced inhibitor composite ---
+  const psiiBlock = Math.max(i.dcmu, i.atrazine);      // DCMU/Atrazine block PSII
+  const psiDamage  = i.paraquat;                        // Paraquat damages PSI output
+  const lightEff = i.light * (1 - psiiBlock) * (1 - psiDamage * 0.8);
+
+  // --- Water requirement: 2H₂O per O₂ (Hill reaction) ---
+  const waterFactor = mm(conc(p.h2o), 0.2);
+
+  // --- Light reaction: produces ATP (9 per cycle) & NADPH (6 per cycle) ---
+  // ATP:NADPH ratio ~ 3:2 per unit of light reaction
+  // ATP accumulates faster, limited by ADP availability modelled as inverse of current ATP
+  const backPress_atp   = Math.max(0, 1 - conc(p.atp) * 0.9);
+  const backPress_nadph = Math.max(0, 1 - conc(p.nadph) * 0.85);
+  const kLight = 1.8;
+  let lightBase = kLight * lightEff * waterFactor;
+  let atpProd  = lightBase * 1.5 * backPress_atp;    // ATP:NADPH differential
+  let nadphProd= lightBase * 1.0 * backPress_nadph;
+  let o2Prod   = lightBase * 0.5 * waterFactor;      // 2H₂O → O₂ + 4H⁺
+
+  // --- CO₂ fixation (RuBisCO): RuBP + CO₂ → 2×3-PGA ---
+  // Michaelis-Menten on CO₂ and RuBP (C5)
+  const kFix = 1.2;
+  let fixRate = kFix * mm(i.co2, 0.4) * mm(conc(p.c5), 0.25)
+                      * (1 - conc(p.c3) * 0.5);
+
+  // --- Reduction: 3-PGA → G3P (consumes ATP AND NADPH, ratio 1:1 here per molecule) ---
+  const kRed = 1.0;
+  let redFactor = (1 - i.inh_nadph) * (1 - i.inh_atp);
+  let redRate = kRed * redFactor * mm(conc(p.c3), 0.3)
+                     * mm(conc(p.atp), 0.2) * mm(conc(p.nadph), 0.2);
+
+  // --- Regeneration: G3P → RuBP (consumes ATP, NOT NADPH) 3 ATP per RuBP ---
+  const kReg = 1.3;
+  let regFactor = (1 - i.inh_regen) * (1 - i.inh_atp);
+  let regRate = kReg * regFactor * mm(conc(p.tp), 0.3) * mm(conc(p.atp), 0.25);
+
+  // --- Glucose synthesis (minor output) ---
+  const kGlu = 0.15;
+  let gluRate = kGlu * mm(conc(p.tp), 0.4);
+
+  ps.rates.lightRxn = lightBase;
+  ps.rates.fixation = fixRate;
+  ps.rates.reduction = redRate;
+  ps.rates.regen = regRate;
+
+  if (isSimultaneous) {
+    // ATP produced more than NADPH (3:2 ratio)
+    p.atp   += atpProd   - 1.0 * redRate - 1.5 * regRate - 0.04;  // ATP used in red & regen
+    p.nadph += nadphProd - 1.0 * redRate - 0.03;                   // NADPH used only in red
+    p.h2o   -= 0.4 * lightBase; // water consumed
+    p.h2o   += conc(p.h2o < 100 ? 100 - p.h2o : 0) * i.water * 0.5; // replenishment
+    p.o2_out= Math.min(100, p.o2_out + o2Prod * 0.3);
+
+    // Carbon mass balance: C5 + CO2 → 2×C3 (per fix)
+    p.c5 -= 0.5 * fixRate;      // 1 RuBP consumed
+    p.c3 += 1.0 * fixRate;      // 2 3-PGA produced
+
+    p.c3 -= 0.5 * redRate;      // 3-PGA reduced
+    p.tp += 0.5 * redRate;      // G3P produced
+
+    p.tp -= 0.5 * regRate + 0.4 * gluRate;
+    p.c5 += 0.3 * regRate;      // 5 G3P → 3 RuBP
+    p.glucose_out = Math.min(100, p.glucose_out + 0.15 * gluRate);
+  } else {
+    ps.stepTimer++;
+    if (ps.stepTimer > 200) { ps.currentStep = (ps.currentStep + 1) % 4; ps.stepTimer = 0; }
+    ps.rates.lightRxn  = (ps.currentStep === 0) ? lightBase : 0;
+    ps.rates.fixation  = (ps.currentStep === 1) ? fixRate   : 0;
+    ps.rates.reduction = (ps.currentStep === 2) ? redRate   : 0;
+    ps.rates.regen     = (ps.currentStep === 3) ? regRate   : 0;
+  }
+
+  for (let k in p) p[k] = Math.max(0, Math.min(100, p[k]));
+  updateCarbonBadgePhoto();
+}
+
+function updateResp() {
+  const rs = state.resp;
+  const i = rs.inputs;
+  const p = rs.pools;
+  const conc = v => Math.max(0, v) / 100;
+
+  // Advanced inhibitor composite effects
+  const etcBlock = Math.max(i.rotenone, i.antimycinA, i.cyanide);  // any ETC block
+  const synthBlock = i.oligomycin;
+
+  // --- Glycolysis: Glucose(C6) → 2 Pyruvate(C3) + 2 NADH + 2 ATP ---
+  const kGly = 1.0;
+  let glyRate = kGly * mm(conc(p.glucose), 0.3) * (1 - i.inh_glyco);
+  p.glucose += i.glucoseSupply * 0.6 - 0.5 * glyRate;
+
+  // --- Link reaction: Pyruvate(C3) → Acetyl-CoA(C2) + CO₂ + NADH ---
+  const kLink = 0.9;
+  let linkRate = kLink * mm(conc(p.pyruvate), 0.25);
+
+  // --- Krebs: Acetyl-CoA(C2) + OAA(C4) → Citrate(C6) ---
+  const kKrebsForm = 1.1;
+  let krebsFormRate = kKrebsForm * (1 - i.inh_krebs)
+                    * mm(conc(p.acetylCoA), 0.25) * mm(conc(p.succinate), 0.3);
+
+  // --- Krebs oxidation: Citrate(C6) → Succinate(C4) + 2CO₂ + 3NADH + 1FADH₂ ---
+  const kKrebsOx = 1.1;
+  let krebsOxRate = kKrebsOx * (1 - i.inh_krebs) * mm(conc(p.citrate), 0.3);
+
+  // --- ETC / Chemiosmosis: NADH/FADH₂ → H⁺ gradient → ATP Synthase → ATP ---
+  // NADH contributes 10H⁺, FADH₂ contributes 6H⁺
+  // H⁺ gradient builds; ATP Synthase (inhibited by oligomycin) converts it
+  const electronInput = conc(p.nadh) * 0.9 + conc(p.fadh2) * 0.6;
+  const etcRate = (1 - etcBlock) * mm(electronInput, 0.3) * mm(i.o2, 0.35) * 1.6;
+  const hGradientProd = etcRate * 1.2;
+  const atpSynthRate  = (1 - synthBlock) * mm(conc(p.h_gradient), 0.25) * 1.4;
+
+  rs.rates.glycolysis = glyRate;
+  rs.rates.link       = linkRate;
+  rs.rates.krebsForm  = krebsFormRate;
+  rs.rates.krebsOx    = krebsOxRate;
+  rs.rates.oxidPhos   = atpSynthRate;
+
+  if (isSimultaneous) {
+    // Carbon flow
+    p.pyruvate   += 0.5 * glyRate  - 0.4 * linkRate;
+    p.acetylCoA  += 0.35 * linkRate - 0.4 * krebsFormRate;
+    p.citrate    += 0.4 * krebsFormRate - 0.4 * krebsOxRate;
+    p.succinate  += 0.4 * krebsOxRate  - 0.4 * krebsFormRate;
+
+    // CO₂ release: link (1 CO₂) + krebsOx (2 CO₂)
+    p.co2_out = Math.min(100, p.co2_out + 0.2 * linkRate + 0.35 * krebsOxRate);
+
+    // Electron carriers
+    let nadhProd = 0.3 * glyRate + 0.35 * linkRate + 0.6 * krebsOxRate;
+    p.nadh += nadhProd - 0.6 * etcRate - 0.02;
+    p.fadh2 += 0.2 * krebsOxRate - 0.3 * etcRate - 0.01;
+
+    // H⁺ gradient: filled by ETC, drained by ATP synthase
+    p.h_gradient += hGradientProd - 0.8 * atpSynthRate - 0.03;
+
+    // ATP produced ONLY via ATP synthase (chemiosmosis) + substrate-level
+    let atpSubstrate = 0.15 * glyRate + 0.05 * krebsOxRate;
+    p.atp += atpSynthRate * 1.0 + atpSubstrate - 0.12;
+
+  } else {
+    rs.stepTimer++;
+    if (rs.stepTimer > 200) { rs.currentStep = (rs.currentStep + 1) % 5; rs.stepTimer = 0; }
+    rs.rates.glycolysis = (rs.currentStep === 0) ? glyRate      : 0;
+    rs.rates.link       = (rs.currentStep === 1) ? linkRate     : 0;
+    rs.rates.krebsForm  = (rs.currentStep === 2) ? krebsFormRate: 0;
+    rs.rates.krebsOx    = (rs.currentStep === 3) ? krebsOxRate  : 0;
+    rs.rates.oxidPhos   = (rs.currentStep === 4) ? atpSynthRate : 0;
+  }
+
+  for (let k in p) p[k] = Math.max(0, Math.min(100, p[k]));
+  updateCarbonBadgeResp();
+}
+
+// ============================================================
+//  CARBON CONSERVATION TRACKER
+// ============================================================
+function updateCarbonBadgePhoto() {
+  const p = state.photo.pools;
+  // Approximate total carbon in cycle intermediates
+  const total = p.c5 * 5 / 100 + p.c3 * 3 / 100 + p.tp * 3 / 100 + p.glucose_out * 6 / 100;
+  const ok = total > 0.1;
+  const badge = document.getElementById('carbonBadge');
+  const co2Fixed = (p.c5 + p.c3 + p.tp).toFixed(0);
+  badge.innerHTML = ok
+    ? `<span class="conserve-ok">碳守恆 ✓</span> &nbsp; 循環碳量: ${co2Fixed}% &nbsp; O₂釋出: ${p.o2_out.toFixed(0)}%`
+    : `<span class="conserve-warn">碳守恆 ⚠ 循環停滯</span>`;
+}
+
+function updateCarbonBadgeResp() {
+  const p = state.resp.pools;
+  const total = p.pyruvate * 3 / 100 + p.acetylCoA * 2 / 100
+              + p.citrate * 6 / 100 + p.succinate * 4 / 100;
+  const badge = document.getElementById('carbonBadge');
+  badge.innerHTML = `<span class="conserve-ok">碳守恆 ✓</span> &nbsp; CO₂ 累積: ${p.co2_out.toFixed(0)}% &nbsp; H⁺梯度: ${p.h_gradient.toFixed(0)}%`;
+}
+
+// ============================================================
+//  PARTICLES
+// ============================================================
+let particles = [];
+class Particle {
+  constructor(x, y, tx, ty, color, speed = 1, curve = null) {
+    this.x = x; this.y = y; this.tx = tx; this.ty = ty;
+    this.color = color; this.done = false; this.curve = curve;
+    this.sp = (0.5 + Math.random() * 0.5) * 2.5 * speed;
+    this.t = 0;
+    if (!curve) this.angle = Math.atan2(ty - y, tx - x);
+  }
+  update() {
+    if (this.curve) {
+      this.t += 0.012 * this.sp;
+      if (this.t >= 1) { this.done = true; return; }
+      const [p0,p1,p2] = this.curve; const t = this.t;
+      this.x = (1-t)*(1-t)*p0.x + 2*(1-t)*t*p1.x + t*t*p2.x;
+      this.y = (1-t)*(1-t)*p0.y + 2*(1-t)*t*p1.y + t*t*p2.y;
+    } else {
+      const d = Math.hypot(this.tx - this.x, this.ty - this.y);
+      if (d < 5) { this.done = true; return; }
+      this.x += Math.cos(this.angle) * this.sp;
+      this.y += Math.sin(this.angle) * this.sp;
+    }
+  }
+  draw(c) {
+    c.beginPath(); c.arc(this.x, this.y, 4, 0, Math.PI*2);
+    c.fillStyle = this.color; c.fill();
+  }
+}
+
+function spawnP(rate, x1, y1, x2, y2, color, ctrl = null) {
+  if (Math.random() < rate * 0.12) {
+    particles.push(new Particle(x1, y1, x2, y2, color, rate,
+      ctrl ? [{x:x1,y:y1}, ctrl, {x:x2,y:y2}] : null));
+  }
+}
+
+// ============================================================
+//  CO₂ BUBBLE PARTICLES (special)
+// ============================================================
+let bubbles = [];
+function spawnBubble(x, y) {
+  bubbles.push({ x: x + (Math.random()-0.5)*20, y, vx:(Math.random()-0.5)*0.5, vy:-1.2-Math.random(), life:1, r:3+Math.random()*3 });
+}
+function drawBubbles() {
+  bubbles = bubbles.filter(b => b.life > 0);
+  bubbles.forEach(b => {
+    b.x += b.vx; b.y += b.vy; b.life -= 0.018;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2);
+    ctx.strokeStyle = `rgba(100,180,255,${b.life})`; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = `rgba(200,230,255,${b.life * 0.4})`; ctx.fill();
+  });
+}
+
+// ============================================================
+//  DRAW HELPERS
+// ============================================================
+function drawArrow(x1, y1, x2, y2, w, color) {
+  const hl = 13, a = Math.atan2(y2-y1, x2-x1);
+  ctx.strokeStyle = color; ctx.lineWidth = w;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2-hl*Math.cos(a-Math.PI/6), y2-hl*Math.sin(a-Math.PI/6));
+  ctx.lineTo(x2, y2);
+  ctx.lineTo(x2-hl*Math.cos(a+Math.PI/6), y2-hl*Math.sin(a+Math.PI/6));
+  ctx.fillStyle = color; ctx.fill();
+}
+function drawCurvedArrow(sx, sy, cx, cy, ex, ey, w, color) {
+  const hl = 13;
+  ctx.beginPath(); ctx.moveTo(sx,sy); ctx.quadraticCurveTo(cx,cy,ex,ey);
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.stroke();
+  const a = Math.atan2(ey-cy, ex-cx);
+  ctx.beginPath();
+  ctx.moveTo(ex-hl*Math.cos(a-Math.PI/6), ey-hl*Math.sin(a-Math.PI/6));
+  ctx.lineTo(ex, ey);
+  ctx.lineTo(ex-hl*Math.cos(a+Math.PI/6), ey-hl*Math.sin(a+Math.PI/6));
+  ctx.fillStyle = color; ctx.fill();
+}
+
+function drawPoolBox(x, y, label, value, color, carbonLabel = '') {
+  const W = 120, H = 52;
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = color; ctx.lineWidth = 2;
+  ctx.fillRect(x-W/2, y-H/2, W, H);
+  ctx.strokeRect(x-W/2, y-H/2, W, H);
+  ctx.fillStyle = color + '33';
+  const fill = (value / 100) * (H - 2);
+  ctx.fillRect(x-W/2+1, y+H/2-1-fill, W-2, fill);
+  ctx.fillStyle = '#222'; ctx.font = `bold 12px 'Noto Sans TC'`; ctx.textAlign = 'center';
+  ctx.fillText(label, x, y - 6);
+  ctx.font = '10px monospace'; ctx.fillStyle = '#555';
+  ctx.fillText(Math.round(value) + '%', x, y + 10);
+  if (carbonLabel) {
+    ctx.font = 'bold 10px monospace'; ctx.fillStyle = '#6366f1';
+    ctx.fillText(carbonLabel, x, y + 22);
+  }
+}
+
+function drawChemiosisNode(x, y, label, value, color) {
+  ctx.beginPath(); ctx.arc(x, y, 38, 0, Math.PI*2);
+  ctx.fillStyle = color + '44'; ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#222'; ctx.font = 'bold 11px Noto Sans TC'; ctx.textAlign = 'center';
+  ctx.fillText(label, x, y - 5);
+  ctx.font = '10px monospace'; ctx.fillStyle = '#555';
+  ctx.fillText(Math.round(value) + '%', x, y + 12);
+}
+
+function getName(key) {
+  return teacherMode ? (TEACHER_NAMES[key] || key) : (STUDENT_NAMES[key] || key);
+}
+
+// ============================================================
+//  DRAW PHOTOSYNTHESIS
+// ============================================================
+function drawPhoto() {
+  const w = canvas.logicalWidth, h = canvas.logicalHeight;
+  const cx = w/2, cy = h/2;
+  const ps = state.photo, p = ps.pools, r = ps.rates;
+
+  // Background: chloroplast
+  ctx.fillStyle = '#e8fdf0';
+  ctx.fillRect(8, 8, w-16, h-16);
+  ctx.strokeStyle = '#48bb78'; ctx.lineWidth = 4;
+  ctx.strokeRect(8, 8, w-16, h-16);
+  ctx.fillStyle = '#2f855a'; ctx.font = 'bold 15px Noto Sans TC';
+  ctx.textAlign = 'right'; ctx.fillText('葉綠體基質 (卡爾文循環)', w-25, 32);
+
+  // Thylakoid membrane (left)
+  const thx = 115, thy = cy;
+  ctx.strokeStyle = '#38a169'; ctx.lineWidth = 1.5;
+  for (let k=0; k<3; k++) {
+    ctx.fillStyle = k===1 ? '#68d391' : '#48bb78';
+    ctx.beginPath(); ctx.ellipse(thx, thy - 38 + k*38, 58, 13, 0, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+  }
+  ctx.fillStyle = '#064e3b'; ctx.font = 'bold 13px Noto Sans TC'; ctx.textAlign = 'center';
+  ctx.fillText('類囊體膜', thx, thy - 65);
+  ctx.fillText('(光反應)', thx, thy + 72);
+
+  // Water pool indicator
+  ctx.fillStyle = '#bee3f8'; ctx.fillRect(thx - 45, thy + 82, 90, 14);
+  ctx.strokeStyle = '#3182ce'; ctx.lineWidth = 1; ctx.strokeRect(thx-45, thy+82, 90, 14);
+  ctx.fillStyle = '#2b6cb0'; ctx.font = '10px Noto Sans TC';
+  ctx.fillText(`H₂O: ${Math.round(p.h2o)}%`, thx, thy + 93);
+
+  // O₂ output bubbles
+  if (r.lightRxn > 0.3 && Math.random() < r.lightRxn * 0.05) {
+    spawnBubble(thx + 40, thy - 55);
+  }
+  if (p.o2_out > 5) {
+    ctx.fillStyle = '#3182ce'; ctx.font = '11px Noto Sans TC';
+    ctx.textAlign = 'left';
+    ctx.fillText(`O₂ ↑ ${p.o2_out.toFixed(0)}%`, thx + 62, thy - 60);
+  }
+
+  // Light arrow
+  ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 13px Noto Sans TC'; ctx.textAlign = 'left';
+  ctx.fillText('光能', 18, 35);
+  drawArrow(38, 46, thx-30, thy-48, 2, '#f59e0b');
+
+  // Cycle positions
+  const cycleX = w * 0.65;
+  const pos = {
+    lightOut: {x: thx+32, y: thy},
+    c5: {x: cycleX - 110, y: cy - 110},
+    c3: {x: cycleX + 110, y: cy - 110},
+    tp: {x: cycleX, y: cy + 130}
+  };
+
+  // ATP + NADPH from light rxn to cycle (curved)
+  const redMidX = (pos.c3.x + pos.tp.x + 60) / 2;
+  const redMidY = (pos.c3.y + pos.tp.y + 25) / 2;
+  const ctrl1 = {x: (pos.lightOut.x + redMidX)/2 + 30, y: cy - 230};
+  drawCurvedArrow(pos.lightOut.x, pos.lightOut.y - 18, ctrl1.x, ctrl1.y, redMidX, redMidY, 2, '#ecc94b');
+  ctx.fillStyle = '#d69e2e'; ctx.font = '11px Noto Sans TC'; ctx.textAlign = 'center';
+  ctx.fillText(teacherMode ? 'ATP + NADPH (9:6)' : 'ATP + NADPH', ctrl1.x, ctrl1.y + 12);
+  spawnP(r.lightRxn, pos.lightOut.x, pos.lightOut.y-18, redMidX, redMidY, '#ecc94b', ctrl1);
+
+  // ATP only to regen (lower curve)
+  const regMidX = (pos.tp.x + pos.c5.x - 60) / 2;
+  const regMidY = (pos.tp.y + pos.c5.y + 25) / 2;
+  drawArrow(pos.lightOut.x, pos.lightOut.y + 18, regMidX, regMidY + 20, 2, '#ecc94b');
+  ctx.fillStyle = '#d69e2e'; ctx.font = '11px Noto Sans TC';
+  ctx.fillText(teacherMode ? 'ATP only (×3)' : 'ATP (受體再生)', (pos.lightOut.x+regMidX)/2, regMidY + 35);
+  spawnP(r.lightRxn * 0.6, pos.lightOut.x, pos.lightOut.y+18, regMidX, regMidY+20, '#ecc94b');
+
+  // CO₂ fixation arrow
+  drawArrow(pos.c5.x + 60, pos.c5.y, pos.c3.x - 60, pos.c3.y, 3 + r.fixation*2.5, '#2b6cb0');
+  ctx.fillStyle = '#2b6cb0'; ctx.font = 'bold 12px Noto Sans TC';
+  ctx.textAlign = 'center';
+  ctx.fillText(teacherMode ? '核酮糖二磷酸羧化酶 (CO₂ 固定)' : 'CO₂ 固定', cycleX, pos.c5.y - 18);
+  ctx.fillStyle = '#3182ce'; ctx.font = '10px Noto Sans TC';
+  ctx.fillText('CO₂ (C1) →', cycleX, pos.c5.y - 4);
+  spawnP(r.fixation, pos.c5.x+60, pos.c5.y, pos.c3.x-60, pos.c3.y, '#2b6cb0');
+
+  // Reduction arrow
+  drawArrow(pos.c3.x, pos.c3.y + 27, pos.tp.x + 62, pos.tp.y, 3 + r.reduction*2.5, '#c53030');
+  ctx.fillStyle = '#c53030'; ctx.font = 'bold 12px Noto Sans TC';
+  ctx.fillText(teacherMode ? '三磷酸甘油酸 → 甘油醛三磷酸' : '三碳化合物還原', cycleX + 130, cy + 65);
+  spawnP(r.reduction, pos.c3.x, pos.c3.y+27, pos.tp.x+62, pos.tp.y, '#c53030');
+
+  // Regen arrow
+  drawArrow(pos.tp.x - 62, pos.tp.y, pos.c5.x, pos.c5.y + 27, 3 + r.regen*2.5, '#805ad5');
+  ctx.fillStyle = '#805ad5'; ctx.font = 'bold 12px Noto Sans TC';
+  ctx.fillText(teacherMode ? '甘油醛三磷酸 → 五碳受體' : '受體再生', cycleX - 130, cy + 65);
+  spawnP(r.regen, pos.tp.x-62, pos.tp.y, pos.c5.x, pos.c5.y+27, '#805ad5');
+
+  // Pool boxes with carbon labels
+  const cLabel = teacherMode;
+  drawPoolBox(pos.c5.x, pos.c5.y, getName('c5'), p.c5, '#48bb78', cLabel ? 'C5 五碳' : 'C5');
+  drawPoolBox(pos.c3.x, pos.c3.y, getName('c3'), p.c3, '#48bb78', cLabel ? 'C3 三磷' : 'C3');
+  drawPoolBox(pos.tp.x,  pos.tp.y,  getName('tp'),  p.tp,  '#48bb78', cLabel ? 'C3 丙糖' : 'C3');
+
+  // ATP / NADPH bar (bottom-right)
+  const bx = w - 155, by = h - 75;
+  ctx.fillStyle = '#fff'; ctx.fillRect(bx, by, 140, 60);
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1; ctx.strokeRect(bx, by, 140, 60);
+  ctx.fillStyle = '#333'; ctx.font = '10px Noto Sans TC'; ctx.textAlign = 'left';
+  ctx.fillText('ATP 供應 (9/循環):', bx + 5, by + 14);
+  ctx.fillStyle = '#ecc94b';
+  ctx.fillRect(bx + 5, by + 18, Math.round(p.atp * 1.28), 8);
+  ctx.fillStyle = '#333'; ctx.fillText('NADPH (6/循環):', bx + 5, by + 38);
+  ctx.fillStyle = '#4fd1c5';
+  ctx.fillRect(bx + 5, by + 42, Math.round(p.nadph * 1.28), 8);
+  // ratio display
+  const ratioATP = (p.atp / (p.atp + p.nadph + 0.01) * 15).toFixed(0);
+  const ratioNADPH = (p.nadph / (p.atp + p.nadph + 0.01) * 10).toFixed(0);
+  ctx.fillStyle = '#6b7280'; ctx.font = '10px monospace';
+  ctx.fillText(`ATP:NADPH ≈ ${Math.round(p.atp/10)}:${Math.round(p.nadph/10)}`, bx + 5, by + 60);
+
+  // Update sidebar info
+  document.getElementById('water-pool').textContent = Math.round(p.h2o) + '%';
+  document.getElementById('o2-out').textContent = Math.round(p.o2_out) + '%';
+  document.getElementById('atp-nadph-ratio').textContent = `${Math.round(p.atp/10)}:${Math.round(p.nadph/10)}`;
+
+  // Step info
+  if (!isSimultaneous) {
+    document.getElementById('stepInfo').classList.remove('hidden');
+    const titles = ['1. 光化學反應（類囊體膜）','2. CO₂ 固定（核酮糖二磷酸羧化酶）','3. 三碳化合物還原','4. 受體再生（五碳受體）'];
+    const descs = [
+      `類囊體膜上：水光解 2H₂O → O₂ + 4H⁺。生成 ATP (每循環 9 個) 與 NADPH (每循環 6 個)，ATP 需求高於 NADPH。`,
+      `基質：核酮糖二磷酸羧化酶催化，CO₂(C1) + 五碳受體(C5) → 2×三磷酸甘油酸(C3)。碳計數守恆：5+1=6=3+3。`,
+      `三磷酸甘油酸 → 甘油醛三磷酸：每分子需 1 ATP + 1 NADPH。NADPH 不可替代為 ATP，兩者獨立消耗。`,
+      `5 甘油醛三磷酸(C3) + 3 ATP → 3 五碳受體(C5)。僅消耗 ATP，不需 NADPH。剩餘甘油醛三磷酸合成葡萄糖。`
+    ];
+    document.getElementById('stepTitle').textContent = titles[ps.currentStep];
+    document.getElementById('stepDesc').textContent  = descs[ps.currentStep];
+  } else {
+    document.getElementById('stepInfo').classList.add('hidden');
+  }
+}
+
+// ============================================================
+//  DRAW RESPIRATION  — redesigned circular Krebs layout
+// ============================================================
+function drawResp() {
+  const w = canvas.logicalWidth, h = canvas.logicalHeight;
+  const rs = state.resp, p = rs.pools, r = rs.rates;
+
+  // ── 背景：細胞質淺藍綠 ──
+  ctx.fillStyle = '#e6fffa'; ctx.fillRect(0, 0, w, h);
+  ctx.font = 'bold 13px Noto Sans TC'; ctx.fillStyle = '#4a5568'; ctx.textAlign = 'left';
+  ctx.fillText('細胞質', 10, 20);
+
+  // ── 粒線體橢圓（右半畫面，留出左側給糖酵解）──
+  // 刻意讓橢圓右邊距畫布右緣 ≥20px
+  const mitoX = w * 0.565, mitoY = h * 0.50;
+  const mitoRx = Math.min(w * 0.40, w - mitoX - 18);
+  const mitoRy = h * 0.43;
+  ctx.fillStyle = '#fff5f5';
+  ctx.beginPath(); ctx.ellipse(mitoX, mitoY, mitoRx, mitoRy, 0, 0, Math.PI*2); ctx.fill();
+  ctx.strokeStyle = '#fc8181'; ctx.lineWidth = 3; ctx.stroke();
+
+  // 粒線體區域標籤（橢圓頂部中央）
+  ctx.font = 'bold 12px Noto Sans TC'; ctx.fillStyle = '#9b2c2c'; ctx.textAlign = 'center';
+  ctx.fillText('粒線體基質', mitoX - mitoRx * 0.26, mitoY - mitoRy + 18);
+  ctx.font = '10px Noto Sans TC'; ctx.fillStyle = '#c53030';
+  ctx.fillText('克雷伯氏循環區', mitoX - mitoRx * 0.26, mitoY - mitoRy + 32);
+
+  // ── 內膜分隔線（橢圓內垂直虛線）──
+  const innerX = mitoX + mitoRx * 0.48;
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = '#fc8181'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(innerX, mitoY - mitoRy * 0.72);
+  ctx.lineTo(innerX, mitoY + mitoRy * 0.72);
+  ctx.stroke(); ctx.setLineDash([]);
+
+  // 內膜區標籤（分隔線右側，靠上）
+  ctx.font = 'bold 11px Noto Sans TC'; ctx.fillStyle = '#6d28d9'; ctx.textAlign = 'center';
+  ctx.fillText('內膜', innerX + mitoRx * 0.26, mitoY - mitoRy * 0.70);
+  ctx.font = '10px Noto Sans TC'; ctx.fillStyle = '#7c3aed';
+  ctx.fillText('電子傳遞鏈', innerX + mitoRx * 0.26, mitoY - mitoRy * 0.54);
+  ctx.fillText('三磷酸腺苷合成酶', innerX + mitoRx * 0.26, mitoY - mitoRy * 0.40);
+
+  // ══════════════════════════════════════════
+  //  克雷伯氏循環（圓形）──置於基質中央
+  // ══════════════════════════════════════════
+  const kx = mitoX - mitoRx * 0.20;
+  const ky = mitoY + mitoRy * 0.06;
+  const kr = 82;
+
+  const kAngle = deg => (deg - 90) * Math.PI / 180;
+  const kPos   = deg => ({ x: kx + kr * Math.cos(kAngle(deg)), y: ky + kr * Math.sin(kAngle(deg)) });
+
+  // 六碳：右上方；四碳：左下方（對齊參考圖）
+  const citPos  = kPos(20);    // 六碳化合物
+  const sucPos  = kPos(160);   // 四碳化合物
+  const acoaPos = kPos(-110);  // 乙醯輔酶A 進入點
+
+  // 圓形虛線導引環
+  ctx.beginPath(); ctx.arc(kx, ky, kr, 0, Math.PI * 2);
+  ctx.strokeStyle = '#9ae6b4'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+
+  // 圓弧方向箭頭輔助函式
+  function drawArcArrow(fromDeg, toDeg, color, lw) {
+    const steps = 40;
+    const a0 = kAngle(fromDeg);
+    let da = kAngle(toDeg) - a0;
+    if (da < 0) da += Math.PI * 2;
+    ctx.beginPath(); ctx.strokeStyle = color; ctx.lineWidth = lw;
+    for (let i = 0; i <= steps; i++) {
+      const a = a0 + da * i / steps;
+      const px = kx + kr * Math.cos(a), py = ky + kr * Math.sin(a);
+      i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.stroke();
+    const aEnd = a0 + da, aT = aEnd + Math.PI / 2;
+    const ex = kx + kr * Math.cos(aEnd), ey = ky + kr * Math.sin(aEnd);
+    const ahl = 10;
+    ctx.beginPath();
+    ctx.moveTo(ex - ahl*Math.cos(aT-Math.PI/6), ey - ahl*Math.sin(aT-Math.PI/6));
+    ctx.lineTo(ex, ey);
+    ctx.lineTo(ex - ahl*Math.cos(aT+Math.PI/6), ey - ahl*Math.sin(aT+Math.PI/6));
+    ctx.fillStyle = color; ctx.fill();
+  }
+
+  // 脫羧弧：六碳 → 四碳（順時針，通過右側）
+  drawArcArrow(20, 160, '#2f855a', 2.5 + r.krebsOx * 2);
+  // 再生弧：四碳 → 乙醯進入點（順時針，通過下/左側）
+  drawArcArrow(160, 250, '#a0aec0', 2 + r.krebsForm * 1.5);
+
+  // 循環中央標籤
+  ctx.font = 'bold 13px Noto Sans TC'; ctx.fillStyle = '#276749'; ctx.textAlign = 'center';
+  ctx.fillText('克雷伯氏', kx, ky - 7);
+  ctx.fillText('循環', kx, ky + 10);
+
+  // 脫羧氧化標籤（圓右側外方）
+  const oxLblX = kx + (kr + 28) * Math.cos(kAngle(82));
+  const oxLblY = ky + (kr + 28) * Math.sin(kAngle(82));
+  ctx.font = 'bold 10px Noto Sans TC'; ctx.fillStyle = '#2f855a'; ctx.textAlign = 'left';
+  ctx.fillText('脫羧氧化', oxLblX + 4, oxLblY - 8);
+  ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#276749';
+  ctx.fillText('C6→C4 + 2CO₂', oxLblX + 4, oxLblY + 5);
+  ctx.fillText('+3NADH +1FADH₂', oxLblX + 4, oxLblY + 17);
+
+  // 2CO₂ 氣泡
+  const co2ox_x = kx + kr * Math.cos(kAngle(82));
+  const co2ox_y = ky + kr * Math.sin(kAngle(82));
+  if (r.krebsOx > 0.2) {
+    ctx.font = 'bold 10px Noto Sans TC'; ctx.fillStyle = '#3182ce'; ctx.textAlign = 'right';
+    ctx.fillText('2CO₂↑', co2ox_x - 4, co2ox_y - 14);
+    if (Math.random() < r.krebsOx * 0.05) spawnBubble(co2ox_x - 8, co2ox_y - 8);
+  }
+
+  // ══════════════════════════════════════════
+  //  乙醯輔酶A 進入箭頭
+  // ══════════════════════════════════════════
+  // acoaNode：基質左上，不與粒線體標籤重疊
+  const acoaNodeX = kx - 95, acoaNodeY = ky - 118;
+  drawArrow(acoaNodeX + 40, acoaNodeY + 10, acoaPos.x - 6, acoaPos.y - 4, 2.5 + r.krebsForm*2, '#38a169');
+  ctx.font = 'bold 10px Noto Sans TC'; ctx.fillStyle = '#2f855a'; ctx.textAlign = 'center';
+  const acoaLblX = (acoaNodeX+40 + acoaPos.x-6) / 2;
+  const acoaLblY = (acoaNodeY+10 + acoaPos.y-4) / 2 - 14;
+  ctx.fillText('縮合 C2+C4→C6', acoaLblX, acoaLblY);
+  spawnP(r.krebsForm, acoaNodeX+40, acoaNodeY+10, acoaPos.x-6, acoaPos.y-4, '#38a169');
+
+  // ══════════════════════════════════════════
+  //  電子傳遞鏈節點（內膜右區，垂直排列）
+  // ══════════════════════════════════════════
+  // 固定在 innerX 右側，距右邊緣安全
+  const etcNodeX = Math.min(innerX + 50, w - 50);
+  const etcNodeY = mitoY - 68;
+
+  // NADH/FADH₂ 輸出：克雷伯右側 → 電子傳遞鏈
+  const nadhSrcX = kx + (kr + 8) * Math.cos(kAngle(65));
+  const nadhSrcY = ky + (kr + 8) * Math.sin(kAngle(65));
+  if (r.krebsOx > 0.05) {
+    drawArrow(nadhSrcX, nadhSrcY, etcNodeX - 36, etcNodeY + 5, 2, '#3182ce');
+    ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#2b6cb0'; ctx.textAlign = 'center';
+    const nadhLblX = (nadhSrcX + etcNodeX - 36) / 2;
+    const nadhLblY = (nadhSrcY + etcNodeY + 5) / 2 - 10;
+    ctx.fillText('NADH/FADH₂', nadhLblX, nadhLblY);
+    spawnP(r.krebsOx, nadhSrcX, nadhSrcY, etcNodeX-36, etcNodeY+5, '#3182ce');
+  }
+
+  // 電子傳遞鏈節點
+  drawChemiosisNode(etcNodeX, etcNodeY, '電子傳遞鏈', p.nadh, '#3182ce');
+  ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#2b6cb0'; ctx.textAlign = 'center';
+  ctx.fillText('H⁺ 泵出', etcNodeX, etcNodeY + 28);
+
+  // 電子傳遞鏈 → H⁺梯度
+  const hgradNodeX = etcNodeX, hgradNodeY = mitoY + 68;
+  drawArrow(etcNodeX, etcNodeY + 40, hgradNodeX, hgradNodeY - 40, 2.5, '#7c3aed');
+  ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#5b21b6'; ctx.textAlign = 'left';
+  ctx.fillText('H⁺梯度', etcNodeX + 5, (etcNodeY + hgradNodeY)/2 + 4);
+  spawnP(rs.rates.oxidPhos*0.7, etcNodeX, etcNodeY+40, hgradNodeX, hgradNodeY-40, '#7c3aed');
+
+  // H⁺梯度節點
+  drawChemiosisNode(hgradNodeX, hgradNodeY, 'H⁺梯度', p.h_gradient, '#7c3aed');
+  ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#5b21b6'; ctx.textAlign = 'center';
+  ctx.fillText('三磷酸腺苷合成酶', hgradNodeX, hgradNodeY + 28);
+
+  // H⁺梯度 → 三磷酸腺苷（ATP）
+  // ATP 盒：置於 H⁺梯度節點正下方，確保在畫布內
+  const atpNodeX = hgradNodeX;
+  const atpNodeY = Math.min(hgradNodeY + 90, h - 34);
+  if (p.h_gradient > 5) {
+    drawArrow(hgradNodeX, hgradNodeY + 40, atpNodeX, atpNodeY - 28, 3 + rs.rates.oxidPhos*2, '#d69e2e');
+    ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#b7791f'; ctx.textAlign = 'left';
+    ctx.fillText('化學滲透', atpNodeX + 5, (hgradNodeY+40 + atpNodeY-28)/2 + 4);
+    spawnP(rs.rates.oxidPhos, hgradNodeX, hgradNodeY+40, atpNodeX, atpNodeY-28, '#d69e2e');
+  }
+  drawPoolBox(atpNodeX, atpNodeY, '三磷酸腺苷', p.atp, '#f6e05e', '');
+
+  // ══════════════════════════════════════════
+  //  細胞質區：葡萄糖、糖酵解、丙酮酸
+  // ══════════════════════════════════════════
+  // 葡萄糖置於左側，確保不與粒線體橢圓重疊
+  const glucX = 72, glucY = h * 0.30;
+  const pyrX  = 195, pyrY  = h * 0.30;
+
+  // 糖酵解箭頭
+  drawArrow(glucX+60, glucY, pyrX-60, pyrY, 3 + r.glycolysis*2, '#dd6b20');
+  ctx.font = 'bold 11px Noto Sans TC'; ctx.fillStyle = '#dd6b20'; ctx.textAlign = 'center';
+  ctx.fillText('糖酵解', (glucX+pyrX)/2, glucY - 26);
+  ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#c05621';
+  ctx.fillText('C6→2C3', (glucX+pyrX)/2, glucY - 13);
+  ctx.fillText('+2ATP +2NADH', (glucX+pyrX)/2, glucY - 1);
+  spawnP(r.glycolysis, glucX+60, glucY, pyrX-60, pyrY, '#dd6b20');
+
+  // 連繫反應箭頭：丙酮酸 → 乙醯輔酶A（斜向進入粒線體）
+  drawArrow(pyrX+60, pyrY, acoaNodeX-42, acoaNodeY+14, 3 + r.link*2, '#d69e2e');
+  ctx.font = 'bold 10px Noto Sans TC'; ctx.fillStyle = '#d69e2e'; ctx.textAlign = 'center';
+  const lkLblX = (pyrX+60 + acoaNodeX-42)/2 + 14;
+  const lkLblY = (pyrY + acoaNodeY+14)/2 - 18;
+  ctx.fillText('連繫反應', lkLblX, lkLblY);
+  ctx.font = '9px Noto Sans TC'; ctx.fillStyle = '#b7791f';
+  ctx.fillText('C3→C2+CO₂+NADH', lkLblX, lkLblY + 12);
+  spawnP(r.link, pyrX+60, pyrY, acoaNodeX-42, acoaNodeY+14, '#d69e2e');
+
+  // CO₂ 氣泡（連繫反應）
+  if (r.link > 0.3 && Math.random() < r.link * 0.04) spawnBubble(lkLblX, lkLblY - 4);
+
+  // ── 化合物方塊（最後畫，蓋在箭頭上方）──
+  drawPoolBox(glucX, glucY, getName('glucose_out')||'葡萄糖', p.glucose, '#ed8936', 'C6');
+  drawPoolBox(pyrX,  pyrY,  getName('pyruvate'), p.pyruvate, '#ed8936', 'C3');
+  drawPoolBox(acoaNodeX, acoaNodeY, getName('acetylCoA'), p.acetylCoA, '#ecc94b', 'C2');
+  drawPoolBox(citPos.x, citPos.y, getName('citrate'), p.citrate, '#48bb78', 'C6');
+  drawPoolBox(sucPos.x, sucPos.y, getName('succinate'), p.succinate, '#48bb78', 'C4');
+
+  // CO₂ 累計
+  if (p.co2_out > 3) {
+    ctx.font = 'bold 10px Noto Sans TC'; ctx.fillStyle = '#3182ce'; ctx.textAlign = 'left';
+    ctx.fillText(`CO₂ 釋出: ${p.co2_out.toFixed(0)}%`, 10, h - 10);
+  }
+
+  // ── 側欄更新 ──
+  document.getElementById('co2-out').textContent      = Math.round(p.co2_out) + '%';
+  document.getElementById('h-gradient').textContent   = Math.round(p.h_gradient) + '%';
+  document.getElementById('nadh-pool').textContent    = Math.round(p.nadh) + '%';
+
+  // 步驟說明
+  if (!isSimultaneous) {
+    document.getElementById('stepInfo').classList.remove('hidden');
+    const titles = ['1. 糖酵解（細胞質）','2. 連繫反應','3. 克雷伯氏縮合','4. 克雷伯氏氧化脫羧','5. 化學滲透（三磷酸腺苷合成）'];
+    const descs = [
+      '葡萄糖(C6) → 2 丙酮酸(C3)。淨產生 2 三磷酸腺苷（受質磷酸化）與 2 NADH。氧氣不參與本步驟。',
+      '丙酮酸(C3) → 乙醯輔酶A(C2) + CO₂。每分子脫去 1 個碳，釋放 CO₂，產生 NADH。',
+      '乙醯輔酶A(C2) + 草醯乙酸(C4) → 檸檬酸(C6)。縮合步驟：碳守恆 2+4=6。',
+      '檸檬酸(C6) → 四碳有機酸(C4)。兩次脫羧各釋出 1 CO₂，產生 3 NADH 和 1 FADH₂。碳守恆：6=4+2。',
+      'NADH/FADH₂ → 電子傳遞鏈 → H⁺梯度 → 三磷酸腺苷合成酶 → 三磷酸腺苷。必須經由化學滲透，不可直接由 NADH 轉換。'
+    ];
+    document.getElementById('stepTitle').textContent = titles[rs.currentStep];
+    document.getElementById('stepDesc').textContent  = descs[rs.currentStep];
+  } else {
+    document.getElementById('stepInfo').classList.add('hidden');
+  }
+}
+
+// ============================================================
+//  LIVE TIME-SERIES CHART (Chart.js)
+// ============================================================
+let rateChart = null;
+let satChart = null;
+let chartViewMode = 'time';
+const chartHistory = { labels: [], photo: [], resp: [], atp: [], co2Fix: [] };
+let chartTick = 0;
+
+function initChart() {
+  const chartCtx = document.getElementById('rateChart').getContext('2d');
+  rateChart = new Chart(chartCtx, {
+    type: 'line',
+    data: {
+      labels: chartHistory.labels,
+      datasets: [
+        { label: '光合速率', data: chartHistory.photo,  borderColor: '#48bb78', borderWidth:1.5, tension: 0.4, pointRadius: 0, fill: false },
+        { label: 'ATP 產量', data: chartHistory.atp,    borderColor: '#d69e2e', borderWidth:1.5, tension: 0.4, pointRadius: 0, fill: false },
+        { label: 'CO₂固定',  data: chartHistory.co2Fix, borderColor: '#3182ce', borderWidth:1.5, tension: 0.4, pointRadius: 0, fill: false },
+        { label: '呼吸速率', data: chartHistory.resp,   borderColor: '#e53e3e', borderWidth:1.5, tension: 0.4, pointRadius: 0, fill: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false,
+      plugins: { legend: { labels: { font: { size: 9 }, boxWidth: 10, padding: 6 } } },
+      scales: {
+        x: { display: false },
+        y: { min: 0, max: 1.8, ticks: { font: { size: 9 }, maxTicksLimit: 4 },
+             title: { display: true, text: '相對速率', font: { size: 9 } } }
+      }
+    }
+  });
+}
+
+function updateChart() {
+  if (!rateChart || !showChart) return;
+  chartTick++;
+  if (chartTick % 5 !== 0) return;
+  const ps = state.photo.rates, rs = state.resp.rates;
+  const totalPhoto = (ps.lightRxn * 0.35 + ps.fixation * 0.65);
+  const totalResp  = (rs.glycolysis * 0.25 + rs.krebsOx * 0.45 + rs.oxidPhos * 0.3);
+  const atpRate    = activeTab === 'photo'
+    ? Math.min(1.6, ps.lightRxn * 1.4 * (1 - state.photo.pools.atp / 200))
+    : Math.min(1.6, rs.oxidPhos * 1.1);
+  const co2Fix = ps.fixation * 0.85;
+  chartHistory.labels.push('');
+  chartHistory.photo.push(+totalPhoto.toFixed(3));
+  chartHistory.resp.push(+totalResp.toFixed(3));
+  chartHistory.atp.push(+atpRate.toFixed(3));
+  chartHistory.co2Fix.push(+co2Fix.toFixed(3));
+  if (chartHistory.labels.length > 80) {
+    ['labels','photo','resp','atp','co2Fix'].forEach(k => chartHistory[k].shift());
+  }
+  rateChart.update();
+  updateRateReadout();
+  if (chartViewMode === 'sat') drawSatCurve();
+}
+
+// ============================================================
+//  SATURATION CURVE (Canvas 2D, drawn into satChart)
+// ============================================================
+function initSatChart() {
+  satChart = document.getElementById('satChart');
+  satChart.width  = satChart.offsetWidth  || 320;
+  satChart.height = 110;
+}
+
+function drawSatCurve() {
+  if (!satChart) return;
+  const sc = satChart.getContext('2d');
+  const W = satChart.width, H = satChart.height;
+  sc.clearRect(0, 0, W, H);
+  sc.fillStyle = '#f9fafb'; sc.fillRect(0, 0, W, H);
+
+  const pad = { l:28, r:10, t:10, b:22 };
+  const gW = W - pad.l - pad.r;
+  const gH = H - pad.t - pad.b;
+
+  // Axes
+  sc.strokeStyle = '#cbd5e0'; sc.lineWidth = 1;
+  sc.beginPath(); sc.moveTo(pad.l, pad.t); sc.lineTo(pad.l, pad.t+gH); sc.lineTo(pad.l+gW, pad.t+gH); sc.stroke();
+  sc.fillStyle = '#718096'; sc.font = '9px Noto Sans TC'; sc.textAlign = 'center';
+  sc.fillText(activeTab==='photo' ? '光強度 →' : '葡萄糖供應 →', pad.l + gW/2, H - 4);
+  sc.textAlign = 'right';
+  sc.fillText('速率', pad.l - 2, pad.t + gH/2);
+
+  // Draw 2 curves: current inhibitor vs no inhibitor
+  const drawCurve = (inhibFactor, color, dashed) => {
+    sc.beginPath(); sc.strokeStyle = color; sc.lineWidth = 1.5;
+    if (dashed) sc.setLineDash([3,3]); else sc.setLineDash([]);
+    for (let xi = 0; xi <= gW; xi++) {
+      const s = xi / gW;              // substrate 0→1
+      // Michaelis-Menten with inhibition
+      const v = (s / (0.3 + s)) * (1 - inhibFactor * 0.8);
+      const px = pad.l + xi;
+      const py = pad.t + gH - v * gH * 0.9;
+      xi === 0 ? sc.moveTo(px, py) : sc.lineTo(px, py);
+    }
+    sc.stroke(); sc.setLineDash([]);
+  };
+
+  const inhFactor = activeTab === 'photo'
+    ? Math.max(state.photo.inputs.inh_nadph, state.photo.inputs.inh_atp,
+               state.photo.inputs.inh_regen, state.photo.inputs.dcmu,
+               state.photo.inputs.atrazine,  state.photo.inputs.paraquat)
+    : Math.max(state.resp.inputs.inh_glyco, state.resp.inputs.inh_krebs,
+               state.resp.inputs.inh_etc,   state.resp.inputs.rotenone,
+               state.resp.inputs.antimycinA, state.resp.inputs.cyanide,
+               state.resp.inputs.oligomycin);
+
+  drawCurve(0, '#48bb78', true);       // ideal (dashed)
+  drawCurve(inhFactor, '#e53e3e', false); // current (solid)
+
+  // Current operating point
+  const curX  = activeTab === 'photo' ? state.photo.inputs.light : state.resp.inputs.glucoseSupply;
+  const curV  = (curX / (0.3 + curX)) * (1 - inhFactor * 0.8);
+  const ptX   = pad.l + curX * gW;
+  const ptY   = pad.t + gH - curV * gH * 0.9;
+  sc.beginPath(); sc.arc(ptX, ptY, 4, 0, Math.PI*2);
+  sc.fillStyle = '#2b6cb0'; sc.fill();
+
+  // Limiting factor annotation
+  const limitMsg = getLimitingFactor();
+  document.getElementById('limitingFactorBox').innerHTML = limitMsg;
+}
+
+function getLimitingFactor() {
+  if (activeTab === 'photo') {
+    const i = state.photo.inputs, p = state.photo.pools;
+    const factors = [
+      { name: 'CO₂ 濃度（核酮糖二磷酸羧化酶底物）', val: i.co2 },
+      { name: '光強度 (ATP/NADPH 來源)', val: i.light },
+      { name: 'H₂O 供應 (光解反應)', val: i.water },
+      { name: '五碳受體庫存', val: p.c5 / 100 },
+    ];
+    const inh = [
+      { name: 'DCMU/Atrazine (PSII)', val: Math.max(i.dcmu, i.atrazine) },
+      { name: 'Paraquat (PSI 損害)', val: i.paraquat },
+      { name: 'ATP 抑制劑', val: i.inh_atp },
+      { name: 'NADPH 抑制劑', val: i.inh_nadph },
+      { name: '再生酶抑制劑', val: i.inh_regen },
+    ].filter(x => x.val > 0.05);
+    const bottleneck = factors.reduce((a, b) => a.val < b.val ? a : b);
+    const satLevel = bottleneck.val > 0.75 ? '飽和' : bottleneck.val > 0.4 ? '接近飽和' : '**限制中**';
+    let html = `<b>主要限制因子：</b>${bottleneck.name} (${(bottleneck.val*100).toFixed(0)}%) — ${satLevel}`;
+    if (inh.length) html += `<br><b>作用抑制劑：</b>${inh.map(x=>`${x.name} ${(x.val*100).toFixed(0)}%`).join('、')}`;
+    if (p.c3 > 75) html += `<br>⚠ 三磷酸甘油酸堆積 (${p.c3.toFixed(0)}%)：還原步驟受限`;
+    if (p.atp < 20) html += `<br>⚠ ATP 供應不足 (${p.atp.toFixed(0)}%)：多步驟停滯`;
+    return html;
+  } else {
+    const i = state.resp.inputs, p = state.resp.pools;
+    const factors = [
+      { name: '葡萄糖供應 (C6)', val: i.glucoseSupply },
+      { name: 'O₂ 供應（電子傳遞鏈終受體）', val: i.o2 },
+      { name: 'H⁺ 梯度', val: p.h_gradient / 100 },
+    ];
+    const inh = [
+      { name: '魚藤酮（複合體一）', val: i.rotenone },
+      { name: '抗黴素A（複合體三）', val: i.antimycinA },
+      { name: '氰化物（複合體四）', val: i.cyanide },
+      { name: '寡黴素（三磷酸腺苷合成酶）', val: i.oligomycin },
+    ].filter(x => x.val > 0.05);
+    const bottleneck = factors.reduce((a, b) => a.val < b.val ? a : b);
+    const satLevel = bottleneck.val > 0.75 ? '飽和' : bottleneck.val > 0.4 ? '接近飽和' : '**限制中**';
+    let html = `<b>主要限制因子：</b>${bottleneck.name} (${(bottleneck.val*100).toFixed(0)}%) — ${satLevel}`;
+    if (inh.length) html += `<br><b>作用抑制劑：</b>${inh.map(x=>`${x.name} ${(x.val*100).toFixed(0)}%`).join('、')}`;
+    if (p.nadh > 80) html += `<br>⚠ NADH 堆積 (${p.nadh.toFixed(0)}%)：電子傳遞鏈受阻`;
+    if (p.h_gradient < 15) html += `<br>⚠ H⁺ 梯度不足：ATP 合酶近乎停止`;
+    return html;
+  }
+}
+
+// ============================================================
+//  RATE READOUT (sidebar numbers)
+// ============================================================
+function updateRateReadout() {
+  const el = document.getElementById('rateReadout');
+  if (!el || !showChart) return;
+  const ps = state.photo.rates, rs = state.resp.rates;
+  if (activeTab === 'photo') {
+    el.innerHTML = `
+      <div class="bg-green-50 rounded px-2 py-1"><b>光反應速率</b><br>${(ps.lightRxn||0).toFixed(2)}</div>
+      <div class="bg-blue-50 rounded px-2 py-1"><b>CO₂固定速率</b><br>${(ps.fixation||0).toFixed(2)}</div>
+      <div class="bg-red-50 rounded px-2 py-1"><b>還原速率</b><br>${(ps.reduction||0).toFixed(2)}</div>
+      <div class="bg-purple-50 rounded px-2 py-1"><b>受體再生速率</b><br>${(ps.regen||0).toFixed(2)}</div>`;
+  } else {
+    el.innerHTML = `
+      <div class="bg-orange-50 rounded px-2 py-1"><b>糖酵解速率</b><br>${(rs.glycolysis||0).toFixed(2)}</div>
+      <div class="bg-yellow-50 rounded px-2 py-1"><b>克雷伯氏速率</b><br>${(rs.krebsOx||0).toFixed(2)}</div>
+      <div class="bg-purple-50 rounded px-2 py-1"><b>電子傳遞鏈速率</b><br>${(rs.oxidPhos||0).toFixed(2)}</div>
+      <div class="bg-green-50 rounded px-2 py-1"><b>ATP 合成速率</b><br>${(rs.oxidPhos||0).toFixed(2)}</div>`;
+  }
+}
+
+// ============================================================
+//  CARBON CONSERVATION ACCOUNTING
+// ============================================================
+function updateCarbonPanel() {
+  const el = document.getElementById('carbonCalc');
+  if (!el || !isSimultaneous) return;
+  if (activeTab === 'photo') {
+    const p = state.photo.pools;
+    // Absolute carbon units (pool% × carbon_atoms_per_molecule / 100)
+    const c5C  = (p.c5  * 5 / 100).toFixed(2);
+    const c3C  = (p.c3  * 3 / 100).toFixed(2);
+    const tpC  = (p.tp  * 3 / 100).toFixed(2);
+    const gluC = (p.glucose_out * 6 / 100).toFixed(2);
+    const total= (parseFloat(c5C)+parseFloat(c3C)+parseFloat(tpC)+parseFloat(gluC)).toFixed(2);
+    const ok = total > 0.5;
+    el.innerHTML = `
+      五碳受體  (C5) × ${p.c5.toFixed(0)}% = <b>${c5C}</b> 碳單位<br>
+      三磷酸甘油酸 (C3) × ${p.c3.toFixed(0)}% = <b>${c3C}</b> 碳單位<br>
+      甘油醛三磷酸 (C3) × ${p.tp.toFixed(0)}% = <b>${tpC}</b> 碳單位<br>
+      葡萄糖 (C6) × ${p.glucose_out.toFixed(0)}% = <b>${gluC}</b> 碳單位<br>
+      <hr style="margin:2px 0;border-color:#bbf7d0">
+      <b>總計: ${total} 碳單位 &nbsp; ${ok ? '<span class="conserve-ok">✓ 守恆</span>' : '<span class="conserve-warn">⚠ 請檢查</span>'}</b>`;
+  } else {
+    const p = state.resp.pools;
+    const pyrC  = (p.pyruvate   * 3 / 100).toFixed(2);
+    const acoaC = (p.acetylCoA  * 2 / 100).toFixed(2);
+    const citC  = (p.citrate    * 6 / 100).toFixed(2);
+    const sucC  = (p.succinate  * 4 / 100).toFixed(2);
+    const total = (parseFloat(pyrC)+parseFloat(acoaC)+parseFloat(citC)+parseFloat(sucC)).toFixed(2);
+    el.innerHTML = `
+      丙酮酸   (C3) × ${p.pyruvate.toFixed(0)}%  = <b>${pyrC}</b> 碳單位<br>
+      乙醯輔酶A (C2) × ${p.acetylCoA.toFixed(0)}% = <b>${acoaC}</b> 碳單位<br>
+      檸檬酸   (C6) × ${p.citrate.toFixed(0)}%   = <b>${citC}</b> 碳單位<br>
+      四碳有機酸 (C4) × ${p.succinate.toFixed(0)}%  = <b>${sucC}</b> 碳單位<br>
+      CO₂ 已釋出 = <b>${p.co2_out.toFixed(0)}%</b><br>
+      <hr style="margin:2px 0;border-color:#fed7aa">
+      <b>循環碳總計: ${total} 碳單位 &nbsp; <span class="conserve-ok">✓ 脫羧釋碳正常</span></b>`;
+  }
+}
+
+// ============================================================
+//  ATP/ADP BALANCE DISPLAY (draw onto canvas)
+//  Shows as a bidirectional bar: ATP ←→ ADP
+// ============================================================
+function drawATPBalance(x, y, w, atpLevel, label) {
+  const h = 14;
+  // Background
+  ctx.fillStyle = '#f7fafc'; ctx.strokeStyle = '#cbd5e0'; ctx.lineWidth = 1;
+  ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
+  // ATP side (left, yellow-green)
+  const atpW = (atpLevel / 100) * (w / 2);
+  ctx.fillStyle = '#68d391';
+  ctx.fillRect(x + w/2 - atpW, y+1, atpW, h-2);
+  // ADP side (right, grey)
+  const adpW = ((100 - atpLevel) / 100) * (w / 2);
+  ctx.fillStyle = '#cbd5e0';
+  ctx.fillRect(x + w/2, y+1, adpW, h-2);
+  // Center line
+  ctx.strokeStyle = '#4a5568'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(x+w/2, y); ctx.lineTo(x+w/2, y+h); ctx.stroke();
+  // Labels
+  ctx.fillStyle = '#276749'; ctx.font = 'bold 9px monospace'; ctx.textAlign = 'left';
+  ctx.fillText('ATP', x+2, y+10);
+  ctx.fillStyle = '#718096'; ctx.textAlign = 'right';
+  ctx.fillText('ADP', x+w-2, y+10);
+  ctx.fillStyle = '#333'; ctx.textAlign = 'center'; ctx.font = '9px Noto Sans TC';
+  ctx.fillText(label + ` ${atpLevel.toFixed(0)}%`, x+w/2, y+h+10);
+}
+
+// ============================================================
+//  LIMITING FACTOR ARROWS ON CANVAS
+// ============================================================
+function drawLimitArrow(x, y, label, severity) {
+  // severity: 0=ok, 0.5=warn, 1=critical
+  if (severity < 0.1) return;
+  const color = severity > 0.6 ? '#e53e3e' : '#d69e2e';
+  const alpha = 0.4 + severity * 0.6;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = color;
+  ctx.font = `bold ${9 + severity * 3}px Noto Sans TC`;
+  ctx.textAlign = 'center';
+  ctx.fillText('⚠ ' + label, x, y);
+  ctx.restore();
+}
+
+// ============================================================
+//  MAIN LOOP
+// ============================================================
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  ctx.scale(dpr, dpr);
+  canvas.logicalWidth  = rect.width;
+  canvas.logicalHeight = rect.height;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function loop() {
+  ctx.clearRect(0, 0, canvas.logicalWidth, canvas.logicalHeight);
+  updateSimulation();
+  if (activeTab === 'photo') {
+    drawPhoto();
+    // ATP/ADP balance bar
+    const w = canvas.logicalWidth, h = canvas.logicalHeight;
+    drawATPBalance(w - 155, h - 130, 130, state.photo.pools.atp, 'ATP/ADP');
+    // Limiting factor warning overlays
+    const i = state.photo.inputs, p = state.photo.pools;
+    if (i.co2 < 0.25)    drawLimitArrow(w*0.65, 25, 'CO₂ 不足', 1 - i.co2 * 4);
+    if (i.light < 0.25)  drawLimitArrow(160, 25, '光照不足', 1 - i.light * 4);
+    if (p.c5 < 20)       drawLimitArrow(w*0.5, 45, '五碳受體耗盡', (20-p.c5)/20);
+  } else {
+    drawResp();
+    // ATP/ADP balance bar
+    const w = canvas.logicalWidth, h = canvas.logicalHeight;
+    drawATPBalance(w - 155, 18, 130, state.resp.pools.atp, 'ATP/ADP');
+    // Limiting factor warning overlays
+    const i = state.resp.inputs, p = state.resp.pools;
+    if (i.o2 < 0.2)        drawLimitArrow(w*0.75, 25, 'O₂ 不足', 1 - i.o2 * 5);
+    if (p.nadh > 85)       drawLimitArrow(w*0.72, 45, 'NADH 堆積（電子傳遞鏈受阻）', (p.nadh-85)/15);
+    if (p.h_gradient < 10) drawLimitArrow(w*0.78, 65, 'H⁺梯度崩潰', (10-p.h_gradient)/10);
+  }
+  drawBubbles();
+  for (let k = particles.length - 1; k >= 0; k--) {
+    particles[k].update(); particles[k].draw(ctx);
+    if (particles[k].done) particles.splice(k, 1);
+  }
+  updateChart();
+  updateCarbonPanel();
+  requestAnimationFrame(loop);
+}
+
+// ============================================================
+//  UI: ADVANCED INHIBITORS
+// ============================================================
+function buildAdvancedInhibitors() {
+  const photoList = document.getElementById('adv-photo-list');
+  ADV_INH_PHOTO.forEach(inh => {
+    photoList.innerHTML += `
+    <div class="adv-inh-item">
+      <div style="flex:1">
+        <b>${inh.label}</b> <span class="inh-tag">${inh.site}</span>
+        <div style="color:#666;font-size:10px">${inh.mechanism}</div>
+      </div>
+      <div style="width:80px">
+        <input type="range" id="slider-${inh.id}" min="0" max="100" value="0" class="accent-red-500" style="width:80px">
+        <div style="text-align:right;font-size:10px" id="val-${inh.id}">0%</div>
+      </div>
+    </div>`;
+  });
+  const respList = document.getElementById('adv-resp-list');
+  ADV_INH_RESP.forEach(inh => {
+    respList.innerHTML += `
+    <div class="adv-inh-item">
+      <div style="flex:1">
+        <b>${inh.label}</b> <span class="inh-tag">${inh.site}</span>
+        <div style="color:#666;font-size:10px">${inh.mechanism}</div>
+      </div>
+      <div style="width:80px">
+        <input type="range" id="slider-${inh.id}" min="0" max="100" value="0" class="accent-red-500" style="width:80px">
+        <div style="text-align:right;font-size:10px" id="val-${inh.id}">0%</div>
+      </div>
+    </div>`;
+  });
+
+  // Bind advanced sliders
+  [...ADV_INH_PHOTO, ...ADV_INH_RESP].forEach(inh => {
+    const el = document.getElementById('slider-' + inh.id);
+    if (!el) return;
+    el.addEventListener('input', e => {
+      const v = parseInt(e.target.value) / 100;
+      document.getElementById('val-' + inh.id).textContent = (v*100).toFixed(0) + '%';
+      if (ADV_INH_PHOTO.find(x => x.id === inh.id)) state.photo.inputs[inh.id] = v;
+      else state.resp.inputs[inh.id] = v;
+    });
+  });
+}
+
+function bindSlider(id, obj, key) {
+  const el = document.getElementById(id);
+  const vEl = document.getElementById(id.replace('slider-', 'val-'));
+  if (!el) return;
+  el.addEventListener('input', e => {
+    const v = parseInt(e.target.value);
+    obj[key] = v / 100;
+    if (vEl) vEl.textContent = v + '%';
+  });
+}
+
+// ============================================================
+//  INIT & EVENT BINDING
+// ============================================================
+buildAdvancedInhibitors();
+
+bindSlider('slider-co2',      state.photo.inputs, 'co2');
+bindSlider('slider-light',    state.photo.inputs, 'light');
+bindSlider('slider-water',    state.photo.inputs, 'water');
+bindSlider('slider-inh-nadph',state.photo.inputs, 'inh_nadph');
+bindSlider('slider-inh-atp',  state.photo.inputs, 'inh_atp');
+bindSlider('slider-inh-regen',state.photo.inputs, 'inh_regen');
+
+bindSlider('slider-glucose',  state.resp.inputs, 'glucoseSupply');
+bindSlider('slider-o2',       state.resp.inputs, 'o2');
+bindSlider('slider-inh-glyco',state.resp.inputs, 'inh_glyco');
+bindSlider('slider-inh-krebs',state.resp.inputs, 'inh_krebs');
+bindSlider('slider-inh-etc',  state.resp.inputs, 'inh_etc');
+
+document.getElementById('modeToggle').addEventListener('change', e => {
+  isSimultaneous = e.target.checked;
+  document.getElementById('modeDesc').textContent = isSimultaneous
+    ? '目前模式：同時進行 (觀察限制因子與堆積效應)'
+    : '目前模式：逐步演示 (適合初學流程)';
+  document.getElementById('carbonPanel').classList.toggle('hidden', !isSimultaneous);
+  particles = [];
+});
+
+document.getElementById('teacherModeSelect').addEventListener('change', e => {
+  teacherMode = e.target.value === 'teacher';
+});
+
+document.getElementById('chartToggle').addEventListener('change', e => {
+  showChart = e.target.checked;
+  document.getElementById('chartPanel').classList.toggle('hidden', !showChart);
+  if (showChart && !rateChart) initChart();
+  if (showChart && !satChart) initSatChart();
+});
+
+document.getElementById('chartViewTime').addEventListener('click', () => {
+  chartViewMode = 'time';
+  document.getElementById('chartPanelTime').classList.remove('hidden');
+  document.getElementById('chartPanelSat').classList.add('hidden');
+  document.getElementById('chartViewTime').className = 'text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-medium';
+  document.getElementById('chartViewSat').className  = 'text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500';
+});
+document.getElementById('chartViewSat').addEventListener('click', () => {
+  chartViewMode = 'sat';
+  document.getElementById('chartPanelTime').classList.add('hidden');
+  document.getElementById('chartPanelSat').classList.remove('hidden');
+  document.getElementById('chartViewSat').className  = 'text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-700 font-medium';
+  document.getElementById('chartViewTime').className = 'text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500';
+  drawSatCurve();
+});
+
+document.getElementById('inhModeSelect').addEventListener('change', e => {
+  inhModePhoto = e.target.value;
+  document.getElementById('inh-photo-beginner').classList.toggle('hidden', inhModePhoto !== 'beginner');
+  document.getElementById('inh-photo-advanced').classList.toggle('hidden', inhModePhoto !== 'advanced');
+});
+
+document.getElementById('inhModeSelectResp').addEventListener('change', e => {
+  inhModeResp = e.target.value;
+  document.getElementById('inh-resp-beginner').classList.toggle('hidden', inhModeResp !== 'beginner');
+  document.getElementById('inh-resp-advanced').classList.toggle('hidden', inhModeResp !== 'advanced');
+});
+
+// ============================================================
+//  TAB SWITCH (must be before loop())
+// ============================================================
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-photo').classList.toggle('active', tab === 'photo');
+  document.getElementById('tab-resp').classList.toggle('active', tab === 'resp');
+  document.getElementById('controls-photo').classList.toggle('hidden', tab !== 'photo');
+  document.getElementById('controls-resp').classList.toggle('hidden', tab !== 'resp');
+  particles = []; bubbles = [];
+  if (isSimultaneous) updateCarbonPanel();
+  if (showChart && chartViewMode === 'sat') drawSatCurve();
+}
+
+document.getElementById('tab-photo').addEventListener('click', () => switchTab('photo'));
+document.getElementById('tab-resp').addEventListener('click',  () => switchTab('resp'));
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  Object.assign(state.photo.pools, { atp:55, nadph:45, h2o:80, o2_out:0, c5:70, c3:40, tp:40, glucose_out:0 });
+  Object.assign(state.resp.pools,  { glucose:70, pyruvate:50, acetylCoA:45, citrate:40, succinate:55, nadh:30, fadh2:20, h_gradient:40, atp:55, co2_out:0 });
+  Object.assign(state.photo.inputs,{ co2:0.5, light:0.6, water:0.8, inh_nadph:0, inh_atp:0, inh_regen:0, dcmu:0, atrazine:0, paraquat:0 });
+  Object.assign(state.resp.inputs, { glucoseSupply:0.5, o2:0.6, inh_glyco:0, inh_krebs:0, inh_etc:0, rotenone:0, antimycinA:0, cyanide:0, oligomycin:0 });
+  const reset = (id, v) => {
+    const el = document.getElementById('slider-' + id);
+    const vEl = document.getElementById('val-' + id);
+    if (el) el.value = v;
+    if (vEl) vEl.textContent = v + '%';
+  };
+  reset('co2',50); reset('light',60); reset('water',80);
+  reset('inh-nadph',0); reset('inh-atp',0); reset('inh-regen',0);
+  reset('glucose',50); reset('o2',60);
+  reset('inh-glyco',0); reset('inh-krebs',0); reset('inh-etc',0);
+  particles = []; bubbles = [];
+});
+
+loop();
+</script>
+</body>
+</html>
