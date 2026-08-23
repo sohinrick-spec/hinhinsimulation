@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>紅色邊界測試</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #d1d1d1;
+            --secondary-color: #414141;
+            --background-color: #f8f9fa;
+            --text-color: #2d3436;
+            --border-radius: 12px;
+            --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        .game-menu {
+            text-align: center;
+            margin: 1rem 0;
+            background: white;
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .start-btn {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            margin-top: 2rem;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            background: var(--secondary-color);
+        }
+
+        .game-area {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            min-height: 400px;
+            position: relative;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .boundary-test {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .color-swatch {
+            width: 180px;
+            height: 180px;
+            margin: 1.5rem auto;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+        }
+
+        .boundary-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .boundary-btn {
+            padding: 0.8rem 1.8rem;
+            font-size: 1.1rem;
+            min-width: 120px;
+            min-height: 44px;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            touch-action: manipulation;
+        }
+
+        .boundary-btn:hover {
+            transform: translateY(-2px);
+            background: var(--secondary-color);
+        }
+
+        .boundary-btn.active {
+            transform: scale(0.95);
+            background-color: #666;
+        }
+
+        .keyboard-hint {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #eee;
+            border-radius: 5px;
+            margin: 1rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-color);
+            transition: width 0.3s ease;
+        }
+
+        .results {
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .results-container {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+            align-items: flex-start;
+        }
+
+        .boundary-map {
+            flex: 2;
+            height: 500px;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .results-info {
+            flex: 1;
+            background: white;
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            text-align: left;
+        }
+
+        .stats {
+            margin-top: 1rem;
+        }
+
+        .stats p {
+            margin: 0.5rem 0;
+            font-size: 1.1rem;
+        }
+
+        .try-again-btn {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: var(--border-radius);
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            margin-top: 2rem;
+        }
+
+        .try-again-btn:hover {
+            transform: translateY(-2px);
+            background: var(--secondary-color);
+        }
+
+        .test-count {
+            font-size: 1.2rem;
+            color: var(--primary-color);
+            margin: 1rem 0;
+            font-weight: 500;
+        }
+
+        /* Demographics styles */
+        .demographics-container {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .demographics-form {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin: 15px 0;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .demo-btn {
+            padding: 8px 16px;
+            border: 2px solid #ddd;
+            border-radius: 20px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .demo-btn.selected {
+            background: #007bff;
+            color: white;
+            border-color: #0056b3;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            margin-top: 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .submit-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 0.5rem;
+            }
+
+            .boundary-test {
+                padding: 0.5rem;
+            }
+
+            .color-swatch {
+                width: 150px;
+                height: 150px;
+                margin: 1rem auto;
+            }
+
+            .boundary-controls {
+                gap: 0.8rem;
+            }
+
+            .boundary-btn {
+                padding: 0.7rem 1.5rem;
+                font-size: 1rem;
+            }
+
+            .results-container {
+                flex-direction: column;
+            }
+
+            .boundary-map {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <header></header>
+
+        <main>
+            <div id="gameMenu" class="game-menu">
+                <h1>紅色邊界測試</h1>
+                <p>這個測試將幫助了解你對紅色的認知邊界。</p>
+                <button class="start-btn" id="startButton">開始測試</button>
+            </div>
+
+            <div id="gameArea" class="game-area hidden">
+                <!-- Game content will be dynamically inserted here -->
+            </div>
+
+            <div id="results" class="results hidden">
+                <h2>測試結果</h2>
+                <div class="stats">
+                    <p>總測試次數: <span id="totalTests">0</span></p>
+                    <p>紅色判定次數: <span id="redCount">0</span></p>
+                    <p>紅色色相範圍: <span id="redRange">0</span>度</p>
+                </div>
+                <div id="boundaryMap" class="boundary-map"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Game state
+        let gameState = {
+            tests: [],
+            currentTest: 0,
+            minTests: 30,
+            maxTests: 50,
+            colorPool: [],
+            testedColors: new Set(),
+            boundaryConfidence: 0,
+            lastIsRed: null,
+            redThreshold: 0,
+            currentGridSize: 6
+        };
+
+        // Color generation utilities
+        function generateColorPool() {
+            const pool = [];
+            const gridSize = gameState.currentGridSize;
+
+            for (let h = 0; h < gridSize; h++) {
+                for (let s = 0; s < gridSize; s++) {
+                    const hue = -30 + (60 * h / (gridSize - 1));
+                    const saturation = 70 + (30 * s / (gridSize - 1));
+                    pool.push({ hue, saturation, weight: 1.0 });
+                }
+            }
+
+            return pool;
+        }
+
+        function parseHSL(colorStr) {
+            const matches = colorStr.match(/hsl\(([-\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+            if (!matches) return null;
+            return {
+                hue: parseFloat(matches[1]),
+                saturation: parseFloat(matches[2]),
+                lightness: parseFloat(matches[3])
+            };
+        }
+
+        function shouldContinueTesting() {
+            if (gameState.currentTest < gameState.minTests) return true;
+            if (gameState.currentTest >= gameState.maxTests) return false;
+
+            if (gameState.currentTest >= gameState.minTests) {
+                const recentTests = gameState.tests.slice(-5);
+                let consistencyScore = 0;
+
+                recentTests.forEach((test, i) => {
+                    if (i === 0) return;
+                    const prevTest = recentTests[i - 1];
+                    const prevColor = parseHSL(prevTest.color);
+                    const currentColor = parseHSL(test.color);
+                    if (!prevColor || !currentColor) return;
+                    if (Math.abs(prevColor.hue - currentColor.hue) < 10 && test.isRed === prevTest.isRed) {
+                        consistencyScore += 1;
+                    }
+                });
+
+                gameState.boundaryConfidence = consistencyScore / 4;
+                return gameState.boundaryConfidence < 0.7;
+            }
+
+            return true;
+        }
+
+        function generateBoundaryColor() {
+            if (gameState.colorPool.length === 0) {
+                gameState.colorPool = generateColorPool();
+                gameState.testedColors.clear();
+            }
+
+            if (gameState.lastIsRed !== null && gameState.tests.length > 0) {
+                const lastTest = gameState.tests[gameState.tests.length - 1];
+                const lastColor = parseHSL(lastTest.color);
+
+                gameState.colorPool.forEach(color => {
+                    const hueDiff = Math.abs(color.hue - lastColor.hue);
+                    const satDiff = Math.abs(color.saturation - lastColor.saturation);
+                    const distance = Math.sqrt(hueDiff * hueDiff + satDiff * satDiff);
+
+                    if (gameState.lastIsRed) {
+                        if (distance < 15) color.weight *= 1.2;
+                    } else {
+                        if (distance < 15) color.weight *= 0.8;
+                    }
+
+                    color.weight = Math.max(0.1, Math.min(2.0, color.weight));
+                });
+            }
+
+            let totalWeight = 0;
+            const availableColors = gameState.colorPool.filter((_, index) => !gameState.testedColors.has(index));
+            availableColors.forEach(color => { totalWeight += color.weight; });
+
+            let randomWeight = Math.random() * totalWeight;
+            let selectedIndex = 0;
+
+            for (let i = 0; i < availableColors.length; i++) {
+                randomWeight -= availableColors[i].weight;
+                if (randomWeight <= 0) {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            const originalIndex = gameState.colorPool.indexOf(availableColors[selectedIndex]);
+            gameState.testedColors.add(originalIndex);
+
+            const selectedColor = availableColors[selectedIndex];
+            return `hsl(${selectedColor.hue}, ${selectedColor.saturation}%, 50%)`;
+        }
+
+        function startGame() {
+            gameState.colorPool = generateColorPool();
+            gameState.testedColors = new Set();
+
+            document.getElementById('gameMenu').classList.add('hidden');
+            document.getElementById('gameArea').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+            initTest();
+        }
+
+        function initTest() {
+            const gameArea = document.getElementById('gameArea');
+            gameArea.innerHTML = `
+                <div class="boundary-test">
+                    <h2>你會叫這個是「紅色」嗎？</h2>
+                    <div class="test-count">Test ${gameState.currentTest + 1} of ${gameState.maxTests}</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${(gameState.currentTest / gameState.maxTests) * 100}%"></div>
+                    </div>
+                    <div class="color-swatch" id="boundaryColor"></div>
+                    <div class="boundary-controls">
+                        <button class="boundary-btn" id="noBtn">No ←</button>
+                        <button class="boundary-btn" id="yesBtn">Yes →</button>
+                    </div>
+                    <div class="keyboard-hint">可以使用 ← → 方向鍵回答</div>
+                </div>
+            `;
+            startNewTest();
+        }
+
+        function startNewTest() {
+            const color = generateBoundaryColor();
+            document.getElementById('boundaryColor').style.backgroundColor = color;
+            document.querySelector('.test-count').textContent = `Test ${gameState.currentTest + 1} of ${gameState.maxTests}`;
+
+            document.getElementById('yesBtn').onclick = () => endTest(color, true);
+            document.getElementById('noBtn').onclick = () => endTest(color, false);
+
+            const handleKeyPress = (event) => {
+                if (event.key === 'ArrowLeft') {
+                    endTest(color, false);
+                    const btn = document.getElementById('noBtn');
+                    if (btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 200); }
+                } else if (event.key === 'ArrowRight') {
+                    endTest(color, true);
+                    const btn = document.getElementById('yesBtn');
+                    if (btn) { btn.classList.add('active'); setTimeout(() => btn.classList.remove('active'), 200); }
+                }
+            };
+
+            if (window.currentKeyListener) {
+                document.removeEventListener('keydown', window.currentKeyListener);
+            }
+            window.currentKeyListener = handleKeyPress;
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function endTest(color, isRed) {
+            if (window.currentKeyListener) {
+                document.removeEventListener('keydown', window.currentKeyListener);
+                window.currentKeyListener = null;
+            }
+
+            gameState.lastIsRed = isRed;
+            gameState.tests.push({ color, isRed });
+            gameState.currentTest++;
+
+            if (gameState.currentTest === Math.floor(gameState.maxTests / 2)) {
+                gameState.currentGridSize = 8;
+                gameState.colorPool = generateColorPool();
+                gameState.testedColors.clear();
+            }
+
+            if (shouldContinueTesting()) {
+                startNewTest();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.getElementById('gameArea').classList.add('hidden');
+            document.getElementById('results').classList.remove('hidden');
+
+            const redCount = gameState.tests.filter(test => test.isRed).length;
+            document.getElementById('totalTests').textContent = gameState.currentTest;
+            document.getElementById('redCount').textContent = redCount;
+
+            const redHues = gameState.tests
+                .filter(test => test.isRed)
+                .map(test => {
+                    const color = parseHSL(test.color);
+                    return color ? color.hue : 0;
+                })
+                .filter(hue => hue !== 0);
+
+            const redRange = redHues.length > 0 ? Math.max(...redHues) - Math.min(...redHues) : 0;
+            document.getElementById('redRange').textContent = Math.round(redRange);
+
+            generateBoundaryMap();
+
+            // Demographics form (local only — no Firebase submission)
+            const demographicsDiv = document.createElement('div');
+            demographicsDiv.className = 'demographics-container';
+            demographicsDiv.innerHTML = `
+                <div class="demographics-form">
+                    <h3>請提供一些基本資料</h3>
+                    <div class="form-group">
+                        <label>性別：</label>
+                        <div class="button-group">
+                            <button class="demo-btn" data-gender="male">男性</button>
+                            <button class="demo-btn" data-gender="female">女性</button>
+                            <button class="demo-btn" data-gender="other">其他</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>年齡範圍：</label>
+                        <div class="button-group">
+                            <button class="demo-btn" data-age="under20">20歲以下</button>
+                            <button class="demo-btn" data-age="20-29">20-29歲</button>
+                            <button class="demo-btn" data-age="30-39">30-39歲</button>
+                            <button class="demo-btn" data-age="40-49">40-49歲</button>
+                            <button class="demo-btn" data-age="50plus">50歲以上</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>色覺狀況：</label>
+                        <div class="button-group">
+                            <button class="demo-btn" data-color-vision="normal">正常色覺</button>
+                            <button class="demo-btn" data-color-vision="colorblind">色盲</button>
+                            <button class="demo-btn" data-color-vision="color_deficient">色弱</button>
+                        </div>
+                    </div>
+                    <button id="submitDemographics" class="submit-btn" disabled>確認完成</button>
+                </div>
+            `;
+            document.getElementById('results').appendChild(demographicsDiv);
+
+            // Try-again button
+            const tryAgainBtn = document.createElement('button');
+            tryAgainBtn.className = 'try-again-btn';
+            tryAgainBtn.textContent = '再試一次';
+            tryAgainBtn.onclick = resetGame;
+            document.getElementById('results').appendChild(tryAgainBtn);
+
+            let selectedGender = null;
+            let selectedAge = null;
+            let selectedColorVision = null;
+
+            function checkFormComplete() {
+                document.getElementById('submitDemographics').disabled =
+                    !(selectedGender && selectedAge && selectedColorVision);
+            }
+
+            document.querySelectorAll('[data-gender]').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('[data-gender]').forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    selectedGender = button.dataset.gender;
+                    checkFormComplete();
+                });
+            });
+
+            document.querySelectorAll('[data-age]').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('[data-age]').forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    selectedAge = button.dataset.age;
+                    checkFormComplete();
+                });
+            });
+
+            document.querySelectorAll('[data-color-vision]').forEach(button => {
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('[data-color-vision]').forEach(btn => btn.classList.remove('selected'));
+                    button.classList.add('selected');
+                    selectedColorVision = button.dataset.colorVision;
+                    checkFormComplete();
+                });
+            });
+
+            document.getElementById('submitDemographics').addEventListener('click', () => {
+                alert('感謝您的參與！');
+                document.getElementById('submitDemographics').textContent = '已完成';
+                document.getElementById('submitDemographics').disabled = true;
+            });
+        }
+
+        function calculatePolygonArea(points) {
+            let area = 0;
+            const n = points.length;
+            for (let i = 0; i < n; i++) {
+                const j = (i + 1) % n;
+                area += points[i].x * points[j].y;
+                area -= points[j].x * points[i].y;
+            }
+            return Math.abs(area / 2);
+        }
+
+        function generateBoundaryMap() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const map = document.getElementById('boundaryMap');
+
+            map.innerHTML = '';
+            canvas.width = map.clientWidth;
+            canvas.height = map.clientHeight;
+            map.appendChild(canvas);
+
+            const gridSize = 60;
+
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    const hue = i - 30;
+                    const sat = 100 - (j / gridSize * 30);
+                    ctx.fillStyle = `hsl(${hue}, ${sat}%, 50%)`;
+                    ctx.fillRect(
+                        (i * canvas.width) / gridSize,
+                        (j * canvas.height) / gridSize,
+                        canvas.width / gridSize + 1,
+                        canvas.height / gridSize + 1
+                    );
+                }
+            }
+
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= gridSize; i += 5) {
+                ctx.beginPath();
+                ctx.moveTo((i * canvas.width) / gridSize, 0);
+                ctx.lineTo((i * canvas.width) / gridSize, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, (i * canvas.height) / gridSize);
+                ctx.lineTo(canvas.width, (i * canvas.height) / gridSize);
+                ctx.stroke();
+            }
+
+            const testPoints = gameState.tests.map(test => {
+                const hslMatch = test.color.match(/hsl\(([-\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)/);
+                const hue = parseFloat(hslMatch[1]);
+                const sat = parseFloat(hslMatch[2]);
+                const x = ((hue + 30) * canvas.width) / 60;
+                const y = ((100 - sat) * canvas.height) / 30;
+                return { x, y, isRed: test.isRed, hue, sat };
+            });
+
+            testPoints.forEach(point => {
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = point.isRed ? 'rgba(255, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)';
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            });
+
+            const redPoints = testPoints.filter(point => point.isRed);
+
+            if (redPoints.length >= 3) {
+                const boundaryPoints = simplifyBoundary(redPoints);
+                ctx.beginPath();
+                ctx.moveTo(boundaryPoints[0].x, boundaryPoints[0].y);
+                for (let i = 1; i < boundaryPoints.length; i++) {
+                    ctx.lineTo(boundaryPoints[i].x, boundaryPoints[i].y);
+                }
+                ctx.lineTo(boundaryPoints[0].x, boundaryPoints[0].y);
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.2)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.lineWidth = 5;
+                ctx.stroke();
+
+                const polygonArea = calculatePolygonArea(boundaryPoints);
+                const totalArea = canvas.width * canvas.height;
+                const areaPercentage = Math.round((polygonArea / totalArea) * 100);
+
+                const redAreaSpan = document.createElement('p');
+                redAreaSpan.innerHTML = `紅色區域覆蓋率: <strong>${areaPercentage}%</strong>`;
+                document.querySelector('.stats').appendChild(redAreaSpan);
+            }
+
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('-30°', 30, canvas.height - 10);
+            ctx.fillText('0°', canvas.width / 2, canvas.height - 5);
+            ctx.fillText('+30°', canvas.width - 30, canvas.height - 5);
+            ctx.textAlign = 'right';
+            ctx.fillText('70%', 50, canvas.height - 20);
+            ctx.fillText('100%', 50, 30);
+        }
+
+        function simplifyBoundary(points) {
+            if (points.length < 3) return points;
+
+            let bottom = points[0];
+            for (let i = 1; i < points.length; i++) {
+                if (points[i].y > bottom.y ||
+                    (points[i].y === bottom.y && points[i].x < bottom.x)) {
+                    bottom = points[i];
+                }
+            }
+
+            points.sort((a, b) => {
+                const angleA = Math.atan2(a.y - bottom.y, a.x - bottom.x);
+                const angleB = Math.atan2(b.y - bottom.y, b.x - bottom.x);
+                return angleA - angleB;
+            });
+
+            const hull = [bottom];
+            for (let i = 1; i < points.length; i++) {
+                while (hull.length >= 2 &&
+                    !isCounterClockwise(hull[hull.length - 2], hull[hull.length - 1], points[i])) {
+                    hull.pop();
+                }
+                hull.push(points[i]);
+            }
+
+            return hull;
+        }
+
+        function isCounterClockwise(p1, p2, p3) {
+            return (p2.x - p1.x) * (p3.y - p1.y) - (p2.y - p1.y) * (p3.x - p1.x) > 0;
+        }
+
+        function resetGame() {
+            gameState = {
+                tests: [],
+                currentTest: 0,
+                minTests: 30,
+                maxTests: 50,
+                colorPool: [],
+                testedColors: new Set(),
+                boundaryConfidence: 0,
+                lastIsRed: null,
+                redThreshold: 0,
+                currentGridSize: 6
+            };
+
+            const demographicsContainer = document.querySelector('.demographics-container');
+            if (demographicsContainer) demographicsContainer.remove();
+
+            const tryAgainBtn = document.querySelector('.try-again-btn');
+            if (tryAgainBtn) tryAgainBtn.remove();
+
+            // Clean up any injected area% stat from previous run
+            const extraStats = document.querySelectorAll('.stats p:nth-child(n+4)');
+            extraStats.forEach(el => el.remove());
+
+            document.getElementById('results').classList.add('hidden');
+            document.getElementById('gameMenu').classList.remove('hidden');
+        }
+
+        document.getElementById('startButton').addEventListener('click', startGame);
+    </script>
+</body>
+</html>
