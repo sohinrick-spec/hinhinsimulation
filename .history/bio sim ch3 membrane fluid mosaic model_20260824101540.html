@@ -1353,17 +1353,17 @@ function animate(){
         tmpA.set(cp.x + io.ax, io.ay, cp.z + io.az);
         tmpB.set(cp.x, eY, cp.z);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }else if(io.prog < 0.63){
         const s = (io.prog-0.45)/0.18;
         tmpA.set(cp.x, eY, cp.z); tmpB.set(cp.x, xY, cp.z);
         tmpP.lerpVectors(tmpA, tmpB, s);
-        tmpP.x += Math.cos(io.spin + s*7)*0.10; tmpP.z += Math.sin(io.spin + s*7)*0.10;   // 0.15 → 0.10（孔徑 0.44、離子 r=0.3）
+        tmpP.x += Math.cos(io.spin + s*7)*0.15; tmpP.z += Math.sin(io.spin + s*7)*0.15;
       }else{
         const s = (io.prog-0.63)/0.37, e = s*s;
         tmpA.set(cp.x, xY, cp.z); tmpB.set(cp.x + io.bx, io.by, cp.z + io.bz);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }
       dummy.position.copy(tmpP);
       dummy.rotation.set(0,0,0);

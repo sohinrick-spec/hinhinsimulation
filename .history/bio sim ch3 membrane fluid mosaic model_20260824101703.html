@@ -1363,7 +1363,7 @@ function animate(){
         const s = (io.prog-0.63)/0.37, e = s*s;
         tmpA.set(cp.x, xY, cp.z); tmpB.set(cp.x + io.bx, io.by, cp.z + io.bz);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }
       dummy.position.copy(tmpP);
       dummy.rotation.set(0,0,0);

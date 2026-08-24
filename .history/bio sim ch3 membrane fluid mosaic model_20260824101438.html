@@ -730,19 +730,9 @@ const grid = new THREE.GridHelper(80, 40, C.grid, 0xe6ebf2);
 grid.position.y = -14; grid.visible = false; scene.add(grid);
 
 /* ============================================================
-   4 · MEMBRANE — bilayer + 排擠場（無洞、無互穿）
+   4 · MEMBRANE — InstancedMesh phospholipid bilayer
    ============================================================ */
 const ROWS = 36, COLS = 36, SPACING = 1.1, HEAD_Y = 1.1;
-const HEAD_R = 0.50;                     // ← 加大頭部，雙層不再透光
-
-/* 膜平面佔位半徑（已含磷脂頭半徑）out=外葉 in=內葉 hull=蛋白↔蛋白 */
-const P_FOOTPRINT = {
-  channel : { out:1.80, in:1.80, hull:1.30 },
-  carrier : { out:1.46, in:1.46, hull:1.20 },
-  receptor: { out:1.25, in:1.25, hull:1.00 },
-  antigen : { out:1.58, in:1.58, hull:1.15 },
-  enzyme  : { out:0.70, in:1.45, hull:1.05 }   // 周邊蛋白：內側球體大、跨膜段細
-};
 
 const P_CONFIG = [
   { type:'channel',  x:-8, z:-8 }, { type:'channel',  x:9,  z:8 },
@@ -752,31 +742,32 @@ const P_CONFIG = [
   { type:'enzyme',   x:2,  z:-9 }, { type:'enzyme',   x:0,  z:2 }
 ];
 
-/* ---- 4a · 完整晶格：不再事先挖洞 ---- */
 const lipids = [];
 for(let r=0;r<ROWS;r++){
   for(let c=0;c<COLS;c++){
-    const x = (r-ROWS/2+0.5)*SPACING + (Math.random()-0.5)*0.06;
-    const z = (c-COLS/2+0.5)*SPACING + (Math.random()-0.5)*0.06;
-    lipids.push({ x, z, y: HEAD_Y, layer: 1, seed:Math.random()*100, headIdx:0 });
+    const x = (r-ROWS/2)*SPACING + (Math.random()-0.5)*0.16;
+    const z = (c-COLS/2)*SPACING + (Math.random()-0.5)*0.16;
+    // carve room for embedded proteins
+    if(P_CONFIG.some(p => (x-p.x)**2 + (z-p.z)**2 < 5.6)) continue;
+    lipids.push({ x, z, y: HEAD_Y, layer:1,  seed:Math.random()*100, headIdx:0 });
     lipids.push({ x, z, y:-HEAD_Y, layer:-1, seed:Math.random()*100, headIdx:0 });
   }
 }
 let upperCount = 0, lowerCount = 0;
 lipids.forEach(L => { L.headIdx = (L.layer>0 ? upperCount++ : lowerCount++); });
 
-const headGeo = new THREE.SphereGeometry(HEAD_R, 14, 12);
-const tailGeo = new THREE.CylinderGeometry(0.075, 0.06, 1.05, 6);
-tailGeo.translate(0, -0.52, 0);
+const headGeo = new THREE.SphereGeometry(0.36, 14, 12);
+const tailGeo = new THREE.CylinderGeometry(0.055, 0.045, 1.0, 6);
+tailGeo.translate(0, -0.5, 0);
 
 const stdMat = (color, o={}) => new THREE.MeshStandardMaterial({
   color, roughness:o.roughness ?? 0.34, metalness:o.metalness ?? 0.05,
   envMapIntensity:0.55, emissive:0x000000, ...o
 });
 
-const matHeadOuter = stdMat(C.cyan, { roughness:0.26 });
-const matHeadInner = stdMat(C.rose, { roughness:0.26 });
-const matTail      = stdMat(C.gray, { roughness:0.62, metalness:0 });
+const matHeadOuter = stdMat(C.cyan,  { roughness:0.26 });
+const matHeadInner = stdMat(C.rose,  { roughness:0.26 });
+const matTail      = stdMat(C.gray,  { roughness:0.62, metalness:0 });
 
 const headOuter = new THREE.InstancedMesh(headGeo, matHeadOuter, upperCount);
 const headInner = new THREE.InstancedMesh(headGeo, matHeadInner, lowerCount);
@@ -788,73 +779,28 @@ const tails     = new THREE.InstancedMesh(tailGeo, matTail, lipids.length*2);
 });
 headOuter.userData.type = 'phospholipid';
 headInner.userData.type = 'phospholipid';
-tails.userData.type     = 'phospholipid';
+tails.userData.type = 'phospholipid';
 
+// pre-baked local tail matrices (two tails per lipid)
 const _o = new THREE.Object3D();
 const tailA = new THREE.Matrix4(), tailB = new THREE.Matrix4();
-_o.position.set(-0.145,0,0); _o.rotation.set(0,0, 0.09); _o.updateMatrix(); tailA.copy(_o.matrix);
-_o.position.set( 0.145,0,0); _o.rotation.set(0,0,-0.09); _o.updateMatrix(); tailB.copy(_o.matrix);
+_o.position.set(-0.125,0,0); _o.rotation.set(0,0, 0.09); _o.updateMatrix(); tailA.copy(_o.matrix);
+_o.position.set( 0.125,0,0); _o.rotation.set(0,0,-0.09); _o.updateMatrix(); tailB.copy(_o.matrix);
 const dummy = new THREE.Object3D(), _m = new THREE.Matrix4();
 
-/* ---- 4b · 連續流場：鄰近分子協同移動 → 數學上不互穿 ---- */
-const FLOW_K = 0.20, FLOW_A_MAX = 0.90;   // 位移上限 < 半晶格，雅可比 ≈0.28
-const flowX = (x,z,t) => Math.sin(x*FLOW_K + t*0.55) + 0.7*Math.cos(z*FLOW_K*0.8 - t*0.42);
-const flowZ = (x,z,t) => Math.cos(z*FLOW_K + t*0.50) + 0.7*Math.sin(x*FLOW_K*0.8 - t*0.38);
-const undulation = (x,z,t) => Math.sin(x*0.18 + z*0.13 + t*0.7);   // 全膜起伏（蛋白同步）
-
-/* ---- 4c · 蛋白排擠：面積守恆徑向映射 r' = √(r²+R²) ---- */
-const PX=[], PZ=[], PRO=[], PRI=[];
-function syncProteinCache(){
-  for(let i=0;i<proteins.length;i++){
-    const p = proteins[i];
-    PX[i]=p.mesh.position.x; PZ[i]=p.mesh.position.z;
-    PRO[i]=p.foot.out;       PRI[i]=p.foot.in;
-  }
-}
-function excludeXZ(px, pz, layer, res, rScale=1){
-  let x = px, z = pz;
-  for(let pass=0; pass<2; pass++){
-    for(let i=0;i<PX.length;i++){
-      const R = (layer>0 ? PRO[i] : PRI[i]) * rScale;
-      if(R<=0) continue;
-      const ox = x-PX[i], oz = z-PZ[i], inf = R*4;
-      if(ox>inf||ox<-inf||oz>inf||oz<-inf) continue;      // 快速剔除
-      const r2 = ox*ox+oz*oz;
-      if(r2 > inf*inf) continue;
-      const r = Math.sqrt(r2);
-      if(r < 1e-3){ x += R; continue; }
-      let push;
-      if(pass===0){                                        // 面積守恆推擠
-        push = Math.sqrt(r2 + R*R) - r;
-        const tp = (r - R*2)/(R*2);
-        if(tp>0) push *= Math.max(0, 1-tp*tp);             // 遠場平滑歸零
-      }else{
-        push = Math.max(0, R - r);                         // 硬性保證：洞內 0 分子
-      }
-      if(push>0){ x += push*ox/r; z += push*oz/r; }
-    }
-  }
-  res.x = x; res.z = z;
-}
-
-/* ---- 4d · 膽固醇：放在晶格「間隙心」，共用同一流場 ---- */
+/* ---------- Cholesterol (instanced, count driven by slider) ---------- */
 const CHOL_MAX = 240;
-const cholGeo  = new THREE.CapsuleGeometry(0.18, 1.0, 4, 8);
+const cholGeo = new THREE.CapsuleGeometry(0.2, 1.0, 4, 8);
 const cholMesh = new THREE.InstancedMesh(cholGeo, stdMat(C.brown,{roughness:0.5}), CHOL_MAX);
 cholMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
 cholMesh.frustumCulled = false;
 cholMesh.userData.type = 'cholesterol';
 scene.add(cholMesh);
 
-const cells = [];
-for(let r=0;r<ROWS-1;r++) for(let c=0;c<COLS-1;c++)
-  cells.push({ x:(r-ROWS/2+1)*SPACING, z:(c-COLS/2+1)*SPACING });
-for(let i=cells.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [cells[i],cells[j]]=[cells[j],cells[i]]; }
-
 const chols = [];
 for(let i=0;i<CHOL_MAX;i++){
-  const cc = cells[i % cells.length];
-  chols.push({ x:cc.x, z:cc.z, layer:(i%2===0?1:-1), seed:Math.random()*100 });
+  const L = lipids[Math.floor(Math.random()*lipids.length)];
+  chols.push({ x:L.x + (Math.random()-0.5)*0.7, z:L.z + (Math.random()-0.5)*0.7, layer:L.layer, seed:Math.random()*100 });
 }
 
 /* ============================================================
@@ -958,12 +904,7 @@ const FACTORY = { channel:createChannel, carrier:createCarrier, receptor:createR
 P_CONFIG.forEach(cfg => {
   const mesh = FACTORY[cfg.type](cfg.x, cfg.z);
   proteinGroup.add(mesh);
-  proteins.push({
-    mesh, type:cfg.type, baseX:cfg.x, baseZ:cfg.z,
-    seed:Math.random()*50,
-    foot:P_FOOTPRINT[cfg.type],          // ← 新增
-    tx:cfg.x, tz:cfg.z                   // ← 碰撞解算暫存
-  });
+  proteins.push({ mesh, type:cfg.type, baseX:cfg.x, baseZ:cfg.z, seed:Math.random()*50 });
 });
 
 /* Selection reticle */
@@ -1245,76 +1186,19 @@ function animate(){
   if(!state.paused) simT += dt * state.speed;
   const t = simT;
 
-  /* --- 1) 蛋白質：sine 目標 → 邊界夾限 → 成對分離（碰撞） --- */
-  const pDrift = 1.2 * state.proteinDrift * fluidity;
-  const BOUND  = (ROWS/2)*SPACING - 2.6;
-  for(const p of proteins){
-    p.tx = THREE.MathUtils.clamp(p.baseX + Math.sin(t*0.4 + p.seed)*pDrift, -BOUND, BOUND);
-    p.tz = THREE.MathUtils.clamp(p.baseZ + Math.cos(t*0.3 + p.seed*1.5)*pDrift, -BOUND, BOUND);
-  }
-  for(let it=0; it<4; it++){
-    for(let i=0;i<proteins.length;i++){
-      for(let j=i+1;j<proteins.length;j++){
-        const a=proteins[i], b=proteins[j];
-        const minD = a.foot.hull + b.foot.hull;
-        let dx=b.tx-a.tx, dz=b.tz-a.tz, d2=dx*dx+dz*dz;
-        if(d2 < 1e-6){ b.tx += 0.02; continue; }
-        if(d2 >= minD*minD) continue;
-        const d=Math.sqrt(d2), k=(minD-d)*0.5/d;
-        a.tx-=dx*k; a.tz-=dz*k; b.tx+=dx*k; b.tz+=dz*k;
-      }
-    }
-  }
-  for(const p of proteins){
-    const s = p.seed, g = p.mesh;
-    g.position.set(p.tx, undulation(p.tx,p.tz,t)*0.10*fluidity, p.tz);
-    g.rotation.x = Math.sin(t*0.6 + s)*0.045;
-    g.rotation.z = Math.cos(t*0.6 + s)*0.045;
-
-    const pt = g.userData.parts;
-    if(p.type === 'carrier' && pt){
-      const cyc = (Math.sin(t*0.75 + s) + 1) / 2;
-      g.rotation.y = cyc * Math.PI;
-      pt.top.scale.set(1 - 0.16*cyc, 1, 1 - 0.16*cyc);
-      pt.bot.scale.set(0.84 + 0.16*cyc, 1, 0.84 + 0.16*cyc);
-      pt.cargo.position.set(0, THREE.MathUtils.lerp(1.5, -1.5, cyc), 0);
-      pt.cargo.visible = state.showIons;
-    }
-    if(p.type === 'receptor' && pt){
-      const k = (Math.sin(t*0.6 + s) + 1) / 2, dock = Math.pow(k, 3);
-      pt.ligand.position.set(Math.sin(t*1.4+s)*0.18, THREE.MathUtils.lerp(7.2, 2.75, dock), Math.cos(t*1.4+s)*0.18);
-      pt.ligand.rotation.y += dt * 2.2;
-      if(g !== state.selectedObj && g !== hovered) setGlow(g, dock > 0.94 ? 0.4*(dock-0.94)/0.06 : 0);
-    }
-    if(p.type === 'antigen' && pt){
-      pt.chain.rotation.y = Math.sin(t*0.5 + s)*0.28;
-      pt.chain.children.forEach((c,i) => {
-        c.position.x = Math.sin(t*1.2 + i*1.7 + s)*0.10;   // 改為有界擺動，不再累加漂走
-        c.position.z = Math.cos(t*1.1 + i*1.7 + s)*0.10;
-      });
-    }
-    if(p.type === 'enzyme' && pt){
-      pt.core.rotation.y += dt*0.6; pt.core.rotation.x += dt*0.25;
-      pt.site.scale.setScalar(1 + Math.max(0, Math.sin(t*2.2 + s))*0.45);
-    }
-  }
-  syncProteinCache();                    // ← 排擠場取用「本帧」蛋白位置
-
-  /* --- 2) 磷脂：流場位移 → 蛋白排擠（孔洞隨蛋白移動） --- */
-  const A   = Math.min(FLOW_A_MAX, 0.30 * state.lipidDrift * fluidity);
-  const res = { x:0, z:0 };
+  /* --- phospholipids --- */
+  const lipDrift = 0.36 * state.lipidDrift * fluidity;
   for(let i=0;i<lipids.length;i++){
     const L = lipids[i], s = L.seed;
-    excludeXZ(L.x + A*flowX(L.x,L.z,t), L.z + A*flowZ(L.x,L.z,t), L.layer, res);
     dummy.position.set(
-      res.x,
-      L.y + undulation(res.x,res.z,t)*0.13*fluidity + Math.sin(t*2.0 + s)*0.035*fluidity,
-      res.z
+      L.x + Math.sin(t*0.8 + s)*lipDrift,
+      L.y + Math.sin(t*2.0 + s)*0.09*fluidity,
+      L.z + Math.cos(t*0.8 + s*1.3)*lipDrift
     );
     dummy.rotation.set(
       L.layer > 0 ? 0 : Math.PI,
-      Math.sin(t*1.1 + s)*0.12*fluidity,
-      Math.sin(t*0.9 + s*0.7)*0.10*fluidity
+      Math.sin(t*1.1 + s)*0.14*fluidity,
+      Math.sin(t*0.9 + s*0.7)*0.12*fluidity
     );
     dummy.updateMatrix();
     (L.layer > 0 ? headOuter : headInner).setMatrixAt(L.headIdx, dummy.matrix);
@@ -1325,17 +1209,59 @@ function animate(){
   headInner.instanceMatrix.needsUpdate = true;
   if(state.showTails) tails.instanceMatrix.needsUpdate = true;
 
-  /* --- 3) 膽固醇：同一流場（與磷脂同步）＋同一排擠場 --- */
+  /* --- cholesterol --- */
   if(state.showCholesterol){
     for(let i=0;i<cholMesh.count;i++){
       const c = chols[i];
-      excludeXZ(c.x + A*flowX(c.x,c.z,t), c.z + A*flowZ(c.x,c.z,t), c.layer, res, 0.92);
-      dummy.position.set(res.x, c.layer*0.72 + undulation(res.x,res.z,t)*0.13*fluidity, res.z);
-      dummy.rotation.set(Math.sin(t*0.7 + c.seed)*0.08, 0, Math.cos(t*0.7 + c.seed)*0.08);
+      dummy.position.set(
+        c.x + Math.sin(t*0.5 + c.seed)*0.22*fluidity,
+        c.layer * 0.72,
+        c.z + Math.cos(t*0.5 + c.seed*1.2)*0.22*fluidity
+      );
+      dummy.rotation.set(Math.sin(t*0.7 + c.seed)*0.1, 0, Math.cos(t*0.7 + c.seed)*0.1);
       dummy.updateMatrix();
       cholMesh.setMatrixAt(i, dummy.matrix);
     }
     cholMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /* --- proteins --- */
+  const pDrift = 1.5 * state.proteinDrift * fluidity;
+  for(const p of proteins){
+    const s = p.seed, g = p.mesh;
+    g.position.x = p.baseX + Math.sin(t*0.4 + s)*pDrift;
+    g.position.z = p.baseZ + Math.cos(t*0.3 + s*1.5)*pDrift;
+    g.rotation.x = Math.sin(t*0.6 + s)*0.045;
+    g.rotation.z = Math.cos(t*0.6 + s)*0.045;
+
+    const pt = g.userData.parts;
+    if(p.type === 'carrier' && pt){
+      const cyc = (Math.sin(t*0.75 + s) + 1) / 2;          // conformational cycle
+      g.rotation.y = cyc * Math.PI;
+      pt.top.scale.set(1 - 0.16*cyc, 1, 1 - 0.16*cyc);
+      pt.bot.scale.set(0.84 + 0.16*cyc, 1, 0.84 + 0.16*cyc);
+      pt.cargo.position.set(0, THREE.MathUtils.lerp(1.5, -1.5, cyc), 0);
+      pt.cargo.visible = state.showIons;
+    }
+    if(p.type === 'receptor' && pt){
+      const k = (Math.sin(t*0.6 + s) + 1) / 2;
+      const dock = Math.pow(k, 3);
+      pt.ligand.position.set(Math.sin(t*1.4+s)*0.18, THREE.MathUtils.lerp(7.2, 2.75, dock), Math.cos(t*1.4+s)*0.18);
+      pt.ligand.rotation.y += dt * 2.2;
+      if(g !== state.selectedObj && g !== hovered) setGlow(g, dock > 0.94 ? 0.4*(dock-0.94)/0.06 : 0);
+    }
+    if(p.type === 'antigen' && pt){
+      pt.chain.children.forEach((c,i) => {
+        c.position.x += Math.sin(t*1.5 + i + s)*0.006*fluidity;
+        c.position.z += Math.cos(t*1.4 + i + s)*0.006*fluidity;
+      });
+      pt.chain.rotation.y = Math.sin(t*0.5 + s)*0.28;
+    }
+    if(p.type === 'enzyme' && pt){
+      pt.core.rotation.y += dt*0.6; pt.core.rotation.x += dt*0.25;
+      const pulse = Math.max(0, Math.sin(t*2.2 + s));
+      pt.site.scale.setScalar(1 + pulse*0.45);
+    }
   }
 
   /* --- ions through channels --- */
@@ -1353,17 +1279,17 @@ function animate(){
         tmpA.set(cp.x + io.ax, io.ay, cp.z + io.az);
         tmpB.set(cp.x, eY, cp.z);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }else if(io.prog < 0.63){
         const s = (io.prog-0.45)/0.18;
         tmpA.set(cp.x, eY, cp.z); tmpB.set(cp.x, xY, cp.z);
         tmpP.lerpVectors(tmpA, tmpB, s);
-        tmpP.x += Math.cos(io.spin + s*7)*0.10; tmpP.z += Math.sin(io.spin + s*7)*0.10;   // 0.15 → 0.10（孔徑 0.44、離子 r=0.3）
+        tmpP.x += Math.cos(io.spin + s*7)*0.15; tmpP.z += Math.sin(io.spin + s*7)*0.15;
       }else{
         const s = (io.prog-0.63)/0.37, e = s*s;
         tmpA.set(cp.x, xY, cp.z); tmpB.set(cp.x + io.bx, io.by, cp.z + io.bz);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }
       dummy.position.copy(tmpP);
       dummy.rotation.set(0,0,0);

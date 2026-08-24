@@ -1245,76 +1245,19 @@ function animate(){
   if(!state.paused) simT += dt * state.speed;
   const t = simT;
 
-  /* --- 1) 蛋白質：sine 目標 → 邊界夾限 → 成對分離（碰撞） --- */
-  const pDrift = 1.2 * state.proteinDrift * fluidity;
-  const BOUND  = (ROWS/2)*SPACING - 2.6;
-  for(const p of proteins){
-    p.tx = THREE.MathUtils.clamp(p.baseX + Math.sin(t*0.4 + p.seed)*pDrift, -BOUND, BOUND);
-    p.tz = THREE.MathUtils.clamp(p.baseZ + Math.cos(t*0.3 + p.seed*1.5)*pDrift, -BOUND, BOUND);
-  }
-  for(let it=0; it<4; it++){
-    for(let i=0;i<proteins.length;i++){
-      for(let j=i+1;j<proteins.length;j++){
-        const a=proteins[i], b=proteins[j];
-        const minD = a.foot.hull + b.foot.hull;
-        let dx=b.tx-a.tx, dz=b.tz-a.tz, d2=dx*dx+dz*dz;
-        if(d2 < 1e-6){ b.tx += 0.02; continue; }
-        if(d2 >= minD*minD) continue;
-        const d=Math.sqrt(d2), k=(minD-d)*0.5/d;
-        a.tx-=dx*k; a.tz-=dz*k; b.tx+=dx*k; b.tz+=dz*k;
-      }
-    }
-  }
-  for(const p of proteins){
-    const s = p.seed, g = p.mesh;
-    g.position.set(p.tx, undulation(p.tx,p.tz,t)*0.10*fluidity, p.tz);
-    g.rotation.x = Math.sin(t*0.6 + s)*0.045;
-    g.rotation.z = Math.cos(t*0.6 + s)*0.045;
-
-    const pt = g.userData.parts;
-    if(p.type === 'carrier' && pt){
-      const cyc = (Math.sin(t*0.75 + s) + 1) / 2;
-      g.rotation.y = cyc * Math.PI;
-      pt.top.scale.set(1 - 0.16*cyc, 1, 1 - 0.16*cyc);
-      pt.bot.scale.set(0.84 + 0.16*cyc, 1, 0.84 + 0.16*cyc);
-      pt.cargo.position.set(0, THREE.MathUtils.lerp(1.5, -1.5, cyc), 0);
-      pt.cargo.visible = state.showIons;
-    }
-    if(p.type === 'receptor' && pt){
-      const k = (Math.sin(t*0.6 + s) + 1) / 2, dock = Math.pow(k, 3);
-      pt.ligand.position.set(Math.sin(t*1.4+s)*0.18, THREE.MathUtils.lerp(7.2, 2.75, dock), Math.cos(t*1.4+s)*0.18);
-      pt.ligand.rotation.y += dt * 2.2;
-      if(g !== state.selectedObj && g !== hovered) setGlow(g, dock > 0.94 ? 0.4*(dock-0.94)/0.06 : 0);
-    }
-    if(p.type === 'antigen' && pt){
-      pt.chain.rotation.y = Math.sin(t*0.5 + s)*0.28;
-      pt.chain.children.forEach((c,i) => {
-        c.position.x = Math.sin(t*1.2 + i*1.7 + s)*0.10;   // 改為有界擺動，不再累加漂走
-        c.position.z = Math.cos(t*1.1 + i*1.7 + s)*0.10;
-      });
-    }
-    if(p.type === 'enzyme' && pt){
-      pt.core.rotation.y += dt*0.6; pt.core.rotation.x += dt*0.25;
-      pt.site.scale.setScalar(1 + Math.max(0, Math.sin(t*2.2 + s))*0.45);
-    }
-  }
-  syncProteinCache();                    // ← 排擠場取用「本帧」蛋白位置
-
-  /* --- 2) 磷脂：流場位移 → 蛋白排擠（孔洞隨蛋白移動） --- */
-  const A   = Math.min(FLOW_A_MAX, 0.30 * state.lipidDrift * fluidity);
-  const res = { x:0, z:0 };
+  /* --- phospholipids --- */
+  const lipDrift = 0.36 * state.lipidDrift * fluidity;
   for(let i=0;i<lipids.length;i++){
     const L = lipids[i], s = L.seed;
-    excludeXZ(L.x + A*flowX(L.x,L.z,t), L.z + A*flowZ(L.x,L.z,t), L.layer, res);
     dummy.position.set(
-      res.x,
-      L.y + undulation(res.x,res.z,t)*0.13*fluidity + Math.sin(t*2.0 + s)*0.035*fluidity,
-      res.z
+      L.x + Math.sin(t*0.8 + s)*lipDrift,
+      L.y + Math.sin(t*2.0 + s)*0.09*fluidity,
+      L.z + Math.cos(t*0.8 + s*1.3)*lipDrift
     );
     dummy.rotation.set(
       L.layer > 0 ? 0 : Math.PI,
-      Math.sin(t*1.1 + s)*0.12*fluidity,
-      Math.sin(t*0.9 + s*0.7)*0.10*fluidity
+      Math.sin(t*1.1 + s)*0.14*fluidity,
+      Math.sin(t*0.9 + s*0.7)*0.12*fluidity
     );
     dummy.updateMatrix();
     (L.layer > 0 ? headOuter : headInner).setMatrixAt(L.headIdx, dummy.matrix);
@@ -1325,17 +1268,59 @@ function animate(){
   headInner.instanceMatrix.needsUpdate = true;
   if(state.showTails) tails.instanceMatrix.needsUpdate = true;
 
-  /* --- 3) 膽固醇：同一流場（與磷脂同步）＋同一排擠場 --- */
+  /* --- cholesterol --- */
   if(state.showCholesterol){
     for(let i=0;i<cholMesh.count;i++){
       const c = chols[i];
-      excludeXZ(c.x + A*flowX(c.x,c.z,t), c.z + A*flowZ(c.x,c.z,t), c.layer, res, 0.92);
-      dummy.position.set(res.x, c.layer*0.72 + undulation(res.x,res.z,t)*0.13*fluidity, res.z);
-      dummy.rotation.set(Math.sin(t*0.7 + c.seed)*0.08, 0, Math.cos(t*0.7 + c.seed)*0.08);
+      dummy.position.set(
+        c.x + Math.sin(t*0.5 + c.seed)*0.22*fluidity,
+        c.layer * 0.72,
+        c.z + Math.cos(t*0.5 + c.seed*1.2)*0.22*fluidity
+      );
+      dummy.rotation.set(Math.sin(t*0.7 + c.seed)*0.1, 0, Math.cos(t*0.7 + c.seed)*0.1);
       dummy.updateMatrix();
       cholMesh.setMatrixAt(i, dummy.matrix);
     }
     cholMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /* --- proteins --- */
+  const pDrift = 1.5 * state.proteinDrift * fluidity;
+  for(const p of proteins){
+    const s = p.seed, g = p.mesh;
+    g.position.x = p.baseX + Math.sin(t*0.4 + s)*pDrift;
+    g.position.z = p.baseZ + Math.cos(t*0.3 + s*1.5)*pDrift;
+    g.rotation.x = Math.sin(t*0.6 + s)*0.045;
+    g.rotation.z = Math.cos(t*0.6 + s)*0.045;
+
+    const pt = g.userData.parts;
+    if(p.type === 'carrier' && pt){
+      const cyc = (Math.sin(t*0.75 + s) + 1) / 2;          // conformational cycle
+      g.rotation.y = cyc * Math.PI;
+      pt.top.scale.set(1 - 0.16*cyc, 1, 1 - 0.16*cyc);
+      pt.bot.scale.set(0.84 + 0.16*cyc, 1, 0.84 + 0.16*cyc);
+      pt.cargo.position.set(0, THREE.MathUtils.lerp(1.5, -1.5, cyc), 0);
+      pt.cargo.visible = state.showIons;
+    }
+    if(p.type === 'receptor' && pt){
+      const k = (Math.sin(t*0.6 + s) + 1) / 2;
+      const dock = Math.pow(k, 3);
+      pt.ligand.position.set(Math.sin(t*1.4+s)*0.18, THREE.MathUtils.lerp(7.2, 2.75, dock), Math.cos(t*1.4+s)*0.18);
+      pt.ligand.rotation.y += dt * 2.2;
+      if(g !== state.selectedObj && g !== hovered) setGlow(g, dock > 0.94 ? 0.4*(dock-0.94)/0.06 : 0);
+    }
+    if(p.type === 'antigen' && pt){
+      pt.chain.children.forEach((c,i) => {
+        c.position.x += Math.sin(t*1.5 + i + s)*0.006*fluidity;
+        c.position.z += Math.cos(t*1.4 + i + s)*0.006*fluidity;
+      });
+      pt.chain.rotation.y = Math.sin(t*0.5 + s)*0.28;
+    }
+    if(p.type === 'enzyme' && pt){
+      pt.core.rotation.y += dt*0.6; pt.core.rotation.x += dt*0.25;
+      const pulse = Math.max(0, Math.sin(t*2.2 + s));
+      pt.site.scale.setScalar(1 + pulse*0.45);
+    }
   }
 
   /* --- ions through channels --- */
@@ -1353,17 +1338,17 @@ function animate(){
         tmpA.set(cp.x + io.ax, io.ay, cp.z + io.az);
         tmpB.set(cp.x, eY, cp.z);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }else if(io.prog < 0.63){
         const s = (io.prog-0.45)/0.18;
         tmpA.set(cp.x, eY, cp.z); tmpB.set(cp.x, xY, cp.z);
         tmpP.lerpVectors(tmpA, tmpB, s);
-        tmpP.x += Math.cos(io.spin + s*7)*0.10; tmpP.z += Math.sin(io.spin + s*7)*0.10;   // 0.15 → 0.10（孔徑 0.44、離子 r=0.3）
+        tmpP.x += Math.cos(io.spin + s*7)*0.15; tmpP.z += Math.sin(io.spin + s*7)*0.15;
       }else{
         const s = (io.prog-0.63)/0.37, e = s*s;
         tmpA.set(cp.x, xY, cp.z); tmpB.set(cp.x + io.bx, io.by, cp.z + io.bz);
         tmpP.lerpVectors(tmpA, tmpB, e);
-        tmpP.x += Math.sin(t*3 + io.spin)*0.25*(1-e); tmpP.z += Math.cos(t*3 + io.spin)*0.25*(1-e);
+        tmpP.x += Math.sin(t*3 + io.spin)*0.25; tmpP.z += Math.cos(t*3 + io.spin)*0.25;
       }
       dummy.position.copy(tmpP);
       dummy.rotation.set(0,0,0);
